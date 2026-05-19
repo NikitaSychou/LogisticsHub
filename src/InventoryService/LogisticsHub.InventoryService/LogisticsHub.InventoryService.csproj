@@ -5,6 +5,10 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.8" />
+    <PackageReference Include="Swashbuckle.AspNetCore.SwaggerUI" Version="10.1.7" />
+  </ItemGroup>
+  <ItemGroup>
     <ProjectReference Include="..\LogisticsHub.InventoryService.Application\LogisticsHub.InventoryService.Application.csproj" />
     <ProjectReference Include="..\LogisticsHub.InventoryService.Infrastructure\LogisticsHub.InventoryService.Infrastructure.csproj" />
   </ItemGroup>

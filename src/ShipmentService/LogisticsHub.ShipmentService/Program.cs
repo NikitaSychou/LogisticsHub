@@ -7,6 +7,7 @@ const string HealthEndpointPath = "/health";
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddHealthChecks();
+builder.Services.AddOpenApi();
 
 builder.Services
     .AddControllers()
@@ -23,6 +24,16 @@ builder.Services.AddScoped<CreateShipment>();
 builder.Services.AddScoped<GetShipment>();
 
 var app = builder.Build();
+
+if (app.Environment.IsDevelopment())
+{
+    app.MapOpenApi();
+
+    app.UseSwaggerUI(options =>
+    {
+        options.SwaggerEndpoint("/openapi/v1.json", "LogisticsHub Shipment API v1");
+    });
+}
 
 app.MapHealthChecks(HealthEndpointPath);
 app.MapControllers();
