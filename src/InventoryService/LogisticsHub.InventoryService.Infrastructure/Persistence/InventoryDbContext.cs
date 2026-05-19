@@ -9,6 +9,6 @@ public class InventoryDbContext : DbContext
     {
     }
 
-    public DbSet<StockReservation>? StockReservations { get; set; }
-    public DbSet<StockReservationItem>? StockReservationItems { get; set; }
+    public DbSet<StockReservation> StockReservations { get; set; }
+    public DbSet<StockReservationItem> StockReservationItems { get; set; }
 }
