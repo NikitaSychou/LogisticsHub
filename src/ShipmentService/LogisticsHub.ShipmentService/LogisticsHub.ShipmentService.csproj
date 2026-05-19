@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Swashbuckle.AspNetCore" Version="10.1.7" />
+    <!-- Infrastructure packages moved to LogisticsHub.ShipmentService.Infrastructure -->
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\LogisticsHub.ShipmentService.Application\LogisticsHub.ShipmentService.Application.csproj" />
+    <ProjectReference Include="..\LogisticsHub.ShipmentService.Infrastructure\LogisticsHub.ShipmentService.Infrastructure.csproj" />
+  </ItemGroup>
+</Project>
