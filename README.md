@@ -20,3 +20,6 @@ LogisticsHub is a microservices-based backend project built in a production-styl
 
 ```powershell
 dotnet build .\LogisticsHub.sln
+## CI
+
+GitHub Actions verifies that the solution builds on push and pull request to master.
