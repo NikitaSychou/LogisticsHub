@@ -1,0 +1,36 @@
+using LogisticsHub.InventoryService.Application.Persistence;
+
+namespace LogisticsHub.InventoryService.Application.StockReservations;
+
+public sealed class GetStockReservation
+{
+    private readonly IInventoryDbContext dbContext;
+
+    public GetStockReservation(IInventoryDbContext dbContext)
+    {
+        this.dbContext = dbContext;
+    }
+
+    public async Task<StockReservationResult?> ExecuteAsync(
+        Guid reservationId,
+        CancellationToken cancellationToken = default)
+    {
+        var stockReservation = await dbContext.GetStockReservationByIdAsync(reservationId, cancellationToken);
+
+        if (stockReservation is null)
+        {
+            return null;
+        }
+
+        var items = stockReservation.Items
+            .Where(item => item.Item is not null)
+            .Select(item => new StockReservationItemResult(item.Item!.Sku, item.Quantity))
+            .ToArray();
+
+        return new StockReservationResult(
+            stockReservation.Id,
+            stockReservation.ShipmentId,
+            stockReservation.Status,
+            items);
+    }
+}

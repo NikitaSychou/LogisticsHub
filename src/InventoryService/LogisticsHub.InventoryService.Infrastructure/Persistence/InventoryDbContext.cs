@@ -23,6 +23,27 @@ public class InventoryDbContext : DbContext, IInventoryDbContext
             .SingleOrDefaultAsync(item => item.Sku == sku, cancellationToken);
     }
 
+    public async Task<IReadOnlyList<Item>> GetItemsBySkusAsync(
+        IReadOnlyCollection<string> skus,
+        CancellationToken cancellationToken = default)
+    {
+        return await Items
+            .Include(item => item.StockBalance)
+            .Where(item => skus.Contains(item.Sku))
+            .ToListAsync(cancellationToken);
+    }
+
+    public async Task<StockReservation?> GetStockReservationByIdAsync(
+        Guid id,
+        CancellationToken cancellationToken = default)
+    {
+        return await StockReservations
+            .AsNoTracking()
+            .Include(stockReservation => stockReservation.Items)
+            .ThenInclude(stockReservationItem => stockReservationItem.Item)
+            .SingleOrDefaultAsync(stockReservation => stockReservation.Id == id, cancellationToken);
+    }
+
     public async Task AddItemAsync(Item item, CancellationToken cancellationToken = default)
     {
         await Items.AddAsync(item, cancellationToken);
@@ -31,6 +52,13 @@ public class InventoryDbContext : DbContext, IInventoryDbContext
     public async Task AddStockBalanceAsync(StockBalance stockBalance, CancellationToken cancellationToken = default)
     {
         await StockBalances.AddAsync(stockBalance, cancellationToken);
+    }
+
+    public async Task AddStockReservationAsync(
+        StockReservation stockReservation,
+        CancellationToken cancellationToken = default)
+    {
+        await StockReservations.AddAsync(stockReservation, cancellationToken);
     }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -89,6 +117,59 @@ public class InventoryDbContext : DbContext, IInventoryDbContext
             builder.Property(stockBalance => stockBalance.RowVersion)
                 .HasColumnName("row_version")
                 .IsRowVersion();
+        });
+
+        modelBuilder.Entity<StockReservation>(builder =>
+        {
+            builder.ToTable("stock_reservations", "dbo");
+
+            builder.HasKey(stockReservation => stockReservation.Id);
+
+            builder.Property(stockReservation => stockReservation.Id)
+                .HasColumnName("id");
+
+            builder.Property(stockReservation => stockReservation.ShipmentId)
+                .HasColumnName("shipment_id");
+
+            builder.Property(stockReservation => stockReservation.Status)
+                .HasColumnName("status")
+                .HasMaxLength(32)
+                .HasConversion<string>();
+
+            builder.Property(stockReservation => stockReservation.CreatedAt)
+                .HasColumnName("created_at");
+
+            builder.Property(stockReservation => stockReservation.UpdatedAt)
+                .HasColumnName("updated_at");
+        });
+
+        modelBuilder.Entity<StockReservationItem>(builder =>
+        {
+            builder.ToTable("stock_reservation_items", "dbo");
+
+            builder.HasKey(stockReservationItem => new
+            {
+                stockReservationItem.ReservationId,
+                stockReservationItem.ItemId
+            });
+
+            builder.Property(stockReservationItem => stockReservationItem.ReservationId)
+                .HasColumnName("reservation_id");
+
+            builder.Property(stockReservationItem => stockReservationItem.ItemId)
+                .HasColumnName("item_id");
+
+            builder.Property(stockReservationItem => stockReservationItem.Quantity)
+                .HasColumnName("quantity");
+
+            builder.HasOne(stockReservationItem => stockReservationItem.Reservation)
+                .WithMany(stockReservation => stockReservation.Items)
+                .HasForeignKey(stockReservationItem => stockReservationItem.ReservationId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            builder.HasOne(stockReservationItem => stockReservationItem.Item)
+                .WithMany()
+                .HasForeignKey(stockReservationItem => stockReservationItem.ItemId);
         });
     }
 }

@@ -1,9 +1,14 @@
 namespace LogisticsHub.InventoryService.Domain.Entities;
 
-public class StockReservationItem
+public sealed class StockReservationItem
 {
-    public Guid Id { get; set; }
     public Guid ReservationId { get; set; }
-    public string? Sku { get; set; }
+
+    public Guid ItemId { get; set; }
+
     public int Quantity { get; set; }
+
+    public StockReservation? Reservation { get; set; }
+
+    public Item? Item { get; set; }
 }

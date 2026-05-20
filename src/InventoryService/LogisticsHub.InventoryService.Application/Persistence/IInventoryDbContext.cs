@@ -6,9 +6,19 @@ public interface IInventoryDbContext
 {
     Task<Item?> GetItemBySkuAsync(string sku, CancellationToken cancellationToken = default);
 
+    Task<IReadOnlyList<Item>> GetItemsBySkusAsync(
+        IReadOnlyCollection<string> skus,
+        CancellationToken cancellationToken = default);
+
+    Task<StockReservation?> GetStockReservationByIdAsync(
+        Guid id,
+        CancellationToken cancellationToken = default);
+
     Task AddItemAsync(Item item, CancellationToken cancellationToken = default);
 
     Task AddStockBalanceAsync(StockBalance stockBalance, CancellationToken cancellationToken = default);
+
+    Task AddStockReservationAsync(StockReservation stockReservation, CancellationToken cancellationToken = default);
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }
