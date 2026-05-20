@@ -11,5 +11,6 @@
   <ItemGroup>
     <ProjectReference Include="..\LogisticsHub.ShipmentService.Application\LogisticsHub.ShipmentService.Application.csproj" />
     <ProjectReference Include="..\LogisticsHub.ShipmentService.Infrastructure\LogisticsHub.ShipmentService.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\Shared\LogisticsHub.Messaging.RabbitMQ\LogisticsHub.Messaging.RabbitMQ.csproj" />
   </ItemGroup>
 </Project>
