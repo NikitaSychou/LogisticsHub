@@ -1,3 +1,4 @@
+using LogisticsHub.InventoryService.Application.Persistence;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.EntityFrameworkCore;
@@ -20,6 +21,8 @@ public static class InfrastructureServiceCollectionExtensions
 
         services.AddDbContext<InventoryDbContext>(options =>
             options.UseSqlServer(connectionString));
+
+        services.AddScoped<IInventoryDbContext>(serviceProvider => serviceProvider.GetRequiredService<InventoryDbContext>());
 
         return services;
     }
