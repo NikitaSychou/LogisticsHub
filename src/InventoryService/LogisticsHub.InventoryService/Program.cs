@@ -1,5 +1,7 @@
 using LogisticsHub.InventoryService.Application.InventoryItems;
+using LogisticsHub.InventoryService.Application.StockReservations;
 using LogisticsHub.InventoryService.Infrastructure.DependencyInjection;
+using System.Text.Json.Serialization;
 
 const string HealthEndpointPath = "/health";
 
@@ -8,10 +10,17 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddDbInfrastructure(builder.Configuration);
 builder.Services.AddHealthChecks();
 builder.Services.AddOpenApi();
-builder.Services.AddControllers();
+builder.Services
+    .AddControllers()
+    .AddJsonOptions(options =>
+    {
+        options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
+    });
 
 builder.Services.AddScoped<CreateInventoryItem>();
 builder.Services.AddScoped<GetInventoryItem>();
+builder.Services.AddScoped<CreateStockReservation>();
+builder.Services.AddScoped<GetStockReservation>();
 
 var app = builder.Build();
 
