@@ -1,5 +1,6 @@
 using LogisticsHub.ShipmentService.Application.Shipments;
 using LogisticsHub.ShipmentService.Infrastructure.DependencyInjection;
+using LogisticsHub.Messaging.RabbitMQ;
 using System.Text.Json.Serialization;
 
 const string HealthEndpointPath = "/health";
@@ -18,6 +19,7 @@ builder.Services
 
 // Register infrastructure dependencies.
 builder.Services.AddDbInfrastructure(builder.Configuration);
+builder.Services.AddRabbitMqMessaging(builder.Configuration);
 
 // Register application services.
 builder.Services.AddScoped<CreateShipment>();
