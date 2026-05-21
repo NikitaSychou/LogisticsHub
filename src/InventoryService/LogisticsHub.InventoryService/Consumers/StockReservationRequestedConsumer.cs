@@ -11,6 +11,7 @@ public sealed class StockReservationRequestedConsumer
     private const string QueueName = "inventory.stock-reservation.requested";
 
     private readonly IServiceScopeFactory serviceScopeFactory;
+    private readonly ILogger<StockReservationRequestedConsumer> logger;
 
     public StockReservationRequestedConsumer(
         IRabbitMqConnectionProvider connectionProvider,
@@ -25,6 +26,7 @@ public sealed class StockReservationRequestedConsumer
             StockReservationRoutingKeys.Requested)
     {
         this.serviceScopeFactory = serviceScopeFactory;
+        this.logger = logger;
     }
 
     protected override async Task HandleMessageAsync(
@@ -34,6 +36,12 @@ public sealed class StockReservationRequestedConsumer
         await using var scope = serviceScopeFactory.CreateAsyncScope();
 
         var publisher = scope.ServiceProvider.GetRequiredService<IRabbitMqPublisher>();
+
+        if (message.EventId == Guid.Empty)
+        {
+            await PublishFailedAsync(publisher, message.ShipmentId, "Event ID is required.", cancellationToken);
+            return;
+        }
 
         if (message.ShipmentId == Guid.Empty)
         {
@@ -74,9 +82,20 @@ public sealed class StockReservationRequestedConsumer
             message.ShipmentId,
             message.Items
                 .Select(item => new StockReservationItemCommand(item.Sku.Trim(), item.Quantity))
-                .ToArray());
+                .ToArray(),
+            message.EventId);
 
         var result = await createStockReservation.ExecuteAsync(command, cancellationToken);
+
+        if (result.AlreadyProcessed)
+        {
+            logger.LogInformation(
+                "Ignoring duplicate stock reservation request event {EventId} for shipment {ShipmentId}.",
+                message.EventId,
+                message.ShipmentId);
+
+            return;
+        }
 
         if (result.Reservation is null)
         {

@@ -6,6 +6,8 @@ namespace LogisticsHub.InventoryService.Infrastructure.Persistence;
 
 public class InventoryDbContext : DbContext, IInventoryDbContext
 {
+    private const string InboxEventIdIndexName = "IX_inventory_inbox_messages_event_id";
+
     public InventoryDbContext(DbContextOptions<InventoryDbContext> options) : base(options)
     {
     }
@@ -14,6 +16,7 @@ public class InventoryDbContext : DbContext, IInventoryDbContext
     public DbSet<StockBalance> StockBalances { get; set; }
     public DbSet<StockReservation> StockReservations { get; set; }
     public DbSet<StockReservationItem> StockReservationItems { get; set; }
+    public DbSet<InventoryInboxMessage> InventoryInboxMessages { get; set; }
 
     public async Task<Item?> GetItemBySkuAsync(string sku, CancellationToken cancellationToken = default)
     {
@@ -44,6 +47,15 @@ public class InventoryDbContext : DbContext, IInventoryDbContext
             .SingleOrDefaultAsync(stockReservation => stockReservation.Id == id, cancellationToken);
     }
 
+    public async Task<bool> HasInventoryInboxMessageAsync(
+        Guid eventId,
+        CancellationToken cancellationToken = default)
+    {
+        return await InventoryInboxMessages
+            .AsNoTracking()
+            .AnyAsync(message => message.EventId == eventId, cancellationToken);
+    }
+
     public async Task AddItemAsync(Item item, CancellationToken cancellationToken = default)
     {
         await Items.AddAsync(item, cancellationToken);
@@ -59,6 +71,27 @@ public class InventoryDbContext : DbContext, IInventoryDbContext
         CancellationToken cancellationToken = default)
     {
         await StockReservations.AddAsync(stockReservation, cancellationToken);
+    }
+
+    public async Task AddInventoryInboxMessageAsync(
+        InventoryInboxMessage inboxMessage,
+        CancellationToken cancellationToken = default)
+    {
+        await InventoryInboxMessages.AddAsync(inboxMessage, cancellationToken);
+    }
+
+    public async Task<bool> SaveChangesAsyncHandlingDuplicateInboxEventAsync(
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            await SaveChangesAsync(cancellationToken);
+            return true;
+        }
+        catch (DbUpdateException exception) when (IsInboxEventIdUniqueIndexViolation(exception))
+        {
+            return false;
+        }
     }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -171,5 +204,38 @@ public class InventoryDbContext : DbContext, IInventoryDbContext
                 .WithMany()
                 .HasForeignKey(stockReservationItem => stockReservationItem.ItemId);
         });
+
+        modelBuilder.Entity<InventoryInboxMessage>(builder =>
+        {
+            builder.ToTable("inventory_inbox_messages", "dbo");
+
+            builder.HasKey(message => message.Id);
+
+            builder.Property(message => message.Id)
+                .HasColumnName("id");
+
+            builder.Property(message => message.EventId)
+                .HasColumnName("event_id");
+
+            builder.Property(message => message.Type)
+                .HasColumnName("type")
+                .HasMaxLength(512)
+                .IsRequired();
+
+            builder.Property(message => message.ProcessedAtUtc)
+                .HasColumnName("processed_at_utc");
+
+            builder.Property(message => message.CreatedAtUtc)
+                .HasColumnName("created_at_utc");
+
+            builder.HasIndex(message => message.EventId)
+                .IsUnique()
+                .HasDatabaseName("IX_inventory_inbox_messages_event_id");
+        });
+    }
+
+    private static bool IsInboxEventIdUniqueIndexViolation(DbUpdateException exception)
+    {
+        return exception.ToString().Contains(InboxEventIdIndexName, StringComparison.OrdinalIgnoreCase);
     }
 }

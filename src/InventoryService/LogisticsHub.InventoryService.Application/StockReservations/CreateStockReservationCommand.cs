@@ -2,4 +2,5 @@ namespace LogisticsHub.InventoryService.Application.StockReservations;
 
 public sealed record CreateStockReservationCommand(
     Guid ShipmentId,
-    IReadOnlyCollection<StockReservationItemCommand> Items);
+    IReadOnlyCollection<StockReservationItemCommand> Items,
+    Guid? EventId = null);
