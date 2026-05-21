@@ -12,6 +12,7 @@ public class ShipmentDbContext : DbContext, IShipmentDbContext
 
     public DbSet<Shipment> Shipments { get; set; }
     public DbSet<ShipmentItem> ShipmentItems { get; set; }
+    public DbSet<ShipmentOutboxMessage> ShipmentOutboxMessages { get; set; }
 
     public async Task<Shipment?> GetShipmentByIdAsync(Guid id, CancellationToken cancellationToken = default)
     {
@@ -35,6 +36,24 @@ public class ShipmentDbContext : DbContext, IShipmentDbContext
     public async Task AddShipmentItemAsync(ShipmentItem shipmentItem, CancellationToken cancellationToken = default)
     {
         await ShipmentItems.AddAsync(shipmentItem, cancellationToken);
+    }
+
+    public async Task AddShipmentOutboxMessageAsync(
+        ShipmentOutboxMessage outboxMessage,
+        CancellationToken cancellationToken = default)
+    {
+        await ShipmentOutboxMessages.AddAsync(outboxMessage, cancellationToken);
+    }
+
+    public async Task<IReadOnlyList<ShipmentOutboxMessage>> GetUnprocessedShipmentOutboxMessagesAsync(
+        int batchSize,
+        CancellationToken cancellationToken = default)
+    {
+        return await ShipmentOutboxMessages
+            .Where(message => message.ProcessedAtUtc == null)
+            .OrderBy(message => message.OccurredAtUtc)
+            .Take(batchSize)
+            .ToListAsync(cancellationToken);
     }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -102,6 +121,45 @@ public class ShipmentDbContext : DbContext, IShipmentDbContext
                 .WithMany(x => x.Items)
                 .HasForeignKey(x => x.ShipmentId)
                 .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<ShipmentOutboxMessage>(builder =>
+        {
+            builder.ToTable("shipment_outbox_messages", "dbo");
+
+            builder.HasKey(x => x.Id);
+
+            builder.Property(x => x.Id)
+                .HasColumnName("id");
+
+            builder.Property(x => x.OccurredAtUtc)
+                .HasColumnName("occurred_at_utc");
+
+            builder.Property(x => x.Type)
+                .HasColumnName("type")
+                .HasMaxLength(512)
+                .IsRequired();
+
+            builder.Property(x => x.RoutingKey)
+                .HasColumnName("routing_key")
+                .HasMaxLength(256)
+                .IsRequired();
+
+            builder.Property(x => x.Payload)
+                .HasColumnName("payload")
+                .IsRequired();
+
+            builder.Property(x => x.ProcessedAtUtc)
+                .HasColumnName("processed_at_utc");
+
+            builder.Property(x => x.Error)
+                .HasColumnName("error");
+
+            builder.Property(x => x.RetryCount)
+                .HasColumnName("retry_count");
+
+            builder.Property(x => x.CreatedAtUtc)
+                .HasColumnName("created_at_utc");
         });
     }
 }

@@ -12,5 +12,11 @@ public interface IShipmentDbContext
 
     Task AddShipmentItemAsync(ShipmentItem shipmentItem, CancellationToken cancellationToken = default);
 
+    Task AddShipmentOutboxMessageAsync(ShipmentOutboxMessage outboxMessage, CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyList<ShipmentOutboxMessage>> GetUnprocessedShipmentOutboxMessagesAsync(
+        int batchSize,
+        CancellationToken cancellationToken = default);
+
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }
