@@ -70,11 +70,42 @@ public abstract class RabbitMqConsumerBackgroundService<TMessage> : BackgroundSe
             autoDelete: false,
             cancellationToken: stoppingToken);
 
+        var deadLetterExchangeName = $"{_options.ExchangeName}.dlx";
+        var deadLetterQueueName = $"{_queueName}.dlq";
+        var deadLetterRoutingKey = $"{_queueName}.dead-letter";
+
+        await channel.ExchangeDeclareAsync(
+            exchange: deadLetterExchangeName,
+            type: ExchangeType.Direct,
+            durable: true,
+            autoDelete: false,
+            cancellationToken: stoppingToken);
+
+        await channel.QueueDeclareAsync(
+            queue: deadLetterQueueName,
+            durable: true,
+            exclusive: false,
+            autoDelete: false,
+            cancellationToken: stoppingToken);
+
+        await channel.QueueBindAsync(
+            queue: deadLetterQueueName,
+            exchange: deadLetterExchangeName,
+            routingKey: deadLetterRoutingKey,
+            cancellationToken: stoppingToken);
+
+        var queueArguments = new Dictionary<string, object?>
+        {
+            ["x-dead-letter-exchange"] = deadLetterExchangeName,
+            ["x-dead-letter-routing-key"] = deadLetterRoutingKey
+        };
+
         await channel.QueueDeclareAsync(
             queue: _queueName,
             durable: true,
             exclusive: false,
             autoDelete: false,
+            arguments: queueArguments,
             cancellationToken: stoppingToken);
 
         await channel.QueueBindAsync(
