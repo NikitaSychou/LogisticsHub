@@ -26,6 +26,14 @@ public interface IInventoryDbContext
         InventoryInboxMessage inboxMessage,
         CancellationToken cancellationToken = default);
 
+    Task AddInventoryOutboxMessageAsync(
+        InventoryOutboxMessage outboxMessage,
+        CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyList<InventoryOutboxMessage>> GetUnprocessedInventoryOutboxMessagesAsync(
+        int batchSize,
+        CancellationToken cancellationToken = default);
+
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 
     Task<bool> SaveChangesAsyncHandlingDuplicateInboxEventAsync(CancellationToken cancellationToken = default);
