@@ -35,9 +35,12 @@ public sealed class MarkShipmentReservationFailed
 
         var now = DateTime.UtcNow;
 
-        shipment.Status = ShipmentStatus.ReservationFailed;
-        shipment.ReservationFailureReason = reason;
-        shipment.UpdatedAt = now;
+        if (shipment.Status == ShipmentStatus.ReservationRequested)
+        {
+            shipment.Status = ShipmentStatus.ReservationFailed;
+            shipment.ReservationFailureReason = reason;
+            shipment.UpdatedAt = now;
+        }
 
         await dbContext.AddShipmentInboxMessageAsync(
             new ShipmentInboxMessage

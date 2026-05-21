@@ -35,10 +35,13 @@ public sealed class MarkShipmentReserved
 
         var now = DateTime.UtcNow;
 
-        shipment.Status = ShipmentStatus.Reserved;
-        shipment.ReservationId = reservationId;
-        shipment.ReservationFailureReason = null;
-        shipment.UpdatedAt = now;
+        if (shipment.Status == ShipmentStatus.ReservationRequested)
+        {
+            shipment.Status = ShipmentStatus.Reserved;
+            shipment.ReservationId = reservationId;
+            shipment.ReservationFailureReason = null;
+            shipment.UpdatedAt = now;
+        }
 
         await dbContext.AddShipmentInboxMessageAsync(
             new ShipmentInboxMessage
