@@ -1,5 +1,6 @@
 using LogisticsHub.InventoryService.Application.InventoryItems;
 using LogisticsHub.InventoryService.Contracts;
+using LogisticsHub.InventoryService.Validation;
 using Microsoft.AspNetCore.Mvc;
 
 namespace LogisticsHub.InventoryService.Controllers;
@@ -42,20 +43,8 @@ public sealed class InventoryItemsController : ControllerBase
         CreateInventoryItemRequest request,
         CancellationToken cancellationToken)
     {
-        if (string.IsNullOrWhiteSpace(request.Sku))
-        {
-            ModelState.AddModelError(nameof(request.Sku), "SKU is required.");
-        }
-
-        if (string.IsNullOrWhiteSpace(request.Name))
-        {
-            ModelState.AddModelError(nameof(request.Name), "Name is required.");
-        }
-
-        if (request.QuantityAvailable < 0)
-        {
-            ModelState.AddModelError(nameof(request.QuantityAvailable), "Quantity available must be zero or greater.");
-        }
+        var validationErrors = CreateInventoryItemRequestValidator.Validate(request);
+        ModelState.AddValidationErrors(validationErrors);
 
         if (!ModelState.IsValid)
         {
