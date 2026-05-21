@@ -10,7 +10,7 @@ public sealed class StockReservedConsumer
 {
     private const string QueueName = "shipment.stock-reservation.reserved";
 
-    private readonly IServiceScopeFactory serviceScopeFactory;
+    private readonly IServiceScopeFactory _serviceScopeFactory;
 
     public StockReservedConsumer(
         IRabbitMqConnectionProvider connectionProvider,
@@ -24,14 +24,14 @@ public sealed class StockReservedConsumer
             QueueName,
             StockReservationRoutingKeys.Reserved)
     {
-        this.serviceScopeFactory = serviceScopeFactory;
+        _serviceScopeFactory = serviceScopeFactory;
     }
 
     protected override async Task HandleMessageAsync(
         StockReservedIntegrationEvent message,
         CancellationToken cancellationToken)
     {
-        await using var scope = serviceScopeFactory.CreateAsyncScope();
+        await using var scope = _serviceScopeFactory.CreateAsyncScope();
         var markShipmentReserved = scope.ServiceProvider.GetRequiredService<MarkShipmentReserved>();
 
         await markShipmentReserved.ExecuteAsync(

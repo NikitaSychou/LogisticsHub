@@ -5,11 +5,11 @@ namespace LogisticsHub.InventoryService.Application.InventoryItems;
 
 public sealed class CreateInventoryItem
 {
-    private readonly IInventoryDbContext dbContext;
+    private readonly IInventoryDbContext _dbContext;
 
     public CreateInventoryItem(IInventoryDbContext dbContext)
     {
-        this.dbContext = dbContext;
+        _dbContext = dbContext;
     }
 
     public async Task<InventoryItemResult?> ExecuteAsync(
@@ -18,7 +18,7 @@ public sealed class CreateInventoryItem
     {
         ArgumentNullException.ThrowIfNull(command);
 
-        var existingItem = await dbContext.GetItemBySkuAsync(command.Sku, cancellationToken);
+        var existingItem = await _dbContext.GetItemBySkuAsync(command.Sku, cancellationToken);
         if (existingItem is not null)
         {
             return null;
@@ -43,9 +43,9 @@ public sealed class CreateInventoryItem
             UpdatedAt = now
         };
 
-        await dbContext.AddItemAsync(item, cancellationToken);
-        await dbContext.AddStockBalanceAsync(stockBalance, cancellationToken);
-        await dbContext.SaveChangesAsync(cancellationToken);
+        await _dbContext.AddItemAsync(item, cancellationToken);
+        await _dbContext.AddStockBalanceAsync(stockBalance, cancellationToken);
+        await _dbContext.SaveChangesAsync(cancellationToken);
 
         return new InventoryItemResult(item.Sku, item.Name, stockBalance.OnHand - stockBalance.Reserved);
     }

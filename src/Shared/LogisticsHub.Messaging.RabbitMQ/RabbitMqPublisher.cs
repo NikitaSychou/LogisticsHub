@@ -8,15 +8,15 @@ public sealed class RabbitMqPublisher : IRabbitMqPublisher
 {
     private static readonly JsonSerializerOptions JsonSerializerOptions = new(JsonSerializerDefaults.Web);
 
-    private readonly IRabbitMqConnectionProvider connectionProvider;
-    private readonly RabbitMqOptions options;
+    private readonly IRabbitMqConnectionProvider _connectionProvider;
+    private readonly RabbitMqOptions _options;
 
     public RabbitMqPublisher(
         IRabbitMqConnectionProvider connectionProvider,
         RabbitMqOptions options)
     {
-        this.connectionProvider = connectionProvider;
-        this.options = options;
+        _connectionProvider = connectionProvider;
+        _options = options;
     }
 
     public async Task PublishAsync<TMessage>(
@@ -27,11 +27,11 @@ public sealed class RabbitMqPublisher : IRabbitMqPublisher
         ArgumentException.ThrowIfNullOrWhiteSpace(routingKey);
         ArgumentNullException.ThrowIfNull(message);
 
-        var connection = await connectionProvider.GetConnectionAsync(cancellationToken);
+        var connection = await _connectionProvider.GetConnectionAsync(cancellationToken);
         await using var channel = await connection.CreateChannelAsync(cancellationToken: cancellationToken);
 
         await channel.ExchangeDeclareAsync(
-            exchange: options.ExchangeName,
+            exchange: _options.ExchangeName,
             type: ExchangeType.Topic,
             durable: true,
             autoDelete: false,
@@ -45,7 +45,7 @@ public sealed class RabbitMqPublisher : IRabbitMqPublisher
         };
 
         await channel.BasicPublishAsync(
-            exchange: options.ExchangeName,
+            exchange: _options.ExchangeName,
             routingKey: routingKey,
             mandatory: false,
             basicProperties: properties,

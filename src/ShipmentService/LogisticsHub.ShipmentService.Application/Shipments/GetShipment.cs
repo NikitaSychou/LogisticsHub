@@ -4,18 +4,18 @@ namespace LogisticsHub.ShipmentService.Application.Shipments;
 
 public sealed class GetShipment
 {
-    private readonly IShipmentDbContext dbContext;
+    private readonly IShipmentDbContext _dbContext;
 
     public GetShipment(IShipmentDbContext dbContext)
     {
-        this.dbContext = dbContext;
+        _dbContext = dbContext;
     }
 
     public async Task<GetShipmentResult?> ExecuteAsync(
         Guid id,
         CancellationToken cancellationToken = default)
     {
-        var shipment = await dbContext.GetShipmentByIdAsync(id, cancellationToken);
+        var shipment = await _dbContext.GetShipmentByIdAsync(id, cancellationToken);
 
         if (shipment is null)
         {

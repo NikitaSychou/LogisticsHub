@@ -10,11 +10,11 @@ public sealed class CreateShipment
 {
     private static readonly JsonSerializerOptions JsonSerializerOptions = new(JsonSerializerDefaults.Web);
 
-    private readonly IShipmentDbContext dbContext;
+    private readonly IShipmentDbContext _dbContext;
 
     public CreateShipment(IShipmentDbContext dbContext)
     {
-        this.dbContext = dbContext;
+        _dbContext = dbContext;
     }
 
     public async Task<CreateShipmentResult> ExecuteAsync(
@@ -36,7 +36,7 @@ public sealed class CreateShipment
             UpdatedAt = now
         };
 
-        await dbContext.AddShipmentAsync(shipment, cancellationToken);
+        await _dbContext.AddShipmentAsync(shipment, cancellationToken);
 
         foreach (var item in command.Items)
         {
@@ -47,7 +47,7 @@ public sealed class CreateShipment
                 Quantity = item.Quantity
             };
 
-            await dbContext.AddShipmentItemAsync(shipmentItem, cancellationToken);
+            await _dbContext.AddShipmentItemAsync(shipmentItem, cancellationToken);
         }
 
         var stockReservationRequested = new StockReservationRequestedIntegrationEvent(
@@ -68,9 +68,9 @@ public sealed class CreateShipment
             CreatedAtUtc = now
         };
 
-        await dbContext.AddShipmentOutboxMessageAsync(outboxMessage, cancellationToken);
+        await _dbContext.AddShipmentOutboxMessageAsync(outboxMessage, cancellationToken);
 
-        await dbContext.SaveChangesAsync(cancellationToken);
+        await _dbContext.SaveChangesAsync(cancellationToken);
 
         return new CreateShipmentResult(shipment.Id, shipment.Status);
     }

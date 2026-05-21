@@ -10,7 +10,7 @@ public sealed class StockReservationFailedConsumer
 {
     private const string QueueName = "shipment.stock-reservation.failed";
 
-    private readonly IServiceScopeFactory serviceScopeFactory;
+    private readonly IServiceScopeFactory _serviceScopeFactory;
 
     public StockReservationFailedConsumer(
         IRabbitMqConnectionProvider connectionProvider,
@@ -24,14 +24,14 @@ public sealed class StockReservationFailedConsumer
             QueueName,
             StockReservationRoutingKeys.Failed)
     {
-        this.serviceScopeFactory = serviceScopeFactory;
+        _serviceScopeFactory = serviceScopeFactory;
     }
 
     protected override async Task HandleMessageAsync(
         StockReservationFailedIntegrationEvent message,
         CancellationToken cancellationToken)
     {
-        await using var scope = serviceScopeFactory.CreateAsyncScope();
+        await using var scope = _serviceScopeFactory.CreateAsyncScope();
         var markShipmentReservationFailed = scope.ServiceProvider.GetRequiredService<MarkShipmentReservationFailed>();
 
         await markShipmentReservationFailed.ExecuteAsync(

@@ -4,18 +4,18 @@ namespace LogisticsHub.InventoryService.Application.StockReservations;
 
 public sealed class GetStockReservation
 {
-    private readonly IInventoryDbContext dbContext;
+    private readonly IInventoryDbContext _dbContext;
 
     public GetStockReservation(IInventoryDbContext dbContext)
     {
-        this.dbContext = dbContext;
+        _dbContext = dbContext;
     }
 
     public async Task<StockReservationResult?> ExecuteAsync(
         Guid reservationId,
         CancellationToken cancellationToken = default)
     {
-        var stockReservation = await dbContext.GetStockReservationByIdAsync(reservationId, cancellationToken);
+        var stockReservation = await _dbContext.GetStockReservationByIdAsync(reservationId, cancellationToken);
 
         if (stockReservation is null)
         {
