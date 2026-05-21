@@ -1,6 +1,6 @@
 using LogisticsHub.ShipmentService.Contracts;
 
-namespace LogisticsHub.ShipmentService;
+namespace LogisticsHub.ShipmentService.Validation;
 
 public static class CreateShipmentRequestValidator
 {

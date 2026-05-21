@@ -1,5 +1,6 @@
 using LogisticsHub.ShipmentService.Application.Shipments;
 using LogisticsHub.ShipmentService.Contracts;
+using LogisticsHub.ShipmentService.Validation;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 
@@ -54,16 +55,10 @@ public sealed class ShipmentsController : ControllerBase
         CancellationToken cancellationToken)
     {
         var validationErrors = CreateShipmentRequestValidator.Validate(request);
-        if (validationErrors.Count > 0)
-        {
-            foreach (var validationError in validationErrors)
-            {
-                foreach (var message in validationError.Value)
-                {
-                    ModelState.AddModelError(validationError.Key, message);
-                }
-            }
+        ModelState.AddValidationErrors(validationErrors);
 
+        if (!ModelState.IsValid)
+        {
             return ValidationProblem(ModelState);
         }
 
