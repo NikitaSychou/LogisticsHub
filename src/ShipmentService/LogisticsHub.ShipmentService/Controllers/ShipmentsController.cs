@@ -1,5 +1,6 @@
 using LogisticsHub.ShipmentService.Application.Shipments;
 using LogisticsHub.ShipmentService.Contracts;
+using LogisticsHub.ShipmentService.Mapping;
 using LogisticsHub.ShipmentService.Validation;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
@@ -29,22 +30,7 @@ public sealed class ShipmentsController : ControllerBase
             return NotFound();
         }
 
-        var response = new GetShipmentResponse(
-            result.ShipmentId,
-            result.ShipmentNumber,
-            result.Status,
-            result.ReservationId,
-            result.ReservationFailureReason,
-            result.DestinationName,
-            result.DestinationAddress,
-            result.Comment,
-            result.CreatedAt,
-            result.UpdatedAt,
-            result.DispatchedAt,
-            result.CancelledAt,
-            result.Items
-                .Select(item => new GetShipmentItemResponse(item.Sku, item.Quantity))
-                .ToArray());
+        var response = ShipmentMapper.ToResponse(result);
 
         return Ok(response);
     }
@@ -62,11 +48,7 @@ public sealed class ShipmentsController : ControllerBase
             return ValidationProblem(ModelState);
         }
 
-        var commandItems = request.Items
-            .Select(item => new CreateShipmentItemCommand(item.Sku, item.Quantity))
-            .ToArray();
-
-        var command = new CreateShipmentCommand(commandItems);
+        var command = ShipmentMapper.ToCommand(request);
 
         var result = await _mediator.Send(command, cancellationToken);
 

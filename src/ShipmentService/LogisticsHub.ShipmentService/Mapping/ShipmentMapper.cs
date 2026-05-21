@@ -1,0 +1,26 @@
+using LogisticsHub.ShipmentService.Application.Shipments;
+using LogisticsHub.ShipmentService.Contracts;
+using Riok.Mapperly.Abstractions;
+
+namespace LogisticsHub.ShipmentService.Mapping;
+
+[Mapper]
+public static partial class ShipmentMapper
+{
+    public static CreateShipmentCommand ToCommand(CreateShipmentRequest request)
+    {
+        return new CreateShipmentCommand(
+            request.Items
+                .Select(ToCommandItem)
+                .ToArray());
+    }
+
+    public static partial GetShipmentResponse ToResponse(GetShipmentResult result);
+
+    private static CreateShipmentItemCommand ToCommandItem(CreateShipmentItemRequest item)
+    {
+        return new CreateShipmentItemCommand(item.Sku, item.Quantity);
+    }
+
+    private static partial GetShipmentItemResponse ToResponseItem(GetShipmentItemResult item);
+}

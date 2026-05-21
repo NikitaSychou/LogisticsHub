@@ -1,5 +1,6 @@
 using LogisticsHub.InventoryService.Application.InventoryItems;
 using LogisticsHub.InventoryService.Contracts;
+using LogisticsHub.InventoryService.Mapping;
 using LogisticsHub.InventoryService.Validation;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
@@ -29,10 +30,7 @@ public sealed class InventoryItemsController : ControllerBase
             return NotFound();
         }
 
-        return Ok(new GetInventoryItemResponse(
-            result.Sku,
-            result.Name,
-            result.QuantityAvailable));
+        return Ok(InventoryItemMapper.ToGetResponse(result));
     }
 
     [HttpPost]
@@ -48,10 +46,7 @@ public sealed class InventoryItemsController : ControllerBase
             return ValidationProblem(ModelState);
         }
 
-        var command = new CreateInventoryItemCommand(
-            request.Sku.Trim(),
-            request.Name.Trim(),
-            request.QuantityAvailable);
+        var command = InventoryItemMapper.ToCommand(request);
 
         var result = await _mediator.Send(command, cancellationToken);
 
@@ -60,10 +55,7 @@ public sealed class InventoryItemsController : ControllerBase
             return Conflict();
         }
 
-        var response = new CreateInventoryItemResponse(
-            result.Sku,
-            result.Name,
-            result.QuantityAvailable);
+        var response = InventoryItemMapper.ToCreateResponse(result);
 
         return Created($"/inventory-items/{result.Sku}", response);
     }
