@@ -17,6 +17,7 @@ public class InventoryDbContext : DbContext, IInventoryDbContext
     public DbSet<StockReservation> StockReservations { get; set; }
     public DbSet<StockReservationItem> StockReservationItems { get; set; }
     public DbSet<InventoryInboxMessage> InventoryInboxMessages { get; set; }
+    public DbSet<InventoryOutboxMessage> InventoryOutboxMessages { get; set; }
 
     public async Task<Item?> GetItemBySkuAsync(string sku, CancellationToken cancellationToken = default)
     {
@@ -78,6 +79,24 @@ public class InventoryDbContext : DbContext, IInventoryDbContext
         CancellationToken cancellationToken = default)
     {
         await InventoryInboxMessages.AddAsync(inboxMessage, cancellationToken);
+    }
+
+    public async Task AddInventoryOutboxMessageAsync(
+        InventoryOutboxMessage outboxMessage,
+        CancellationToken cancellationToken = default)
+    {
+        await InventoryOutboxMessages.AddAsync(outboxMessage, cancellationToken);
+    }
+
+    public async Task<IReadOnlyList<InventoryOutboxMessage>> GetUnprocessedInventoryOutboxMessagesAsync(
+        int batchSize,
+        CancellationToken cancellationToken = default)
+    {
+        return await InventoryOutboxMessages
+            .Where(message => message.ProcessedAtUtc == null)
+            .OrderBy(message => message.OccurredAtUtc)
+            .Take(batchSize)
+            .ToListAsync(cancellationToken);
     }
 
     public async Task<bool> SaveChangesAsyncHandlingDuplicateInboxEventAsync(
