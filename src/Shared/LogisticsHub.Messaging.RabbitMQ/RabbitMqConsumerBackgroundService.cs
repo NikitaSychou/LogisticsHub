@@ -24,6 +24,9 @@ public abstract class RabbitMqConsumerBackgroundService<TMessage> : BackgroundSe
         string queueName,
         string routingKey)
     {
+        ArgumentException.ThrowIfNullOrWhiteSpace(queueName);
+        ArgumentException.ThrowIfNullOrWhiteSpace(routingKey);
+
         _connectionProvider = connectionProvider;
         _options = options;
         _logger = logger;
