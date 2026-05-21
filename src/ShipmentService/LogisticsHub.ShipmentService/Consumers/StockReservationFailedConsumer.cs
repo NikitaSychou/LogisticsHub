@@ -35,6 +35,7 @@ public sealed class StockReservationFailedConsumer
         var markShipmentReservationFailed = scope.ServiceProvider.GetRequiredService<MarkShipmentReservationFailed>();
 
         await markShipmentReservationFailed.ExecuteAsync(
+            message.EventId,
             message.ShipmentId,
             message.Reason,
             cancellationToken);

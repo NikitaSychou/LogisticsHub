@@ -6,6 +6,8 @@ namespace LogisticsHub.ShipmentService.Infrastructure.Persistence;
 
 public class ShipmentDbContext : DbContext, IShipmentDbContext
 {
+    private const string InboxEventIdIndexName = "IX_shipment_inbox_messages_event_id";
+
     public ShipmentDbContext(DbContextOptions<ShipmentDbContext> options) : base(options)
     {
     }
@@ -13,6 +15,7 @@ public class ShipmentDbContext : DbContext, IShipmentDbContext
     public DbSet<Shipment> Shipments { get; set; }
     public DbSet<ShipmentItem> ShipmentItems { get; set; }
     public DbSet<ShipmentOutboxMessage> ShipmentOutboxMessages { get; set; }
+    public DbSet<ShipmentInboxMessage> ShipmentInboxMessages { get; set; }
 
     public async Task<Shipment?> GetShipmentByIdAsync(Guid id, CancellationToken cancellationToken = default)
     {
@@ -54,6 +57,36 @@ public class ShipmentDbContext : DbContext, IShipmentDbContext
             .OrderBy(message => message.OccurredAtUtc)
             .Take(batchSize)
             .ToListAsync(cancellationToken);
+    }
+
+    public async Task<bool> HasShipmentInboxMessageAsync(
+        Guid eventId,
+        CancellationToken cancellationToken = default)
+    {
+        return await ShipmentInboxMessages
+            .AsNoTracking()
+            .AnyAsync(message => message.EventId == eventId, cancellationToken);
+    }
+
+    public async Task AddShipmentInboxMessageAsync(
+        ShipmentInboxMessage inboxMessage,
+        CancellationToken cancellationToken = default)
+    {
+        await ShipmentInboxMessages.AddAsync(inboxMessage, cancellationToken);
+    }
+
+    public async Task<bool> SaveChangesAsyncHandlingDuplicateInboxEventAsync(
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            await SaveChangesAsync(cancellationToken);
+            return true;
+        }
+        catch (DbUpdateException exception) when (IsInboxEventIdUniqueIndexViolation(exception))
+        {
+            return false;
+        }
     }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -161,5 +194,38 @@ public class ShipmentDbContext : DbContext, IShipmentDbContext
             builder.Property(x => x.CreatedAtUtc)
                 .HasColumnName("created_at_utc");
         });
+
+        modelBuilder.Entity<ShipmentInboxMessage>(builder =>
+        {
+            builder.ToTable("shipment_inbox_messages", "dbo");
+
+            builder.HasKey(message => message.Id);
+
+            builder.Property(message => message.Id)
+                .HasColumnName("id");
+
+            builder.Property(message => message.EventId)
+                .HasColumnName("event_id");
+
+            builder.Property(message => message.Type)
+                .HasColumnName("type")
+                .HasMaxLength(512)
+                .IsRequired();
+
+            builder.Property(message => message.ProcessedAtUtc)
+                .HasColumnName("processed_at_utc");
+
+            builder.Property(message => message.CreatedAtUtc)
+                .HasColumnName("created_at_utc");
+
+            builder.HasIndex(message => message.EventId)
+                .IsUnique()
+                .HasDatabaseName("IX_shipment_inbox_messages_event_id");
+        });
+    }
+
+    private static bool IsInboxEventIdUniqueIndexViolation(DbUpdateException exception)
+    {
+        return exception.ToString().Contains(InboxEventIdIndexName, StringComparison.OrdinalIgnoreCase);
     }
 }

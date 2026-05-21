@@ -1,4 +1,5 @@
 using LogisticsHub.ShipmentService.Application.Persistence;
+using LogisticsHub.ShipmentService.Domain.Entities;
 using LogisticsHub.ShipmentService.Domain.Enums;
 
 namespace LogisticsHub.ShipmentService.Application.Shipments;
@@ -13,10 +14,18 @@ public sealed class MarkShipmentReservationFailed
     }
 
     public async Task ExecuteAsync(
+        Guid eventId,
         Guid shipmentId,
         string reason,
         CancellationToken cancellationToken = default)
     {
+        var alreadyProcessed = await dbContext.HasShipmentInboxMessageAsync(eventId, cancellationToken);
+
+        if (alreadyProcessed)
+        {
+            return;
+        }
+
         var shipment = await dbContext.GetShipmentForUpdateAsync(shipmentId, cancellationToken);
 
         if (shipment is null)
@@ -24,10 +33,23 @@ public sealed class MarkShipmentReservationFailed
             return;
         }
 
+        var now = DateTime.UtcNow;
+
         shipment.Status = ShipmentStatus.ReservationFailed;
         shipment.ReservationFailureReason = reason;
-        shipment.UpdatedAt = DateTime.UtcNow;
+        shipment.UpdatedAt = now;
 
-        await dbContext.SaveChangesAsync(cancellationToken);
+        await dbContext.AddShipmentInboxMessageAsync(
+            new ShipmentInboxMessage
+            {
+                Id = Guid.NewGuid(),
+                EventId = eventId,
+                Type = "StockReservationFailedIntegrationEvent",
+                ProcessedAtUtc = now,
+                CreatedAtUtc = now
+            },
+            cancellationToken);
+
+        await dbContext.SaveChangesAsyncHandlingDuplicateInboxEventAsync(cancellationToken);
     }
 }
