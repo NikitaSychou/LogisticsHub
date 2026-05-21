@@ -6,11 +6,11 @@ namespace LogisticsHub.ShipmentService.Application.Shipments;
 
 public sealed class MarkShipmentReserved
 {
-    private readonly IShipmentDbContext dbContext;
+    private readonly IShipmentDbContext _dbContext;
 
     public MarkShipmentReserved(IShipmentDbContext dbContext)
     {
-        this.dbContext = dbContext;
+        _dbContext = dbContext;
     }
 
     public async Task ExecuteAsync(
@@ -19,14 +19,14 @@ public sealed class MarkShipmentReserved
         Guid reservationId,
         CancellationToken cancellationToken = default)
     {
-        var alreadyProcessed = await dbContext.HasShipmentInboxMessageAsync(eventId, cancellationToken);
+        var alreadyProcessed = await _dbContext.HasShipmentInboxMessageAsync(eventId, cancellationToken);
 
         if (alreadyProcessed)
         {
             return;
         }
 
-        var shipment = await dbContext.GetShipmentForUpdateAsync(shipmentId, cancellationToken);
+        var shipment = await _dbContext.GetShipmentForUpdateAsync(shipmentId, cancellationToken);
 
         if (shipment is null)
         {
@@ -43,7 +43,7 @@ public sealed class MarkShipmentReserved
             shipment.UpdatedAt = now;
         }
 
-        await dbContext.AddShipmentInboxMessageAsync(
+        await _dbContext.AddShipmentInboxMessageAsync(
             new ShipmentInboxMessage
             {
                 Id = Guid.NewGuid(),
@@ -54,6 +54,6 @@ public sealed class MarkShipmentReserved
             },
             cancellationToken);
 
-        await dbContext.SaveChangesAsyncHandlingDuplicateInboxEventAsync(cancellationToken);
+        await _dbContext.SaveChangesAsyncHandlingDuplicateInboxEventAsync(cancellationToken);
     }
 }

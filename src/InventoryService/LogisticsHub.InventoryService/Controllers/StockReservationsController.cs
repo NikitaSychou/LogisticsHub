@@ -8,15 +8,15 @@ namespace LogisticsHub.InventoryService.Controllers;
 [Route("stock-reservations")]
 public sealed class StockReservationsController : ControllerBase
 {
-    private readonly CreateStockReservation createStockReservation;
-    private readonly GetStockReservation getStockReservation;
+    private readonly CreateStockReservation _createStockReservation;
+    private readonly GetStockReservation _getStockReservation;
 
     public StockReservationsController(
         CreateStockReservation createStockReservation,
         GetStockReservation getStockReservation)
     {
-        this.createStockReservation = createStockReservation;
-        this.getStockReservation = getStockReservation;
+        _createStockReservation = createStockReservation;
+        _getStockReservation = getStockReservation;
     }
 
     [HttpGet("{reservationId:guid}")]
@@ -24,7 +24,7 @@ public sealed class StockReservationsController : ControllerBase
         Guid reservationId,
         CancellationToken cancellationToken)
     {
-        var result = await getStockReservation.ExecuteAsync(reservationId, cancellationToken);
+        var result = await _getStockReservation.ExecuteAsync(reservationId, cancellationToken);
 
         if (result is null)
         {
@@ -64,7 +64,7 @@ public sealed class StockReservationsController : ControllerBase
                 .Select(item => new StockReservationItemCommand(item.Sku.Trim(), item.Quantity))
                 .ToArray());
 
-        var result = await createStockReservation.ExecuteAsync(command, cancellationToken);
+        var result = await _createStockReservation.ExecuteAsync(command, cancellationToken);
 
         if (result.Reservation is null)
         {

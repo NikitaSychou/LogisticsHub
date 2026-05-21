@@ -11,11 +11,11 @@ public abstract class RabbitMqConsumerBackgroundService<TMessage> : BackgroundSe
     private static readonly JsonSerializerOptions JsonSerializerOptions = new(JsonSerializerDefaults.Web);
     private static readonly TimeSpan ReconnectDelay = TimeSpan.FromSeconds(5);
 
-    private readonly IRabbitMqConnectionProvider connectionProvider;
-    private readonly RabbitMqOptions options;
-    private readonly ILogger logger;
-    private readonly string queueName;
-    private readonly string routingKey;
+    private readonly IRabbitMqConnectionProvider _connectionProvider;
+    private readonly RabbitMqOptions _options;
+    private readonly ILogger _logger;
+    private readonly string _queueName;
+    private readonly string _routingKey;
 
     protected RabbitMqConsumerBackgroundService(
         IRabbitMqConnectionProvider connectionProvider,
@@ -24,11 +24,11 @@ public abstract class RabbitMqConsumerBackgroundService<TMessage> : BackgroundSe
         string queueName,
         string routingKey)
     {
-        this.connectionProvider = connectionProvider;
-        this.options = options;
-        this.logger = logger;
-        this.queueName = queueName;
-        this.routingKey = routingKey;
+        _connectionProvider = connectionProvider;
+        _options = options;
+        _logger = logger;
+        _queueName = queueName;
+        _routingKey = routingKey;
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -45,10 +45,10 @@ public abstract class RabbitMqConsumerBackgroundService<TMessage> : BackgroundSe
             }
             catch (Exception exception)
             {
-                logger.LogError(
+                _logger.LogError(
                     exception,
                     "RabbitMQ consumer for queue {QueueName} failed. Reconnecting after delay.",
-                    queueName);
+                    _queueName);
             }
 
             await Task.Delay(ReconnectDelay, stoppingToken);
@@ -57,27 +57,27 @@ public abstract class RabbitMqConsumerBackgroundService<TMessage> : BackgroundSe
 
     private async Task ConsumeAsync(CancellationToken stoppingToken)
     {
-        var connection = await connectionProvider.GetConnectionAsync(stoppingToken);
+        var connection = await _connectionProvider.GetConnectionAsync(stoppingToken);
         await using var channel = await connection.CreateChannelAsync(cancellationToken: stoppingToken);
 
         await channel.ExchangeDeclareAsync(
-            exchange: options.ExchangeName,
+            exchange: _options.ExchangeName,
             type: ExchangeType.Topic,
             durable: true,
             autoDelete: false,
             cancellationToken: stoppingToken);
 
         await channel.QueueDeclareAsync(
-            queue: queueName,
+            queue: _queueName,
             durable: true,
             exclusive: false,
             autoDelete: false,
             cancellationToken: stoppingToken);
 
         await channel.QueueBindAsync(
-            queue: queueName,
-            exchange: options.ExchangeName,
-            routingKey: routingKey,
+            queue: _queueName,
+            exchange: _options.ExchangeName,
+            routingKey: _routingKey,
             cancellationToken: stoppingToken);
 
         var consumer = new AsyncEventingBasicConsumer(channel);
@@ -89,15 +89,15 @@ public abstract class RabbitMqConsumerBackgroundService<TMessage> : BackgroundSe
             }
             catch (Exception exception)
             {
-                logger.LogError(
+                _logger.LogError(
                     exception,
                     "Failed to process RabbitMQ message from queue {QueueName}.",
-                    queueName);
+                    _queueName);
             }
         };
 
         await channel.BasicConsumeAsync(
-            queue: queueName,
+            queue: _queueName,
             autoAck: false,
             consumer: consumer,
             cancellationToken: stoppingToken);
@@ -107,9 +107,9 @@ public abstract class RabbitMqConsumerBackgroundService<TMessage> : BackgroundSe
             await Task.Delay(ReconnectDelay, stoppingToken);
         }
 
-        logger.LogWarning(
+        _logger.LogWarning(
             "RabbitMQ consumer for queue {QueueName} lost its connection or channel. Reconnecting.",
-            queueName);
+            _queueName);
     }
 
     private async Task ProcessMessageAsync(

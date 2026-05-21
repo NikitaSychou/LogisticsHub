@@ -12,15 +12,15 @@ public sealed class ShipmentOutboxPublisherBackgroundService : BackgroundService
     private static readonly TimeSpan PollingInterval = TimeSpan.FromSeconds(5);
     private const int BatchSize = 20;
 
-    private readonly IServiceScopeFactory serviceScopeFactory;
-    private readonly ILogger<ShipmentOutboxPublisherBackgroundService> logger;
+    private readonly IServiceScopeFactory _serviceScopeFactory;
+    private readonly ILogger<ShipmentOutboxPublisherBackgroundService> _logger;
 
     public ShipmentOutboxPublisherBackgroundService(
         IServiceScopeFactory serviceScopeFactory,
         ILogger<ShipmentOutboxPublisherBackgroundService> logger)
     {
-        this.serviceScopeFactory = serviceScopeFactory;
-        this.logger = logger;
+        _serviceScopeFactory = serviceScopeFactory;
+        _logger = logger;
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -42,7 +42,7 @@ public sealed class ShipmentOutboxPublisherBackgroundService : BackgroundService
             }
             catch (Exception exception)
             {
-                logger.LogError(exception, "Failed to process shipment outbox messages.");
+                _logger.LogError(exception, "Failed to process shipment outbox messages.");
                 await Task.Delay(PollingInterval, stoppingToken);
             }
         }
@@ -50,7 +50,7 @@ public sealed class ShipmentOutboxPublisherBackgroundService : BackgroundService
 
     private async Task<bool> ProcessBatchAsync(CancellationToken cancellationToken)
     {
-        await using var scope = serviceScopeFactory.CreateAsyncScope();
+        await using var scope = _serviceScopeFactory.CreateAsyncScope();
 
         var dbContext = scope.ServiceProvider.GetRequiredService<IShipmentDbContext>();
         var publisher = scope.ServiceProvider.GetRequiredService<IRabbitMqPublisher>();
@@ -76,7 +76,7 @@ public sealed class ShipmentOutboxPublisherBackgroundService : BackgroundService
                 message.RetryCount++;
                 message.Error = exception.Message;
 
-                logger.LogError(
+                _logger.LogError(
                     exception,
                     "Failed to publish shipment outbox message {OutboxMessageId}.",
                     message.Id);

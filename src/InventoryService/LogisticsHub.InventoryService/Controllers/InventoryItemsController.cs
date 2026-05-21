@@ -8,15 +8,15 @@ namespace LogisticsHub.InventoryService.Controllers;
 [Route("inventory-items")]
 public sealed class InventoryItemsController : ControllerBase
 {
-    private readonly CreateInventoryItem createInventoryItem;
-    private readonly GetInventoryItem getInventoryItem;
+    private readonly CreateInventoryItem _createInventoryItem;
+    private readonly GetInventoryItem _getInventoryItem;
 
     public InventoryItemsController(
         CreateInventoryItem createInventoryItem,
         GetInventoryItem getInventoryItem)
     {
-        this.createInventoryItem = createInventoryItem;
-        this.getInventoryItem = getInventoryItem;
+        _createInventoryItem = createInventoryItem;
+        _getInventoryItem = getInventoryItem;
     }
 
     [HttpGet("{sku}")]
@@ -24,7 +24,7 @@ public sealed class InventoryItemsController : ControllerBase
         string sku,
         CancellationToken cancellationToken)
     {
-        var result = await getInventoryItem.ExecuteAsync(sku, cancellationToken);
+        var result = await _getInventoryItem.ExecuteAsync(sku, cancellationToken);
 
         if (result is null)
         {
@@ -67,7 +67,7 @@ public sealed class InventoryItemsController : ControllerBase
             request.Name.Trim(),
             request.QuantityAvailable);
 
-        var result = await createInventoryItem.ExecuteAsync(command, cancellationToken);
+        var result = await _createInventoryItem.ExecuteAsync(command, cancellationToken);
 
         if (result is null)
         {

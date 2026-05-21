@@ -6,11 +6,11 @@ namespace LogisticsHub.InventoryService.Application.StockReservations;
 
 public sealed class CreateStockReservation
 {
-    private readonly IInventoryDbContext dbContext;
+    private readonly IInventoryDbContext _dbContext;
 
     public CreateStockReservation(IInventoryDbContext dbContext)
     {
-        this.dbContext = dbContext;
+        _dbContext = dbContext;
     }
 
     public async Task<CreateStockReservationResult> ExecuteAsync(
@@ -21,7 +21,7 @@ public sealed class CreateStockReservation
 
         if (command.EventId.HasValue)
         {
-            var alreadyProcessed = await dbContext.HasInventoryInboxMessageAsync(
+            var alreadyProcessed = await _dbContext.HasInventoryInboxMessageAsync(
                 command.EventId.Value,
                 cancellationToken);
 
@@ -35,7 +35,7 @@ public sealed class CreateStockReservation
             .Select(item => item.Sku)
             .ToArray();
 
-        var inventoryItems = await dbContext.GetItemsBySkusAsync(requestedSkus, cancellationToken);
+        var inventoryItems = await _dbContext.GetItemsBySkusAsync(requestedSkus, cancellationToken);
         var inventoryItemsBySku = inventoryItems.ToDictionary(item => item.Sku, StringComparer.OrdinalIgnoreCase);
 
         foreach (var requestedItem in command.Items)
@@ -88,7 +88,7 @@ public sealed class CreateStockReservation
             });
         }
 
-        await dbContext.AddStockReservationAsync(stockReservation, cancellationToken);
+        await _dbContext.AddStockReservationAsync(stockReservation, cancellationToken);
 
         if (command.EventId.HasValue)
         {
@@ -101,12 +101,12 @@ public sealed class CreateStockReservation
                 CreatedAtUtc = now
             };
 
-            await dbContext.AddInventoryInboxMessageAsync(inboxMessage, cancellationToken);
+            await _dbContext.AddInventoryInboxMessageAsync(inboxMessage, cancellationToken);
         }
 
         if (command.EventId.HasValue)
         {
-            var saved = await dbContext.SaveChangesAsyncHandlingDuplicateInboxEventAsync(cancellationToken);
+            var saved = await _dbContext.SaveChangesAsyncHandlingDuplicateInboxEventAsync(cancellationToken);
 
             if (!saved)
             {
@@ -115,7 +115,7 @@ public sealed class CreateStockReservation
         }
         else
         {
-            await dbContext.SaveChangesAsync(cancellationToken);
+            await _dbContext.SaveChangesAsync(cancellationToken);
         }
 
         var resultItems = stockReservation.Items

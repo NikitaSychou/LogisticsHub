@@ -4,13 +4,13 @@ namespace LogisticsHub.Messaging.RabbitMQ;
 
 public sealed class RabbitMqConnectionProvider : IRabbitMqConnectionProvider
 {
-    private readonly RabbitMqOptions options;
-    private readonly SemaphoreSlim connectionLock = new(1, 1);
+    private readonly RabbitMqOptions _options;
+    private readonly SemaphoreSlim _connectionLock = new(1, 1);
     private IConnection? connection;
 
     public RabbitMqConnectionProvider(RabbitMqOptions options)
     {
-        this.options = options;
+        _options = options;
     }
 
     public async Task<IConnection> GetConnectionAsync(CancellationToken cancellationToken = default)
@@ -20,7 +20,7 @@ public sealed class RabbitMqConnectionProvider : IRabbitMqConnectionProvider
             return connection;
         }
 
-        await connectionLock.WaitAsync(cancellationToken);
+        await _connectionLock.WaitAsync(cancellationToken);
 
         try
         {
@@ -31,10 +31,10 @@ public sealed class RabbitMqConnectionProvider : IRabbitMqConnectionProvider
 
             var factory = new ConnectionFactory
             {
-                HostName = options.HostName,
-                Port = options.Port,
-                UserName = options.UserName,
-                Password = options.Password
+                HostName = _options.HostName,
+                Port = _options.Port,
+                UserName = _options.UserName,
+                Password = _options.Password
             };
 
             connection = await factory.CreateConnectionAsync(cancellationToken);
@@ -43,13 +43,13 @@ public sealed class RabbitMqConnectionProvider : IRabbitMqConnectionProvider
         }
         finally
         {
-            connectionLock.Release();
+            _connectionLock.Release();
         }
     }
 
     public async ValueTask DisposeAsync()
     {
-        connectionLock.Dispose();
+        _connectionLock.Dispose();
 
         if (connection is not null)
         {

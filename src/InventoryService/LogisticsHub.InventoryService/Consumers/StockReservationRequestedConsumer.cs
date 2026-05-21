@@ -10,8 +10,8 @@ public sealed class StockReservationRequestedConsumer
 {
     private const string QueueName = "inventory.stock-reservation.requested";
 
-    private readonly IServiceScopeFactory serviceScopeFactory;
-    private readonly ILogger<StockReservationRequestedConsumer> logger;
+    private readonly IServiceScopeFactory _serviceScopeFactory;
+    private readonly ILogger<StockReservationRequestedConsumer> _logger;
 
     public StockReservationRequestedConsumer(
         IRabbitMqConnectionProvider connectionProvider,
@@ -25,15 +25,15 @@ public sealed class StockReservationRequestedConsumer
             QueueName,
             StockReservationRoutingKeys.Requested)
     {
-        this.serviceScopeFactory = serviceScopeFactory;
-        this.logger = logger;
+        _serviceScopeFactory = serviceScopeFactory;
+        _logger = logger;
     }
 
     protected override async Task HandleMessageAsync(
         StockReservationRequestedIntegrationEvent message,
         CancellationToken cancellationToken)
     {
-        await using var scope = serviceScopeFactory.CreateAsyncScope();
+        await using var scope = _serviceScopeFactory.CreateAsyncScope();
 
         var publisher = scope.ServiceProvider.GetRequiredService<IRabbitMqPublisher>();
 
@@ -89,7 +89,7 @@ public sealed class StockReservationRequestedConsumer
 
         if (result.AlreadyProcessed)
         {
-            logger.LogInformation(
+            _logger.LogInformation(
                 "Ignoring duplicate stock reservation request event {EventId} for shipment {ShipmentId}.",
                 message.EventId,
                 message.ShipmentId);
