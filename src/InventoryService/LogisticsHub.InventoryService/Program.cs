@@ -12,7 +12,9 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddDbInfrastructure(builder.Configuration);
 builder.Services.AddRabbitMqMessaging(builder.Configuration);
-builder.Services.AddHealthChecks();
+builder.Services
+    .AddHealthChecks()
+    .AddRabbitMqHealthCheck();
 builder.Services.AddOpenApi();
 builder.Services
     .AddControllers()

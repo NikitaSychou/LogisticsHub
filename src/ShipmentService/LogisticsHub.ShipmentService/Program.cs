@@ -9,7 +9,9 @@ const string HealthEndpointPath = "/health";
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddHealthChecks();
+builder.Services
+    .AddHealthChecks()
+    .AddRabbitMqHealthCheck();
 builder.Services.AddOpenApi();
 
 builder.Services

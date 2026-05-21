@@ -1,5 +1,6 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Diagnostics.HealthChecks;
 
 namespace LogisticsHub.Messaging.RabbitMQ;
 
@@ -20,6 +21,12 @@ public static class RabbitMqDependencyInjection
         services.AddSingleton<IRabbitMqPublisher, RabbitMqPublisher>();
 
         return services;
+    }
+
+    public static IHealthChecksBuilder AddRabbitMqHealthCheck(
+        this IHealthChecksBuilder builder)
+    {
+        return builder.AddCheck<RabbitMqHealthCheck>("rabbitmq");
     }
 
     private static void ValidateOptions(
