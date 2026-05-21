@@ -19,6 +19,18 @@ public sealed class CreateStockReservation
     {
         ArgumentNullException.ThrowIfNull(command);
 
+        if (command.EventId.HasValue)
+        {
+            var alreadyProcessed = await dbContext.HasInventoryInboxMessageAsync(
+                command.EventId.Value,
+                cancellationToken);
+
+            if (alreadyProcessed)
+            {
+                return new CreateStockReservationResult(null, null, AlreadyProcessed: true);
+            }
+        }
+
         var requestedSkus = command.Items
             .Select(item => item.Sku)
             .ToArray();
@@ -77,7 +89,34 @@ public sealed class CreateStockReservation
         }
 
         await dbContext.AddStockReservationAsync(stockReservation, cancellationToken);
-        await dbContext.SaveChangesAsync(cancellationToken);
+
+        if (command.EventId.HasValue)
+        {
+            var inboxMessage = new InventoryInboxMessage
+            {
+                Id = Guid.NewGuid(),
+                EventId = command.EventId.Value,
+                Type = "StockReservationRequestedIntegrationEvent",
+                ProcessedAtUtc = now,
+                CreatedAtUtc = now
+            };
+
+            await dbContext.AddInventoryInboxMessageAsync(inboxMessage, cancellationToken);
+        }
+
+        if (command.EventId.HasValue)
+        {
+            var saved = await dbContext.SaveChangesAsyncHandlingDuplicateInboxEventAsync(cancellationToken);
+
+            if (!saved)
+            {
+                return new CreateStockReservationResult(null, null, AlreadyProcessed: true);
+            }
+        }
+        else
+        {
+            await dbContext.SaveChangesAsync(cancellationToken);
+        }
 
         var resultItems = stockReservation.Items
             .Select(item => new StockReservationItemResult(item.Item!.Sku, item.Quantity))

@@ -14,11 +14,19 @@ public interface IInventoryDbContext
         Guid id,
         CancellationToken cancellationToken = default);
 
+    Task<bool> HasInventoryInboxMessageAsync(Guid eventId, CancellationToken cancellationToken = default);
+
     Task AddItemAsync(Item item, CancellationToken cancellationToken = default);
 
     Task AddStockBalanceAsync(StockBalance stockBalance, CancellationToken cancellationToken = default);
 
     Task AddStockReservationAsync(StockReservation stockReservation, CancellationToken cancellationToken = default);
 
+    Task AddInventoryInboxMessageAsync(
+        InventoryInboxMessage inboxMessage,
+        CancellationToken cancellationToken = default);
+
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
+
+    Task<bool> SaveChangesAsyncHandlingDuplicateInboxEventAsync(CancellationToken cancellationToken = default);
 }
