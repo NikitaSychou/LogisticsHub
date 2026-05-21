@@ -26,7 +26,7 @@ public sealed class CreateShipment
         var shipment = new Shipment
         {
             Id = shipmentId,
-            Status = ShipmentStatus.Created,
+            Status = ShipmentStatus.ReservationRequested,
             ShipmentNumber = shipmentNumber,
             CreatedAt = now,
             UpdatedAt = now

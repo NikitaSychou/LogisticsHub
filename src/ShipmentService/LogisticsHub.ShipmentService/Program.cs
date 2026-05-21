@@ -1,4 +1,5 @@
 using LogisticsHub.ShipmentService.Application.Shipments;
+using LogisticsHub.ShipmentService.Consumers;
 using LogisticsHub.ShipmentService.Infrastructure.DependencyInjection;
 using LogisticsHub.Messaging.RabbitMQ;
 using System.Text.Json.Serialization;
@@ -24,6 +25,11 @@ builder.Services.AddRabbitMqMessaging(builder.Configuration);
 // Register application services.
 builder.Services.AddScoped<CreateShipment>();
 builder.Services.AddScoped<GetShipment>();
+builder.Services.AddScoped<MarkShipmentReserved>();
+builder.Services.AddScoped<MarkShipmentReservationFailed>();
+
+builder.Services.AddHostedService<StockReservedConsumer>();
+builder.Services.AddHostedService<StockReservationFailedConsumer>();
 
 var app = builder.Build();
 
