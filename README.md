@@ -1,6 +1,6 @@
 # LogisticsHub
 
-LogisticsHub is a production-style educational microservices backend project for a shipment and inventory workflow. It demonstrates service boundaries, asynchronous messaging, idempotency, and SQL Server persistence without becoming a large platform.
+LogisticsHub is a microservices backend project for a shipment and inventory workflow. It demonstrates service boundaries, asynchronous messaging, idempotency, and SQL Server persistence.
 
 ## Architecture
 
