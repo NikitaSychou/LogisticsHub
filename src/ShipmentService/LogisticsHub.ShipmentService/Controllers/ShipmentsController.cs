@@ -1,5 +1,3 @@
-using LogisticsHub.IntegrationEvents.StockReservations;
-using LogisticsHub.Messaging.RabbitMQ;
 using LogisticsHub.ShipmentService.Application.Shipments;
 using LogisticsHub.ShipmentService.Contracts;
 using Microsoft.AspNetCore.Mvc;
@@ -12,16 +10,13 @@ public sealed class ShipmentsController : ControllerBase
 {
     private readonly CreateShipment _createShipment;
     private readonly GetShipment _getShipment;
-    private readonly IRabbitMqPublisher _rabbitMqPublisher;
 
     public ShipmentsController(
         CreateShipment createShipment,
-        GetShipment getShipment,
-        IRabbitMqPublisher rabbitMqPublisher)
+        GetShipment getShipment)
     {
         _createShipment = createShipment;
         _getShipment = getShipment;
-        _rabbitMqPublisher = rabbitMqPublisher;
     }
 
     [HttpGet("{id:guid}")]
@@ -82,17 +77,6 @@ public sealed class ShipmentsController : ControllerBase
         var command = new CreateShipmentCommand(commandItems);
 
         var result = await _createShipment.ExecuteAsync(command, cancellationToken);
-
-        await _rabbitMqPublisher.PublishAsync(
-            StockReservationRoutingKeys.Requested,
-            new StockReservationRequestedIntegrationEvent(
-                Guid.NewGuid(),
-                DateTime.UtcNow,
-                result.ShipmentId,
-                commandItems
-                    .Select(item => new StockReservationRequestedItem(item.Sku, item.Quantity))
-                    .ToArray()),
-            cancellationToken);
 
         return Created($"/shipments/{result.ShipmentId}", result);
     }

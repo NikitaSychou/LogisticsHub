@@ -9,6 +9,7 @@ namespace LogisticsHub.Messaging.RabbitMQ;
 public abstract class RabbitMqConsumerBackgroundService<TMessage> : BackgroundService
 {
     private static readonly JsonSerializerOptions JsonSerializerOptions = new(JsonSerializerDefaults.Web);
+    private static readonly TimeSpan ReconnectDelay = TimeSpan.FromSeconds(5);
 
     private readonly IRabbitMqConnectionProvider connectionProvider;
     private readonly RabbitMqOptions options;
@@ -31,6 +32,30 @@ public abstract class RabbitMqConsumerBackgroundService<TMessage> : BackgroundSe
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+    {
+        while (!stoppingToken.IsCancellationRequested)
+        {
+            try
+            {
+                await ConsumeAsync(stoppingToken);
+            }
+            catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
+            {
+                return;
+            }
+            catch (Exception exception)
+            {
+                logger.LogError(
+                    exception,
+                    "RabbitMQ consumer for queue {QueueName} failed. Reconnecting after delay.",
+                    queueName);
+            }
+
+            await Task.Delay(ReconnectDelay, stoppingToken);
+        }
+    }
+
+    private async Task ConsumeAsync(CancellationToken stoppingToken)
     {
         var connection = await connectionProvider.GetConnectionAsync(stoppingToken);
         await using var channel = await connection.CreateChannelAsync(cancellationToken: stoppingToken);
@@ -60,23 +85,14 @@ public abstract class RabbitMqConsumerBackgroundService<TMessage> : BackgroundSe
         {
             try
             {
-                var message = JsonSerializer.Deserialize<TMessage>(
-                    eventArgs.Body.Span,
-                    JsonSerializerOptions);
-
-                if (message is null)
-                {
-                    await channel.BasicNackAsync(eventArgs.DeliveryTag, multiple: false, requeue: false, cancellationToken: stoppingToken);
-                    return;
-                }
-
-                await HandleMessageAsync(message, stoppingToken);
-                await channel.BasicAckAsync(eventArgs.DeliveryTag, multiple: false, cancellationToken: stoppingToken);
+                await ProcessMessageAsync(channel, eventArgs, stoppingToken);
             }
             catch (Exception exception)
             {
-                logger.LogError(exception, "Failed to process RabbitMQ message from queue {QueueName}.", queueName);
-                await channel.BasicNackAsync(eventArgs.DeliveryTag, multiple: false, requeue: false, cancellationToken: stoppingToken);
+                logger.LogError(
+                    exception,
+                    "Failed to process RabbitMQ message from queue {QueueName}.",
+                    queueName);
             }
         };
 
@@ -86,7 +102,45 @@ public abstract class RabbitMqConsumerBackgroundService<TMessage> : BackgroundSe
             consumer: consumer,
             cancellationToken: stoppingToken);
 
-        await Task.Delay(Timeout.InfiniteTimeSpan, stoppingToken);
+        while (connection.IsOpen && channel.IsOpen && !stoppingToken.IsCancellationRequested)
+        {
+            await Task.Delay(ReconnectDelay, stoppingToken);
+        }
+
+        logger.LogWarning(
+            "RabbitMQ consumer for queue {QueueName} lost its connection or channel. Reconnecting.",
+            queueName);
+    }
+
+    private async Task ProcessMessageAsync(
+        IChannel channel,
+        BasicDeliverEventArgs eventArgs,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var message = JsonSerializer.Deserialize<TMessage>(
+                eventArgs.Body.Span,
+                JsonSerializerOptions);
+
+            if (message is null)
+            {
+                await channel.BasicNackAsync(eventArgs.DeliveryTag, multiple: false, requeue: false, cancellationToken: cancellationToken);
+                return;
+            }
+
+            await HandleMessageAsync(message, cancellationToken);
+            await channel.BasicAckAsync(eventArgs.DeliveryTag, multiple: false, cancellationToken: cancellationToken);
+        }
+        catch
+        {
+            if (channel.IsOpen)
+            {
+                await channel.BasicNackAsync(eventArgs.DeliveryTag, multiple: false, requeue: false, cancellationToken: cancellationToken);
+            }
+
+            throw;
+        }
     }
 
     protected abstract Task HandleMessageAsync(

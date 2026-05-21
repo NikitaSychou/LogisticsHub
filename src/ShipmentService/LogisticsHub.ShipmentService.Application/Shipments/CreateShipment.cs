@@ -1,3 +1,5 @@
+using System.Text.Json;
+using LogisticsHub.IntegrationEvents.StockReservations;
 using LogisticsHub.ShipmentService.Application.Persistence;
 using LogisticsHub.ShipmentService.Domain.Entities;
 using LogisticsHub.ShipmentService.Domain.Enums;
@@ -6,6 +8,8 @@ namespace LogisticsHub.ShipmentService.Application.Shipments;
 
 public sealed class CreateShipment
 {
+    private static readonly JsonSerializerOptions JsonSerializerOptions = new(JsonSerializerDefaults.Web);
+
     private readonly IShipmentDbContext dbContext;
 
     public CreateShipment(IShipmentDbContext dbContext)
@@ -45,6 +49,26 @@ public sealed class CreateShipment
 
             await dbContext.AddShipmentItemAsync(shipmentItem, cancellationToken);
         }
+
+        var stockReservationRequested = new StockReservationRequestedIntegrationEvent(
+            Guid.NewGuid(),
+            now,
+            shipment.Id,
+            command.Items
+                .Select(item => new StockReservationRequestedItem(item.Sku, item.Quantity))
+                .ToArray());
+
+        var outboxMessage = new ShipmentOutboxMessage
+        {
+            Id = stockReservationRequested.EventId,
+            OccurredAtUtc = stockReservationRequested.OccurredAtUtc,
+            Type = typeof(StockReservationRequestedIntegrationEvent).FullName!,
+            RoutingKey = StockReservationRoutingKeys.Requested,
+            Payload = JsonSerializer.Serialize(stockReservationRequested, JsonSerializerOptions),
+            CreatedAtUtc = now
+        };
+
+        await dbContext.AddShipmentOutboxMessageAsync(outboxMessage, cancellationToken);
 
         await dbContext.SaveChangesAsync(cancellationToken);
 

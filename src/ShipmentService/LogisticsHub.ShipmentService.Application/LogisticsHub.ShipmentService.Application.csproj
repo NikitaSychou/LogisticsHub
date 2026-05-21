@@ -6,5 +6,6 @@
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\LogisticsHub.ShipmentService.Domain\LogisticsHub.ShipmentService.Domain.csproj" />
+    <ProjectReference Include="..\..\Shared\LogisticsHub.IntegrationEvents\LogisticsHub.IntegrationEvents.csproj" />
   </ItemGroup>
 </Project>
