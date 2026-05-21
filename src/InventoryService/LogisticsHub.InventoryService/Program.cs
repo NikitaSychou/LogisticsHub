@@ -1,5 +1,6 @@
 using LogisticsHub.InventoryService.Application.InventoryItems;
 using LogisticsHub.InventoryService.Application.StockReservations;
+using LogisticsHub.InventoryService.Consumers;
 using LogisticsHub.InventoryService.Infrastructure.DependencyInjection;
 using LogisticsHub.Messaging.RabbitMQ;
 using System.Text.Json.Serialization;
@@ -23,6 +24,8 @@ builder.Services.AddScoped<CreateInventoryItem>();
 builder.Services.AddScoped<GetInventoryItem>();
 builder.Services.AddScoped<CreateStockReservation>();
 builder.Services.AddScoped<GetStockReservation>();
+
+builder.Services.AddHostedService<StockReservationRequestedConsumer>();
 
 var app = builder.Build();
 

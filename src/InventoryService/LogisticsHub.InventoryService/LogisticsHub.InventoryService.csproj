@@ -12,5 +12,6 @@
     <ProjectReference Include="..\LogisticsHub.InventoryService.Application\LogisticsHub.InventoryService.Application.csproj" />
     <ProjectReference Include="..\LogisticsHub.InventoryService.Infrastructure\LogisticsHub.InventoryService.Infrastructure.csproj" />
     <ProjectReference Include="..\..\Shared\LogisticsHub.Messaging.RabbitMQ\LogisticsHub.Messaging.RabbitMQ.csproj" />
+    <ProjectReference Include="..\..\Shared\LogisticsHub.IntegrationEvents\LogisticsHub.IntegrationEvents.csproj" />
   </ItemGroup>
 </Project>

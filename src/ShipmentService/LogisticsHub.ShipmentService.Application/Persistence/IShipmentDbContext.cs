@@ -6,6 +6,8 @@ public interface IShipmentDbContext
 {
     Task<Shipment?> GetShipmentByIdAsync(Guid id, CancellationToken cancellationToken = default);
 
+    Task<Shipment?> GetShipmentForUpdateAsync(Guid id, CancellationToken cancellationToken = default);
+
     Task AddShipmentAsync(Shipment shipment, CancellationToken cancellationToken = default);
 
     Task AddShipmentItemAsync(ShipmentItem shipmentItem, CancellationToken cancellationToken = default);

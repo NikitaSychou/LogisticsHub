@@ -21,6 +21,12 @@ public class ShipmentDbContext : DbContext, IShipmentDbContext
             .SingleOrDefaultAsync(shipment => shipment.Id == id, cancellationToken);
     }
 
+    public async Task<Shipment?> GetShipmentForUpdateAsync(Guid id, CancellationToken cancellationToken = default)
+    {
+        return await Shipments
+            .SingleOrDefaultAsync(shipment => shipment.Id == id, cancellationToken);
+    }
+
     public async Task AddShipmentAsync(Shipment shipment, CancellationToken cancellationToken = default)
     {
         await Shipments.AddAsync(shipment, cancellationToken);
