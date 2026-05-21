@@ -18,5 +18,11 @@ public interface IShipmentDbContext
         int batchSize,
         CancellationToken cancellationToken = default);
 
+    Task<bool> HasShipmentInboxMessageAsync(Guid eventId, CancellationToken cancellationToken = default);
+
+    Task AddShipmentInboxMessageAsync(ShipmentInboxMessage inboxMessage, CancellationToken cancellationToken = default);
+
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
+
+    Task<bool> SaveChangesAsyncHandlingDuplicateInboxEventAsync(CancellationToken cancellationToken = default);
 }

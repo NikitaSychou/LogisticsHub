@@ -35,6 +35,7 @@ public sealed class StockReservedConsumer
         var markShipmentReserved = scope.ServiceProvider.GetRequiredService<MarkShipmentReserved>();
 
         await markShipmentReserved.ExecuteAsync(
+            message.EventId,
             message.ShipmentId,
             message.ReservationId,
             cancellationToken);
