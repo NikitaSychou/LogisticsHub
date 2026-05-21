@@ -1,8 +1,9 @@
 using LogisticsHub.InventoryService.Application.Persistence;
+using MediatR;
 
 namespace LogisticsHub.InventoryService.Application.StockReservations;
 
-public sealed class GetStockReservation
+public sealed class GetStockReservation : IRequestHandler<GetStockReservationQuery, StockReservationResult?>
 {
     private readonly IInventoryDbContext _dbContext;
 
@@ -11,11 +12,11 @@ public sealed class GetStockReservation
         _dbContext = dbContext;
     }
 
-    public async Task<StockReservationResult?> ExecuteAsync(
-        Guid reservationId,
-        CancellationToken cancellationToken = default)
+    public async Task<StockReservationResult?> Handle(
+        GetStockReservationQuery query,
+        CancellationToken cancellationToken)
     {
-        var stockReservation = await _dbContext.GetStockReservationByIdAsync(reservationId, cancellationToken);
+        var stockReservation = await _dbContext.GetStockReservationByIdAsync(query.ReservationId, cancellationToken);
 
         if (stockReservation is null)
         {

@@ -1,9 +1,10 @@
 using LogisticsHub.InventoryService.Application.Persistence;
 using LogisticsHub.InventoryService.Domain.Entities;
+using MediatR;
 
 namespace LogisticsHub.InventoryService.Application.InventoryItems;
 
-public sealed class CreateInventoryItem
+public sealed class CreateInventoryItem : IRequestHandler<CreateInventoryItemCommand, InventoryItemResult?>
 {
     private readonly IInventoryDbContext _dbContext;
 
@@ -12,9 +13,9 @@ public sealed class CreateInventoryItem
         _dbContext = dbContext;
     }
 
-    public async Task<InventoryItemResult?> ExecuteAsync(
+    public async Task<InventoryItemResult?> Handle(
         CreateInventoryItemCommand command,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(command);
 

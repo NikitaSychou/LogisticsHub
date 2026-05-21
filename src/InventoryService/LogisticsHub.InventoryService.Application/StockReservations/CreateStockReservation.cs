@@ -1,10 +1,11 @@
 using LogisticsHub.InventoryService.Application.Persistence;
 using LogisticsHub.InventoryService.Domain.Entities;
 using LogisticsHub.InventoryService.Domain.Enums;
+using MediatR;
 
 namespace LogisticsHub.InventoryService.Application.StockReservations;
 
-public sealed class CreateStockReservation
+public sealed class CreateStockReservation : IRequestHandler<CreateStockReservationCommand, CreateStockReservationResult>
 {
     private readonly IInventoryDbContext _dbContext;
 
@@ -13,9 +14,9 @@ public sealed class CreateStockReservation
         _dbContext = dbContext;
     }
 
-    public async Task<CreateStockReservationResult> ExecuteAsync(
+    public async Task<CreateStockReservationResult> Handle(
         CreateStockReservationCommand command,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(command);
 

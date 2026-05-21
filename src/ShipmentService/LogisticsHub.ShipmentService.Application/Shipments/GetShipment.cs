@@ -1,8 +1,9 @@
 using LogisticsHub.ShipmentService.Application.Persistence;
+using MediatR;
 
 namespace LogisticsHub.ShipmentService.Application.Shipments;
 
-public sealed class GetShipment
+public sealed class GetShipment : IRequestHandler<GetShipmentQuery, GetShipmentResult?>
 {
     private readonly IShipmentDbContext _dbContext;
 
@@ -11,11 +12,11 @@ public sealed class GetShipment
         _dbContext = dbContext;
     }
 
-    public async Task<GetShipmentResult?> ExecuteAsync(
-        Guid id,
-        CancellationToken cancellationToken = default)
+    public async Task<GetShipmentResult?> Handle(
+        GetShipmentQuery query,
+        CancellationToken cancellationToken)
     {
-        var shipment = await _dbContext.GetShipmentByIdAsync(id, cancellationToken);
+        var shipment = await _dbContext.GetShipmentByIdAsync(query.Id, cancellationToken);
 
         if (shipment is null)
         {

@@ -20,10 +20,10 @@ builder.Services
         options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
     });
 
-builder.Services.AddScoped<CreateInventoryItem>();
-builder.Services.AddScoped<GetInventoryItem>();
-builder.Services.AddScoped<CreateStockReservation>();
-builder.Services.AddScoped<GetStockReservation>();
+builder.Services.AddMediatR(configuration =>
+{
+    configuration.RegisterServicesFromAssembly(typeof(CreateInventoryItem).Assembly);
+});
 
 builder.Services.AddHostedService<StockReservationRequestedConsumer>();
 

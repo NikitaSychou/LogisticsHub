@@ -1,6 +1,7 @@
 using LogisticsHub.InventoryService.Application.InventoryItems;
 using LogisticsHub.InventoryService.Contracts;
 using LogisticsHub.InventoryService.Validation;
+using MediatR;
 using Microsoft.AspNetCore.Mvc;
 
 namespace LogisticsHub.InventoryService.Controllers;
@@ -9,15 +10,11 @@ namespace LogisticsHub.InventoryService.Controllers;
 [Route("inventory-items")]
 public sealed class InventoryItemsController : ControllerBase
 {
-    private readonly CreateInventoryItem _createInventoryItem;
-    private readonly GetInventoryItem _getInventoryItem;
+    private readonly IMediator _mediator;
 
-    public InventoryItemsController(
-        CreateInventoryItem createInventoryItem,
-        GetInventoryItem getInventoryItem)
+    public InventoryItemsController(IMediator mediator)
     {
-        _createInventoryItem = createInventoryItem;
-        _getInventoryItem = getInventoryItem;
+        _mediator = mediator;
     }
 
     [HttpGet("{sku}")]
@@ -25,7 +22,7 @@ public sealed class InventoryItemsController : ControllerBase
         string sku,
         CancellationToken cancellationToken)
     {
-        var result = await _getInventoryItem.ExecuteAsync(sku, cancellationToken);
+        var result = await _mediator.Send(new GetInventoryItemQuery(sku), cancellationToken);
 
         if (result is null)
         {
@@ -56,7 +53,7 @@ public sealed class InventoryItemsController : ControllerBase
             request.Name.Trim(),
             request.QuantityAvailable);
 
-        var result = await _createInventoryItem.ExecuteAsync(command, cancellationToken);
+        var result = await _mediator.Send(command, cancellationToken);
 
         if (result is null)
         {
