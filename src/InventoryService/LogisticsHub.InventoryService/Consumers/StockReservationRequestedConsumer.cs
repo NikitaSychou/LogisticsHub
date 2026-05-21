@@ -1,6 +1,7 @@
 using LogisticsHub.IntegrationEvents.StockReservations;
 using LogisticsHub.InventoryService.Application.StockReservations;
 using LogisticsHub.Messaging.RabbitMQ;
+using MediatR;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace LogisticsHub.InventoryService.Consumers;
@@ -77,7 +78,7 @@ public sealed class StockReservationRequestedConsumer
             }
         }
 
-        var createStockReservation = scope.ServiceProvider.GetRequiredService<CreateStockReservation>();
+        var mediator = scope.ServiceProvider.GetRequiredService<IMediator>();
         var command = new CreateStockReservationCommand(
             message.ShipmentId,
             message.Items
@@ -85,7 +86,7 @@ public sealed class StockReservationRequestedConsumer
                 .ToArray(),
             message.EventId);
 
-        var result = await createStockReservation.ExecuteAsync(command, cancellationToken);
+        var result = await mediator.Send(command, cancellationToken);
 
         if (result.AlreadyProcessed)
         {

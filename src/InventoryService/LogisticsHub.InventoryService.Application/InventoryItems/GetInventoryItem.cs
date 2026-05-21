@@ -1,8 +1,9 @@
 using LogisticsHub.InventoryService.Application.Persistence;
+using MediatR;
 
 namespace LogisticsHub.InventoryService.Application.InventoryItems;
 
-public sealed class GetInventoryItem
+public sealed class GetInventoryItem : IRequestHandler<GetInventoryItemQuery, InventoryItemResult?>
 {
     private readonly IInventoryDbContext _dbContext;
 
@@ -11,11 +12,11 @@ public sealed class GetInventoryItem
         _dbContext = dbContext;
     }
 
-    public async Task<InventoryItemResult?> ExecuteAsync(
-        string sku,
-        CancellationToken cancellationToken = default)
+    public async Task<InventoryItemResult?> Handle(
+        GetInventoryItemQuery query,
+        CancellationToken cancellationToken)
     {
-        var item = await _dbContext.GetItemBySkuAsync(sku, cancellationToken);
+        var item = await _dbContext.GetItemBySkuAsync(query.Sku, cancellationToken);
 
         if (item?.StockBalance is null)
         {

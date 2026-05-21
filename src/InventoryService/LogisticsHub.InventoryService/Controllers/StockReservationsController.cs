@@ -1,6 +1,7 @@
 using LogisticsHub.InventoryService.Application.StockReservations;
 using LogisticsHub.InventoryService.Contracts;
 using LogisticsHub.InventoryService.Validation;
+using MediatR;
 using Microsoft.AspNetCore.Mvc;
 
 namespace LogisticsHub.InventoryService.Controllers;
@@ -9,15 +10,11 @@ namespace LogisticsHub.InventoryService.Controllers;
 [Route("stock-reservations")]
 public sealed class StockReservationsController : ControllerBase
 {
-    private readonly CreateStockReservation _createStockReservation;
-    private readonly GetStockReservation _getStockReservation;
+    private readonly IMediator _mediator;
 
-    public StockReservationsController(
-        CreateStockReservation createStockReservation,
-        GetStockReservation getStockReservation)
+    public StockReservationsController(IMediator mediator)
     {
-        _createStockReservation = createStockReservation;
-        _getStockReservation = getStockReservation;
+        _mediator = mediator;
     }
 
     [HttpGet("{reservationId:guid}")]
@@ -25,7 +22,7 @@ public sealed class StockReservationsController : ControllerBase
         Guid reservationId,
         CancellationToken cancellationToken)
     {
-        var result = await _getStockReservation.ExecuteAsync(reservationId, cancellationToken);
+        var result = await _mediator.Send(new GetStockReservationQuery(reservationId), cancellationToken);
 
         if (result is null)
         {
@@ -54,7 +51,7 @@ public sealed class StockReservationsController : ControllerBase
                 .Select(item => new StockReservationItemCommand(item.Sku.Trim(), item.Quantity))
                 .ToArray());
 
-        var result = await _createStockReservation.ExecuteAsync(command, cancellationToken);
+        var result = await _mediator.Send(command, cancellationToken);
 
         if (result.Reservation is null)
         {

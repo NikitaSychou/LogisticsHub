@@ -1,5 +1,6 @@
 using LogisticsHub.ShipmentService.Application.Shipments;
 using LogisticsHub.ShipmentService.Contracts;
+using MediatR;
 using Microsoft.AspNetCore.Mvc;
 
 namespace LogisticsHub.ShipmentService.Controllers;
@@ -8,15 +9,11 @@ namespace LogisticsHub.ShipmentService.Controllers;
 [Route("shipments")]
 public sealed class ShipmentsController : ControllerBase
 {
-    private readonly CreateShipment _createShipment;
-    private readonly GetShipment _getShipment;
+    private readonly IMediator _mediator;
 
-    public ShipmentsController(
-        CreateShipment createShipment,
-        GetShipment getShipment)
+    public ShipmentsController(IMediator mediator)
     {
-        _createShipment = createShipment;
-        _getShipment = getShipment;
+        _mediator = mediator;
     }
 
     [HttpGet("{id:guid}")]
@@ -24,7 +21,7 @@ public sealed class ShipmentsController : ControllerBase
         Guid id,
         CancellationToken cancellationToken)
     {
-        var result = await _getShipment.ExecuteAsync(id, cancellationToken);
+        var result = await _mediator.Send(new GetShipmentQuery(id), cancellationToken);
 
         if (result is null)
         {
@@ -76,7 +73,7 @@ public sealed class ShipmentsController : ControllerBase
 
         var command = new CreateShipmentCommand(commandItems);
 
-        var result = await _createShipment.ExecuteAsync(command, cancellationToken);
+        var result = await _mediator.Send(command, cancellationToken);
 
         return Created($"/shipments/{result.ShipmentId}", result);
     }

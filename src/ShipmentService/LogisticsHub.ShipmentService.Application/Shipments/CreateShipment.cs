@@ -3,10 +3,11 @@ using LogisticsHub.IntegrationEvents.StockReservations;
 using LogisticsHub.ShipmentService.Application.Persistence;
 using LogisticsHub.ShipmentService.Domain.Entities;
 using LogisticsHub.ShipmentService.Domain.Enums;
+using MediatR;
 
 namespace LogisticsHub.ShipmentService.Application.Shipments;
 
-public sealed class CreateShipment
+public sealed class CreateShipment : IRequestHandler<CreateShipmentCommand, CreateShipmentResult>
 {
     private static readonly JsonSerializerOptions JsonSerializerOptions = new(JsonSerializerDefaults.Web);
 
@@ -17,9 +18,9 @@ public sealed class CreateShipment
         _dbContext = dbContext;
     }
 
-    public async Task<CreateShipmentResult> ExecuteAsync(
+    public async Task<CreateShipmentResult> Handle(
         CreateShipmentCommand command,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(command);
 

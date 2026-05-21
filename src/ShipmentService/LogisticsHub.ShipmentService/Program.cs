@@ -24,10 +24,10 @@ builder.Services.AddDbInfrastructure(builder.Configuration);
 builder.Services.AddRabbitMqMessaging(builder.Configuration);
 
 // Register application services.
-builder.Services.AddScoped<CreateShipment>();
-builder.Services.AddScoped<GetShipment>();
-builder.Services.AddScoped<MarkShipmentReserved>();
-builder.Services.AddScoped<MarkShipmentReservationFailed>();
+builder.Services.AddMediatR(configuration =>
+{
+    configuration.RegisterServicesFromAssembly(typeof(CreateShipment).Assembly);
+});
 
 builder.Services.AddHostedService<StockReservedConsumer>();
 builder.Services.AddHostedService<StockReservationFailedConsumer>();

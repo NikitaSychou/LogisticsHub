@@ -1,6 +1,7 @@
 using LogisticsHub.IntegrationEvents.StockReservations;
 using LogisticsHub.Messaging.RabbitMQ;
 using LogisticsHub.ShipmentService.Application.Shipments;
+using MediatR;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace LogisticsHub.ShipmentService.Consumers;
@@ -32,12 +33,10 @@ public sealed class StockReservationFailedConsumer
         CancellationToken cancellationToken)
     {
         await using var scope = _serviceScopeFactory.CreateAsyncScope();
-        var markShipmentReservationFailed = scope.ServiceProvider.GetRequiredService<MarkShipmentReservationFailed>();
+        var mediator = scope.ServiceProvider.GetRequiredService<IMediator>();
 
-        await markShipmentReservationFailed.ExecuteAsync(
-            message.EventId,
-            message.ShipmentId,
-            message.Reason,
+        await mediator.Send(
+            new MarkShipmentReservationFailedCommand(message.EventId, message.ShipmentId, message.Reason),
             cancellationToken);
     }
 }

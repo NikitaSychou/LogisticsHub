@@ -1,10 +1,11 @@
 using LogisticsHub.ShipmentService.Application.Persistence;
 using LogisticsHub.ShipmentService.Domain.Entities;
 using LogisticsHub.ShipmentService.Domain.Enums;
+using MediatR;
 
 namespace LogisticsHub.ShipmentService.Application.Shipments;
 
-public sealed class MarkShipmentReservationFailed
+public sealed class MarkShipmentReservationFailed : IRequestHandler<MarkShipmentReservationFailedCommand>
 {
     private readonly IShipmentDbContext _dbContext;
 
@@ -13,20 +14,18 @@ public sealed class MarkShipmentReservationFailed
         _dbContext = dbContext;
     }
 
-    public async Task ExecuteAsync(
-        Guid eventId,
-        Guid shipmentId,
-        string reason,
-        CancellationToken cancellationToken = default)
+    public async Task Handle(
+        MarkShipmentReservationFailedCommand command,
+        CancellationToken cancellationToken)
     {
-        var alreadyProcessed = await _dbContext.HasShipmentInboxMessageAsync(eventId, cancellationToken);
+        var alreadyProcessed = await _dbContext.HasShipmentInboxMessageAsync(command.EventId, cancellationToken);
 
         if (alreadyProcessed)
         {
             return;
         }
 
-        var shipment = await _dbContext.GetShipmentForUpdateAsync(shipmentId, cancellationToken);
+        var shipment = await _dbContext.GetShipmentForUpdateAsync(command.ShipmentId, cancellationToken);
 
         if (shipment is null)
         {
@@ -38,7 +37,7 @@ public sealed class MarkShipmentReservationFailed
         if (shipment.Status == ShipmentStatus.ReservationRequested)
         {
             shipment.Status = ShipmentStatus.ReservationFailed;
-            shipment.ReservationFailureReason = reason;
+            shipment.ReservationFailureReason = command.Reason;
             shipment.UpdatedAt = now;
         }
 
@@ -46,7 +45,7 @@ public sealed class MarkShipmentReservationFailed
             new ShipmentInboxMessage
             {
                 Id = Guid.NewGuid(),
-                EventId = eventId,
+                EventId = command.EventId,
                 Type = "StockReservationFailedIntegrationEvent",
                 ProcessedAtUtc = now,
                 CreatedAtUtc = now

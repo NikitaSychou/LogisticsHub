@@ -1,10 +1,11 @@
 using LogisticsHub.ShipmentService.Application.Persistence;
 using LogisticsHub.ShipmentService.Domain.Entities;
 using LogisticsHub.ShipmentService.Domain.Enums;
+using MediatR;
 
 namespace LogisticsHub.ShipmentService.Application.Shipments;
 
-public sealed class MarkShipmentReserved
+public sealed class MarkShipmentReserved : IRequestHandler<MarkShipmentReservedCommand>
 {
     private readonly IShipmentDbContext _dbContext;
 
@@ -13,20 +14,18 @@ public sealed class MarkShipmentReserved
         _dbContext = dbContext;
     }
 
-    public async Task ExecuteAsync(
-        Guid eventId,
-        Guid shipmentId,
-        Guid reservationId,
-        CancellationToken cancellationToken = default)
+    public async Task Handle(
+        MarkShipmentReservedCommand command,
+        CancellationToken cancellationToken)
     {
-        var alreadyProcessed = await _dbContext.HasShipmentInboxMessageAsync(eventId, cancellationToken);
+        var alreadyProcessed = await _dbContext.HasShipmentInboxMessageAsync(command.EventId, cancellationToken);
 
         if (alreadyProcessed)
         {
             return;
         }
 
-        var shipment = await _dbContext.GetShipmentForUpdateAsync(shipmentId, cancellationToken);
+        var shipment = await _dbContext.GetShipmentForUpdateAsync(command.ShipmentId, cancellationToken);
 
         if (shipment is null)
         {
@@ -38,7 +37,7 @@ public sealed class MarkShipmentReserved
         if (shipment.Status == ShipmentStatus.ReservationRequested)
         {
             shipment.Status = ShipmentStatus.Reserved;
-            shipment.ReservationId = reservationId;
+            shipment.ReservationId = command.ReservationId;
             shipment.ReservationFailureReason = null;
             shipment.UpdatedAt = now;
         }
@@ -47,7 +46,7 @@ public sealed class MarkShipmentReserved
             new ShipmentInboxMessage
             {
                 Id = Guid.NewGuid(),
-                EventId = eventId,
+                EventId = command.EventId,
                 Type = "StockReservedIntegrationEvent",
                 ProcessedAtUtc = now,
                 CreatedAtUtc = now
