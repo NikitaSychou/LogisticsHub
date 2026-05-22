@@ -24,16 +24,9 @@ public sealed class CreateStockReservation : IRequestHandler<CreateStockReservat
     {
         ArgumentNullException.ThrowIfNull(command);
 
-        if (TryGetPersistableEventId(command.EventId, out var eventId))
+        if (await IsAlreadyProcessedAsync(command.EventId, cancellationToken))
         {
-            var alreadyProcessed = await _dbContext.HasInventoryInboxMessageAsync(
-                eventId,
-                cancellationToken);
-
-            if (alreadyProcessed)
-            {
-                return new CreateStockReservationResult(null, null, AlreadyProcessed: true);
-            }
+            return new CreateStockReservationResult(null, null, AlreadyProcessed: true);
         }
 
         var now = DateTime.UtcNow;
@@ -44,119 +37,43 @@ public sealed class CreateStockReservation : IRequestHandler<CreateStockReservat
             return await SaveFailureResultAsync(command, validationFailure, now, cancellationToken);
         }
 
-        var requestedSkus = command.Items
-            .Select(item => item.Sku.Trim())
-            .ToArray();
+        var inventoryItemsBySku = await GetInventoryItemsBySkuAsync(command, cancellationToken);
 
-        var inventoryItems = await _dbContext.GetItemsBySkusAsync(requestedSkus, cancellationToken);
-        var inventoryItemsBySku = inventoryItems.ToDictionary(item => item.Sku, StringComparer.OrdinalIgnoreCase);
-
-        foreach (var requestedItem in command.Items)
+        var stockValidationFailure = ValidateStockAvailability(command, inventoryItemsBySku);
+        if (stockValidationFailure is not null)
         {
-            var requestedSku = requestedItem.Sku.Trim();
-
-            if (!inventoryItemsBySku.TryGetValue(requestedSku, out var inventoryItem))
-            {
-                return await SaveFailureResultAsync(
-                    command,
-                    $"SKU '{requestedItem.Sku}' does not exist.",
-                    now,
-                    cancellationToken);
-            }
-
-            if (!inventoryItem.IsActive)
-            {
-                return await SaveFailureResultAsync(
-                    command,
-                    $"SKU '{requestedItem.Sku}' is inactive.",
-                    now,
-                    cancellationToken);
-            }
-
-            if (inventoryItem.StockBalance is null)
-            {
-                return await SaveFailureResultAsync(
-                    command,
-                    $"SKU '{requestedItem.Sku}' has no stock balance.",
-                    now,
-                    cancellationToken);
-            }
-
-            var available = inventoryItem.StockBalance.OnHand - inventoryItem.StockBalance.Reserved;
-            if (available < requestedItem.Quantity)
-            {
-                return await SaveFailureResultAsync(
-                    command,
-                    $"Insufficient stock for SKU '{requestedItem.Sku}'.",
-                    now,
-                    cancellationToken);
-            }
+            return await SaveFailureResultAsync(command, stockValidationFailure, now, cancellationToken);
         }
 
-        var stockReservation = new StockReservation
-        {
-            Id = Guid.NewGuid(),
-            ShipmentId = command.ShipmentId,
-            Status = ReservationStatus.Active,
-            CreatedAt = now,
-            UpdatedAt = now
-        };
-
-        foreach (var requestedItem in command.Items)
-        {
-            var inventoryItem = inventoryItemsBySku[requestedItem.Sku.Trim()];
-
-            inventoryItem.StockBalance!.Reserved += requestedItem.Quantity;
-            inventoryItem.StockBalance.UpdatedAt = now;
-
-            stockReservation.Items.Add(new StockReservationItem
-            {
-                ReservationId = stockReservation.Id,
-                ItemId = inventoryItem.Id,
-                Quantity = requestedItem.Quantity,
-                Item = inventoryItem
-            });
-        }
-
+        var stockReservation = CreateReservation(command, inventoryItemsBySku, now);
         await _dbContext.AddStockReservationAsync(stockReservation, cancellationToken);
 
-        if (TryGetPersistableEventId(command.EventId, out eventId))
+        var saved = await SaveSuccessfulResultAsync(command, stockReservation.Id, now, cancellationToken);
+
+        if (!saved)
         {
-            await AddInboxMessageAsync(eventId, now, cancellationToken);
-            await AddReservedOutboxMessageAsync(command, stockReservation.Id, now, cancellationToken);
+            return new CreateStockReservationResult(null, null, AlreadyProcessed: true);
         }
 
-        if (TryGetPersistableEventId(command.EventId, out _))
-        {
-            var saved = await _dbContext.SaveChangesAsyncHandlingDuplicateInboxEventAsync(cancellationToken);
-
-            if (!saved)
-            {
-                return new CreateStockReservationResult(null, null, AlreadyProcessed: true);
-            }
-        }
-        else
-        {
-            await _dbContext.SaveChangesAsync(cancellationToken);
-        }
-
-        var resultItems = stockReservation.Items
-            .Select(item => new StockReservationItemResult(item.Item!.Sku, item.Quantity))
-            .ToArray();
-
-        return new CreateStockReservationResult(
-            new StockReservationResult(
-                stockReservation.Id,
-                stockReservation.ShipmentId,
-                stockReservation.Status,
-                resultItems),
-            null);
+        return new CreateStockReservationResult(ToResult(stockReservation), null);
     }
 
     private static bool TryGetPersistableEventId(Guid? eventId, out Guid value)
     {
         value = eventId.GetValueOrDefault();
         return eventId.HasValue && value != Guid.Empty;
+    }
+
+    private async Task<bool> IsAlreadyProcessedAsync(
+        Guid? eventId,
+        CancellationToken cancellationToken)
+    {
+        if (!TryGetPersistableEventId(eventId, out var value))
+        {
+            return false;
+        }
+
+        return await _dbContext.HasInventoryInboxMessageAsync(value, cancellationToken);
     }
 
     private static string? ValidateCommand(CreateStockReservationCommand command)
@@ -196,6 +113,116 @@ public sealed class CreateStockReservation : IRequestHandler<CreateStockReservat
         }
 
         return null;
+    }
+
+    private async Task<Dictionary<string, Item>> GetInventoryItemsBySkuAsync(
+        CreateStockReservationCommand command,
+        CancellationToken cancellationToken)
+    {
+        var requestedSkus = command.Items
+            .Select(item => item.Sku.Trim())
+            .ToArray();
+
+        var inventoryItems = await _dbContext.GetItemsBySkusAsync(requestedSkus, cancellationToken);
+
+        return inventoryItems.ToDictionary(item => item.Sku, StringComparer.OrdinalIgnoreCase);
+    }
+
+    private static string? ValidateStockAvailability(
+        CreateStockReservationCommand command,
+        IReadOnlyDictionary<string, Item> inventoryItemsBySku)
+    {
+        foreach (var requestedItem in command.Items)
+        {
+            var requestedSku = requestedItem.Sku.Trim();
+
+            if (!inventoryItemsBySku.TryGetValue(requestedSku, out var inventoryItem))
+            {
+                return $"SKU '{requestedItem.Sku}' does not exist.";
+            }
+
+            if (!inventoryItem.IsActive)
+            {
+                return $"SKU '{requestedItem.Sku}' is inactive.";
+            }
+
+            if (inventoryItem.StockBalance is null)
+            {
+                return $"SKU '{requestedItem.Sku}' has no stock balance.";
+            }
+
+            var available = inventoryItem.StockBalance.OnHand - inventoryItem.StockBalance.Reserved;
+            if (available < requestedItem.Quantity)
+            {
+                return $"Insufficient stock for SKU '{requestedItem.Sku}'.";
+            }
+        }
+
+        return null;
+    }
+
+    private static StockReservation CreateReservation(
+        CreateStockReservationCommand command,
+        IReadOnlyDictionary<string, Item> inventoryItemsBySku,
+        DateTime now)
+    {
+        var stockReservation = new StockReservation
+        {
+            Id = Guid.NewGuid(),
+            ShipmentId = command.ShipmentId,
+            Status = ReservationStatus.Active,
+            CreatedAt = now,
+            UpdatedAt = now
+        };
+
+        foreach (var requestedItem in command.Items)
+        {
+            var inventoryItem = inventoryItemsBySku[requestedItem.Sku.Trim()];
+
+            inventoryItem.StockBalance!.Reserved += requestedItem.Quantity;
+            inventoryItem.StockBalance.UpdatedAt = now;
+
+            stockReservation.Items.Add(new StockReservationItem
+            {
+                ReservationId = stockReservation.Id,
+                ItemId = inventoryItem.Id,
+                Quantity = requestedItem.Quantity,
+                Item = inventoryItem
+            });
+        }
+
+        return stockReservation;
+    }
+
+    private async Task<bool> SaveSuccessfulResultAsync(
+        CreateStockReservationCommand command,
+        Guid reservationId,
+        DateTime now,
+        CancellationToken cancellationToken)
+    {
+        if (!TryGetPersistableEventId(command.EventId, out var eventId))
+        {
+            await _dbContext.SaveChangesAsync(cancellationToken);
+            return true;
+        }
+
+        await AddInboxMessageAsync(eventId, now, cancellationToken);
+        await AddReservedOutboxMessageAsync(command, reservationId, now, cancellationToken);
+
+        return await _dbContext.SaveChangesAsyncHandlingDuplicateInboxEventAsync(cancellationToken);
+    }
+
+    private static StockReservationResult ToResult(StockReservation stockReservation)
+    {
+        var resultItems = stockReservation.Items
+            .Select(item => new StockReservationItemResult(item.Item!.Sku, item.Quantity))
+            .ToArray();
+
+        return new StockReservationResult(
+            stockReservation.Id,
+            stockReservation.ShipmentId,
+            stockReservation.Status,
+            resultItems);
     }
 
     private async Task<CreateStockReservationResult> SaveFailureResultAsync(
