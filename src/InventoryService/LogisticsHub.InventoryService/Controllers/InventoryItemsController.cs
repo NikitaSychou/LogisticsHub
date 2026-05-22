@@ -19,6 +19,8 @@ public sealed class InventoryItemsController : ControllerBase
     }
 
     [HttpGet("{sku}")]
+    [ProducesResponseType(typeof(GetInventoryItemResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetAsync(
         string sku,
         CancellationToken cancellationToken)
@@ -34,6 +36,9 @@ public sealed class InventoryItemsController : ControllerBase
     }
 
     [HttpPost]
+    [ProducesResponseType(typeof(CreateInventoryItemResponse), StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
     public async Task<IActionResult> CreateAsync(
         CreateInventoryItemRequest request,
         CancellationToken cancellationToken)

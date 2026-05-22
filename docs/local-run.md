@@ -50,7 +50,15 @@ dotnet run --project .\src\ShipmentService\LogisticsHub.ShipmentService\Logistic
 dotnet run --project .\src\Gateway\LogisticsHub.Gateway\LogisticsHub.Gateway.csproj
 ```
 
-Swagger UI is available at `/swagger` in Development for the services that expose APIs.
+Swagger UI is available in Development:
+
+| Service | Swagger UI |
+|---|---|
+| Gateway | `http://localhost:5100/swagger` |
+| InventoryService | `http://localhost:5101/swagger` |
+| ShipmentService | `http://localhost:5102/swagger` |
+
+Gateway Swagger documents Gateway endpoints only. Use the direct service Swagger pages for InventoryService and ShipmentService APIs.
 
 ## Tests
 
