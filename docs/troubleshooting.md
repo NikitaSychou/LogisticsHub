@@ -9,6 +9,8 @@ This project uses local SQL Server, RabbitMQ, and three ASP.NET Core services. S
 3. Start InventoryService and ShipmentService before the Gateway.
 4. Check each service console for configuration, database, or RabbitMQ connection errors.
 
+If using Docker Compose for dependencies, check container status with `docker compose ps`. RabbitMQ management is available at `http://localhost:15672` with the local development credentials from the container image defaults. SQL Server should show as running before the services try to connect.
+
 ## Health Endpoints
 
 | Service | Health endpoint |

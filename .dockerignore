@@ -1,0 +1,14 @@
+.git/
+.vs/
+.vscode/
+bin/
+obj/
+**/bin/
+**/obj/
+TestResults/
+test-results/
+logs/
+*.log
+*.user
+*.suo
+*.rsuser
