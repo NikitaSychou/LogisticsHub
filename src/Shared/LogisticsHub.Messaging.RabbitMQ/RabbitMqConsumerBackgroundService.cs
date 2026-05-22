@@ -10,6 +10,9 @@ public abstract class RabbitMqConsumerBackgroundService<TMessage> : BackgroundSe
 {
     private static readonly JsonSerializerOptions JsonSerializerOptions = new(JsonSerializerDefaults.Web);
     private static readonly TimeSpan ReconnectDelay = TimeSpan.FromSeconds(5);
+    private static readonly TimeSpan FirstRetryDelay = TimeSpan.FromSeconds(2);
+    private static readonly TimeSpan SecondRetryDelay = TimeSpan.FromSeconds(5);
+    private const int MaxProcessingAttempts = 3;
 
     private readonly IRabbitMqConnectionProvider _connectionProvider;
     private readonly RabbitMqOptions _options;
@@ -153,17 +156,41 @@ public abstract class RabbitMqConsumerBackgroundService<TMessage> : BackgroundSe
     {
         try
         {
-            var message = JsonSerializer.Deserialize<TMessage>(
-                eventArgs.Body.Span,
-                JsonSerializerOptions);
+            TMessage? message;
+            try
+            {
+                message = DeserializeMessage(eventArgs);
+            }
+            catch (JsonException exception)
+            {
+                _logger.LogError(
+                    exception,
+                    "RabbitMQ message from queue {QueueName} could not be deserialized as {MessageType}. Sending to DLQ.",
+                    _queueName,
+                    typeof(TMessage).Name);
+
+                await channel.BasicNackAsync(eventArgs.DeliveryTag, multiple: false, requeue: false, cancellationToken: cancellationToken);
+                return;
+            }
 
             if (message is null)
+            {
+                _logger.LogError(
+                    "RabbitMQ message from queue {QueueName} could not be deserialized as {MessageType}. Sending to DLQ.",
+                    _queueName,
+                    typeof(TMessage).Name);
+
+                await channel.BasicNackAsync(eventArgs.DeliveryTag, multiple: false, requeue: false, cancellationToken: cancellationToken);
+                return;
+            }
+
+            var processed = await TryHandleMessageAsync(message, eventArgs, cancellationToken);
+            if (!processed)
             {
                 await channel.BasicNackAsync(eventArgs.DeliveryTag, multiple: false, requeue: false, cancellationToken: cancellationToken);
                 return;
             }
 
-            await HandleMessageAsync(message, cancellationToken);
             await channel.BasicAckAsync(eventArgs.DeliveryTag, multiple: false, cancellationToken: cancellationToken);
         }
         catch
@@ -175,6 +202,67 @@ public abstract class RabbitMqConsumerBackgroundService<TMessage> : BackgroundSe
 
             throw;
         }
+    }
+
+    private static TMessage? DeserializeMessage(BasicDeliverEventArgs eventArgs)
+    {
+        return JsonSerializer.Deserialize<TMessage>(
+            eventArgs.Body.Span,
+            JsonSerializerOptions);
+    }
+
+    private async Task<bool> TryHandleMessageAsync(
+        TMessage message,
+        BasicDeliverEventArgs eventArgs,
+        CancellationToken cancellationToken)
+    {
+        for (var attempt = 1; attempt <= MaxProcessingAttempts; attempt++)
+        {
+            try
+            {
+                await HandleMessageAsync(message, cancellationToken);
+                return true;
+            }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            {
+                throw;
+            }
+            catch (Exception exception) when (attempt < MaxProcessingAttempts)
+            {
+                var retryDelay = GetRetryDelay(attempt);
+
+                _logger.LogWarning(
+                    exception,
+                    "RabbitMQ message processing failed for queue {QueueName} on attempt {Attempt}/{MaxAttempts}. Retrying after {RetryDelay}. Delivery tag {DeliveryTag}.",
+                    _queueName,
+                    attempt,
+                    MaxProcessingAttempts,
+                    retryDelay,
+                    eventArgs.DeliveryTag);
+
+                await Task.Delay(retryDelay, cancellationToken);
+            }
+            catch (Exception exception)
+            {
+                _logger.LogError(
+                    exception,
+                    "RabbitMQ message processing failed for queue {QueueName} after {MaxAttempts} attempts. Sending to DLQ. Delivery tag {DeliveryTag}.",
+                    _queueName,
+                    MaxProcessingAttempts,
+                    eventArgs.DeliveryTag);
+
+                return false;
+            }
+        }
+
+        return false;
+    }
+
+    private static TimeSpan GetRetryDelay(int failedAttempt)
+    {
+        return failedAttempt == 1
+            ? FirstRetryDelay
+            : SecondRetryDelay;
     }
 
     protected abstract Task HandleMessageAsync(
