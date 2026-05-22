@@ -135,17 +135,23 @@ public class InventoryDbContext : DbContext, IInventoryDbContext
             """;
     }
 
-    public async Task<bool> SaveChangesAsyncHandlingDuplicateInboxEventAsync(
+    public async Task<InventorySaveChangesResult> SaveChangesAsyncHandlingDuplicateInboxEventAndConcurrencyAsync(
         CancellationToken cancellationToken = default)
     {
         try
         {
             await SaveChangesAsync(cancellationToken);
-            return true;
+            return InventorySaveChangesResult.Saved;
         }
         catch (DbUpdateException exception) when (IsInboxEventIdUniqueIndexViolation(exception))
         {
-            return false;
+            return InventorySaveChangesResult.DuplicateInboxEvent;
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            // Clear stale tracked entities so the application retry reloads current stock state.
+            ChangeTracker.Clear();
+            return InventorySaveChangesResult.ConcurrencyConflict;
         }
     }
 

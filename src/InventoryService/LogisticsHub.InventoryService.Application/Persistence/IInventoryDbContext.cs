@@ -39,5 +39,6 @@ public interface IInventoryDbContext
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 
-    Task<bool> SaveChangesAsyncHandlingDuplicateInboxEventAsync(CancellationToken cancellationToken = default);
+    Task<InventorySaveChangesResult> SaveChangesAsyncHandlingDuplicateInboxEventAndConcurrencyAsync(
+        CancellationToken cancellationToken = default);
 }

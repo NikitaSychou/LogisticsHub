@@ -4,18 +4,26 @@ using LogisticsHub.InventoryService.Application.Persistence;
 using LogisticsHub.InventoryService.Domain.Entities;
 using LogisticsHub.InventoryService.Domain.Enums;
 using MediatR;
+using Microsoft.Extensions.Logging;
 
 namespace LogisticsHub.InventoryService.Application.StockReservations;
 
 public sealed class CreateStockReservation : IRequestHandler<CreateStockReservationCommand, CreateStockReservationResult>
 {
+    private const int MaxConcurrencyAttempts = 3;
+    private const string ConcurrencyFailureReason = "Stock reservation could not be completed due to concurrent inventory updates.";
+
     private static readonly JsonSerializerOptions JsonSerializerOptions = new(JsonSerializerDefaults.Web);
 
     private readonly IInventoryDbContext _dbContext;
+    private readonly ILogger<CreateStockReservation> _logger;
 
-    public CreateStockReservation(IInventoryDbContext dbContext)
+    public CreateStockReservation(
+        IInventoryDbContext dbContext,
+        ILogger<CreateStockReservation> logger)
     {
         _dbContext = dbContext;
+        _logger = logger;
     }
 
     public async Task<CreateStockReservationResult> Handle(
@@ -24,9 +32,42 @@ public sealed class CreateStockReservation : IRequestHandler<CreateStockReservat
     {
         ArgumentNullException.ThrowIfNull(command);
 
+        for (var attempt = 1; attempt <= MaxConcurrencyAttempts; attempt++)
+        {
+            var attemptResult = await TryCreateStockReservationAsync(command, cancellationToken);
+
+            if (!attemptResult.ConcurrencyConflict)
+            {
+                return attemptResult.Result;
+            }
+
+            _logger.LogWarning(
+                "Stock reservation concurrency conflict for ShipmentId {ShipmentId} on attempt {Attempt} of {MaxAttempts}.",
+                command.ShipmentId,
+                attempt,
+                MaxConcurrencyAttempts);
+        }
+
+        _logger.LogError(
+            "Stock reservation failed for ShipmentId {ShipmentId} after {MaxAttempts} concurrency conflicts.",
+            command.ShipmentId,
+            MaxConcurrencyAttempts);
+
+        return await SaveFailureResultAsync(
+            command,
+            ConcurrencyFailureReason,
+            DateTime.UtcNow,
+            cancellationToken);
+    }
+
+    private async Task<StockReservationAttemptResult> TryCreateStockReservationAsync(
+        CreateStockReservationCommand command,
+        CancellationToken cancellationToken)
+    {
         if (await IsAlreadyProcessedAsync(command.EventId, cancellationToken))
         {
-            return new CreateStockReservationResult(null, null, AlreadyProcessed: true);
+            return StockReservationAttemptResult.Completed(
+                new CreateStockReservationResult(null, null, AlreadyProcessed: true));
         }
 
         var now = DateTime.UtcNow;
@@ -34,7 +75,8 @@ public sealed class CreateStockReservation : IRequestHandler<CreateStockReservat
         var validationFailure = ValidateCommand(command);
         if (validationFailure is not null)
         {
-            return await SaveFailureResultAsync(command, validationFailure, now, cancellationToken);
+            return StockReservationAttemptResult.Completed(
+                await SaveFailureResultAsync(command, validationFailure, now, cancellationToken));
         }
 
         var inventoryItemsBySku = await GetInventoryItemsBySkuAsync(command, cancellationToken);
@@ -42,20 +84,28 @@ public sealed class CreateStockReservation : IRequestHandler<CreateStockReservat
         var stockValidationFailure = ValidateStockAvailability(command, inventoryItemsBySku);
         if (stockValidationFailure is not null)
         {
-            return await SaveFailureResultAsync(command, stockValidationFailure, now, cancellationToken);
+            return StockReservationAttemptResult.Completed(
+                await SaveFailureResultAsync(command, stockValidationFailure, now, cancellationToken));
         }
 
         var stockReservation = CreateReservation(command, inventoryItemsBySku, now);
         await _dbContext.AddStockReservationAsync(stockReservation, cancellationToken);
 
-        var saved = await SaveSuccessfulResultAsync(command, stockReservation.Id, now, cancellationToken);
+        var saveResult = await SaveSuccessfulResultAsync(command, stockReservation.Id, now, cancellationToken);
 
-        if (!saved)
+        if (saveResult == InventorySaveChangesResult.DuplicateInboxEvent)
         {
-            return new CreateStockReservationResult(null, null, AlreadyProcessed: true);
+            return StockReservationAttemptResult.Completed(
+                new CreateStockReservationResult(null, null, AlreadyProcessed: true));
         }
 
-        return new CreateStockReservationResult(ToResult(stockReservation), null);
+        if (saveResult == InventorySaveChangesResult.ConcurrencyConflict)
+        {
+            return StockReservationAttemptResult.Retry();
+        }
+
+        return StockReservationAttemptResult.Completed(
+            new CreateStockReservationResult(ToResult(stockReservation), null));
     }
 
     private static bool TryGetPersistableEventId(Guid? eventId, out Guid value)
@@ -194,7 +244,7 @@ public sealed class CreateStockReservation : IRequestHandler<CreateStockReservat
         return stockReservation;
     }
 
-    private async Task<bool> SaveSuccessfulResultAsync(
+    private async Task<InventorySaveChangesResult> SaveSuccessfulResultAsync(
         CreateStockReservationCommand command,
         Guid reservationId,
         DateTime now,
@@ -202,14 +252,13 @@ public sealed class CreateStockReservation : IRequestHandler<CreateStockReservat
     {
         if (!TryGetPersistableEventId(command.EventId, out var eventId))
         {
-            await _dbContext.SaveChangesAsync(cancellationToken);
-            return true;
+            return await _dbContext.SaveChangesAsyncHandlingDuplicateInboxEventAndConcurrencyAsync(cancellationToken);
         }
 
         await AddInboxMessageAsync(eventId, now, cancellationToken);
         await AddReservedOutboxMessageAsync(command, reservationId, now, cancellationToken);
 
-        return await _dbContext.SaveChangesAsyncHandlingDuplicateInboxEventAsync(cancellationToken);
+        return await _dbContext.SaveChangesAsyncHandlingDuplicateInboxEventAndConcurrencyAsync(cancellationToken);
     }
 
     private static StockReservationResult ToResult(StockReservation stockReservation)
@@ -247,9 +296,9 @@ public sealed class CreateStockReservation : IRequestHandler<CreateStockReservat
         await AddInboxMessageAsync(eventId, now, cancellationToken);
         await AddFailedOutboxMessageAsync(command, reason, now, cancellationToken);
 
-        var saved = await _dbContext.SaveChangesAsyncHandlingDuplicateInboxEventAsync(cancellationToken);
+        var saved = await _dbContext.SaveChangesAsyncHandlingDuplicateInboxEventAndConcurrencyAsync(cancellationToken);
 
-        if (!saved)
+        if (saved == InventorySaveChangesResult.DuplicateInboxEvent)
         {
             return new CreateStockReservationResult(null, null, AlreadyProcessed: true);
         }
@@ -338,5 +387,22 @@ public sealed class CreateStockReservation : IRequestHandler<CreateStockReservat
                 CreatedAtUtc = now
             },
             cancellationToken);
+    }
+
+    private sealed record StockReservationAttemptResult(
+        CreateStockReservationResult Result,
+        bool ConcurrencyConflict)
+    {
+        public static StockReservationAttemptResult Completed(CreateStockReservationResult result)
+        {
+            return new StockReservationAttemptResult(result, ConcurrencyConflict: false);
+        }
+
+        public static StockReservationAttemptResult Retry()
+        {
+            return new StockReservationAttemptResult(
+                new CreateStockReservationResult(null, null),
+                ConcurrencyConflict: true);
+        }
     }
 }
