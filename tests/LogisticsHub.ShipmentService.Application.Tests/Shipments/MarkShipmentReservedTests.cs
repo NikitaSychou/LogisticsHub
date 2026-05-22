@@ -59,6 +59,27 @@ public sealed class MarkShipmentReservedTests
         Assert.Equal(command.EventId, dbContext.InboxMessages[0].EventId);
     }
 
+    [Fact]
+    public async Task Handle_WhenSaveReturnsDuplicateInboxEvent_CompletesWithoutThrowing()
+    {
+        // Arrange
+        var dbContext = new FakeShipmentDbContext
+        {
+            SaveChangesHandlingDuplicateInboxEventResult = false
+        };
+        var shipment = CreateShipment(ShipmentStatus.ReservationRequested);
+        dbContext.Shipments.Add(shipment);
+
+        var command = new MarkShipmentReservedCommand(Guid.NewGuid(), shipment.Id, Guid.NewGuid());
+        var handler = new MarkShipmentReserved(dbContext);
+
+        // Act
+        await handler.Handle(command, CancellationToken.None);
+
+        // Assert
+        Assert.Single(dbContext.InboxMessages);
+    }
+
     private static Shipment CreateShipment(ShipmentStatus status)
     {
         return new Shipment

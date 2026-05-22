@@ -1,5 +1,6 @@
 using System.Text.Json;
 using LogisticsHub.IntegrationEvents.StockReservations;
+using LogisticsHub.InventoryService.Application.Persistence;
 using LogisticsHub.InventoryService.Application.StockReservations;
 using LogisticsHub.InventoryService.Application.Tests.Fakes;
 using LogisticsHub.InventoryService.Domain.Entities;
@@ -146,6 +147,29 @@ public sealed class CreateStockReservationTests
         Assert.NotNull(integrationEvent);
         Assert.Equal(command.ShipmentId, integrationEvent.ShipmentId);
         Assert.Equal(result.FailureReason, integrationEvent.Reason);
+    }
+
+    [Fact]
+    public async Task Handle_WhenSaveReturnsDuplicateInboxEvent_ReturnsAlreadyProcessed()
+    {
+        // Arrange
+        var dbContext = new FakeInventoryDbContext
+        {
+            SaveChangesResult = InventorySaveChangesResult.DuplicateInboxEvent
+        };
+        var item = CreateItem("TEST-SKU-001", onHand: 10, reserved: 2);
+        dbContext.Items.Add(item);
+
+        var command = CreateCommand(Guid.NewGuid(), quantity: 5);
+        var handler = CreateHandler(dbContext);
+
+        // Act
+        var result = await handler.Handle(command, CancellationToken.None);
+
+        // Assert
+        Assert.True(result.AlreadyProcessed);
+        Assert.Null(result.Reservation);
+        Assert.Null(result.FailureReason);
     }
 
     private static CreateStockReservation CreateHandler(FakeInventoryDbContext dbContext)

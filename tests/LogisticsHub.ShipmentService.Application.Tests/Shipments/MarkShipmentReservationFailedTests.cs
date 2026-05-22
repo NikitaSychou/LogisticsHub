@@ -62,6 +62,30 @@ public sealed class MarkShipmentReservationFailedTests
         Assert.Equal(command.EventId, dbContext.InboxMessages[0].EventId);
     }
 
+    [Fact]
+    public async Task Handle_WhenSaveReturnsDuplicateInboxEvent_CompletesWithoutThrowing()
+    {
+        // Arrange
+        var dbContext = new FakeShipmentDbContext
+        {
+            SaveChangesHandlingDuplicateInboxEventResult = false
+        };
+        var shipment = CreateShipment(ShipmentStatus.ReservationRequested);
+        dbContext.Shipments.Add(shipment);
+
+        var command = new MarkShipmentReservationFailedCommand(
+            Guid.NewGuid(),
+            shipment.Id,
+            "Late failure.");
+        var handler = new MarkShipmentReservationFailed(dbContext);
+
+        // Act
+        await handler.Handle(command, CancellationToken.None);
+
+        // Assert
+        Assert.Single(dbContext.InboxMessages);
+    }
+
     private static Shipment CreateShipment(ShipmentStatus status)
     {
         return new Shipment
