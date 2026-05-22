@@ -1,8 +1,12 @@
-namespace LogisticsHub.InventoryService;
+using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Logging;
+
+namespace LogisticsHub.AspNetCore;
 
 public sealed class CorrelationIdMiddleware
 {
-    private const string CorrelationIdHeaderName = "X-Correlation-ID";
+    public const string CorrelationIdHeaderName = "X-Correlation-ID";
+    public const string CorrelationIdScopeName = "CorrelationId";
 
     private readonly RequestDelegate _next;
     private readonly ILogger<CorrelationIdMiddleware> _logger;
@@ -27,7 +31,7 @@ public sealed class CorrelationIdMiddleware
 
         using (_logger.BeginScope(new Dictionary<string, object>
         {
-            ["CorrelationId"] = correlationId
+            [CorrelationIdScopeName] = correlationId
         }))
         {
             await _next(context);
@@ -41,13 +45,5 @@ public sealed class CorrelationIdMiddleware
         return string.IsNullOrWhiteSpace(headerValue)
             ? context.TraceIdentifier
             : headerValue;
-    }
-}
-
-public static class CorrelationIdMiddlewareExtensions
-{
-    public static IApplicationBuilder UseCorrelationId(this IApplicationBuilder app)
-    {
-        return app.UseMiddleware<CorrelationIdMiddleware>();
     }
 }

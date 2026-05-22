@@ -1,3 +1,4 @@
+using LogisticsHub.AspNetCore;
 using LogisticsHub.ShipmentService.Application.Shipments;
 using LogisticsHub.ShipmentService.Contracts;
 using LogisticsHub.ShipmentService.Mapping;

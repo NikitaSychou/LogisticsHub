@@ -1,9 +1,9 @@
+using LogisticsHub.AspNetCore;
 using LogisticsHub.InventoryService.Application.InventoryItems;
 using LogisticsHub.InventoryService.Application.StockReservations;
 using LogisticsHub.InventoryService.Consumers;
 using LogisticsHub.InventoryService.Infrastructure.DependencyInjection;
 using LogisticsHub.InventoryService.Outbox;
-using LogisticsHub.InventoryService;
 using LogisticsHub.Messaging.RabbitMQ;
 using System.Text.Json.Serialization;
 
