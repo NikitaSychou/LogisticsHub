@@ -40,6 +40,8 @@ ShipmentService and InventoryService publish integration events through outbox t
 - `error` records the latest failure
 - messages that keep failing can move to a poison state through `failed_at_utc`
 
+Outbox publishers mark a message as processed only after RabbitMQ confirms the publish. Publishing also uses mandatory routing, so unroutable messages fail the publish and remain retryable in the outbox. This improves broker acknowledgement and routing safety, but the design is still at-least-once rather than exactly-once. A service can still publish an event and crash before marking the outbox row as processed, so duplicate delivery remains possible and consumers must stay idempotent.
+
 Use application logs together with the relevant outbox rows to understand whether a message is waiting, retrying, processed, or permanently failed.
 
 ## Duplicate Events
