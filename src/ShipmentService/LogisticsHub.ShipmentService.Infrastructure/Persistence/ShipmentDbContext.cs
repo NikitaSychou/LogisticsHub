@@ -84,6 +84,8 @@ public class ShipmentDbContext : DbContext, IShipmentDbContext
                 SELECT TOP({batchSize}) *
                 FROM dbo.shipment_outbox_messages WITH (UPDLOCK, READPAST, ROWLOCK)
                 WHERE processed_at_utc IS NULL
+                    AND failed_at_utc IS NULL
+                    AND (next_attempt_at_utc IS NULL OR next_attempt_at_utc <= {lockedAtUtc})
                     AND (locked_at_utc IS NULL OR locked_at_utc < {lockExpiresBefore})
                 ORDER BY occurred_at_utc
             )

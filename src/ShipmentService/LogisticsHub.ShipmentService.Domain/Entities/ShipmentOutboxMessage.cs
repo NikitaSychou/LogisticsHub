@@ -18,6 +18,10 @@ public sealed class ShipmentOutboxMessage
 
     public DateTime? LockedAtUtc { get; set; }
 
+    public DateTime? NextAttemptAtUtc { get; set; }
+
+    public DateTime? FailedAtUtc { get; set; }
+
     public string? Error { get; set; }
 
     public int RetryCount { get; set; }
