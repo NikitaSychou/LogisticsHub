@@ -43,7 +43,7 @@ Duplicate `EventId` deliveries are ignored through inbox tables. Shipment result
 
 Swagger UI is available at `/swagger` in Development.
 
-RabbitMQ and SQL Server must be running locally. Docker Compose is not present yet.
+RabbitMQ and SQL Server must be running locally. Docker Compose can start these local dependencies; the .NET services still run with `dotnet run`.
 
 InventoryService and ShipmentService `/health` endpoints check RabbitMQ connectivity. They do not validate every exchange, queue, or binding.
 

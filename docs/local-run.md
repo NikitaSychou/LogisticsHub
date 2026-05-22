@@ -8,6 +8,14 @@ This guide covers the local application workflow for reviewers and contributors.
 - SQL Server available locally
 - RabbitMQ available locally
 
+Docker Compose can start SQL Server and RabbitMQ for local development:
+
+```powershell
+docker compose up -d
+```
+
+The compose file starts dependencies only. It does not run Gateway, InventoryService, or ShipmentService, and it does not create database schema.
+
 The service connection strings currently point to local SQL Server databases:
 
 - `InventoryDb`
@@ -31,6 +39,8 @@ Start local dependencies first:
 
 1. SQL Server
 2. RabbitMQ
+
+You can use locally installed dependencies or the Docker Compose dependencies.
 
 Then start the backend services:
 
