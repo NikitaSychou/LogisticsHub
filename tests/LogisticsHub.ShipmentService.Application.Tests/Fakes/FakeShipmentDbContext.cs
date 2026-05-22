@@ -6,6 +6,7 @@ namespace LogisticsHub.ShipmentService.Application.Tests.Fakes;
 public sealed class FakeShipmentDbContext : IShipmentDbContext
 {
     public List<Shipment> Shipments { get; } = [];
+    public List<ShipmentItem> ShipmentItems { get; } = [];
     public List<ShipmentInboxMessage> InboxMessages { get; } = [];
     public List<ShipmentOutboxMessage> OutboxMessages { get; } = [];
 
@@ -27,6 +28,7 @@ public sealed class FakeShipmentDbContext : IShipmentDbContext
 
     public Task AddShipmentItemAsync(ShipmentItem shipmentItem, CancellationToken cancellationToken = default)
     {
+        ShipmentItems.Add(shipmentItem);
         return Task.CompletedTask;
     }
 
