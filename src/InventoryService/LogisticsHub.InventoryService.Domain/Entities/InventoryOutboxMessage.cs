@@ -14,6 +14,10 @@ public sealed class InventoryOutboxMessage
 
     public DateTime? ProcessedAtUtc { get; set; }
 
+    public string? LockedBy { get; set; }
+
+    public DateTime? LockedAtUtc { get; set; }
+
     public string? Error { get; set; }
 
     public int RetryCount { get; set; }
