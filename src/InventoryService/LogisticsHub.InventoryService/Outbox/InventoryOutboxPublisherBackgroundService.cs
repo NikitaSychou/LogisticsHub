@@ -11,7 +11,9 @@ public sealed class InventoryOutboxPublisherBackgroundService : BackgroundServic
     private static readonly JsonSerializerOptions JsonSerializerOptions = new(JsonSerializerDefaults.Web);
     private static readonly TimeSpan PollingInterval = TimeSpan.FromSeconds(5);
     private static readonly TimeSpan LockTimeout = TimeSpan.FromMinutes(5);
+    private static readonly TimeSpan MaxRetryDelay = TimeSpan.FromMinutes(15);
     private const int BatchSize = 20;
+    private const int MaxRetryCount = 5;
 
     private readonly IServiceScopeFactory _serviceScopeFactory;
     private readonly ILogger<InventoryOutboxPublisherBackgroundService> _logger;
@@ -90,6 +92,7 @@ public sealed class InventoryOutboxPublisherBackgroundService : BackgroundServic
                 message.ProcessedAtUtc = DateTime.UtcNow;
                 message.LockedBy = null;
                 message.LockedAtUtc = null;
+                message.NextAttemptAtUtc = null;
                 message.Error = null;
 
                 _logger.LogDebug(
@@ -100,15 +103,35 @@ public sealed class InventoryOutboxPublisherBackgroundService : BackgroundServic
             catch (Exception exception)
             {
                 hadFailure = true;
+                var failedAtUtc = DateTime.UtcNow;
                 message.RetryCount++;
                 message.LockedBy = null;
                 message.LockedAtUtc = null;
                 message.Error = exception.Message;
 
-                _logger.LogError(
-                    exception,
-                    "Failed to publish inventory outbox message {OutboxMessageId}.",
-                    message.Id);
+                if (message.RetryCount >= MaxRetryCount)
+                {
+                    message.FailedAtUtc = failedAtUtc;
+                    message.NextAttemptAtUtc = null;
+
+                    _logger.LogError(
+                        exception,
+                        "Inventory outbox message {OutboxMessageId} reached max retry count {RetryCount} and was marked failed.",
+                        message.Id,
+                        message.RetryCount);
+                }
+                else
+                {
+                    var retryDelay = GetRetryDelay(message.RetryCount);
+                    message.NextAttemptAtUtc = failedAtUtc.Add(retryDelay);
+
+                    _logger.LogWarning(
+                        exception,
+                        "Inventory outbox message {OutboxMessageId} failed on retry {RetryCount}. Next attempt scheduled at {NextAttemptAtUtc}.",
+                        message.Id,
+                        message.RetryCount,
+                        message.NextAttemptAtUtc);
+                }
             }
 
             await dbContext.SaveChangesAsync(cancellationToken);
@@ -161,5 +184,19 @@ public sealed class InventoryOutboxPublisherBackgroundService : BackgroundServic
 
         throw new InvalidOperationException(
             $"Unsupported inventory outbox message type '{message.Type}'.");
+    }
+
+    private static TimeSpan GetRetryDelay(int retryCount)
+    {
+        var seconds = retryCount switch
+        {
+            1 => 30,
+            2 => 60,
+            3 => 120,
+            4 => 300,
+            _ => (int)MaxRetryDelay.TotalSeconds
+        };
+
+        return TimeSpan.FromSeconds(seconds);
     }
 }
