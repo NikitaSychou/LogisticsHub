@@ -8,6 +8,9 @@ namespace LogisticsHub.Messaging.RabbitMQ;
 public sealed class RabbitMqPublisher : IRabbitMqPublisher
 {
     private static readonly JsonSerializerOptions JsonSerializerOptions = new(JsonSerializerDefaults.Web);
+    private static readonly CreateChannelOptions PublisherChannelOptions = new(
+        publisherConfirmationsEnabled: true,
+        publisherConfirmationTrackingEnabled: true);
 
     private readonly IRabbitMqConnectionProvider _connectionProvider;
     private readonly RabbitMqOptions _options;
@@ -44,7 +47,9 @@ public sealed class RabbitMqPublisher : IRabbitMqPublisher
                 routingKey);
 
             var connection = await _connectionProvider.GetConnectionAsync(cancellationToken);
-            await using var channel = await connection.CreateChannelAsync(cancellationToken: cancellationToken);
+            await using var channel = await connection.CreateChannelAsync(
+                PublisherChannelOptions,
+                cancellationToken);
 
             _logger.LogDebug(
                 "Declaring RabbitMQ exchange {ExchangeName} before publishing message {MessageType} with id {MessageId}.",
@@ -69,13 +74,13 @@ public sealed class RabbitMqPublisher : IRabbitMqPublisher
             await channel.BasicPublishAsync(
                 exchange: _options.ExchangeName,
                 routingKey: routingKey,
-                mandatory: false,
+                mandatory: true,
                 basicProperties: properties,
                 body: body,
                 cancellationToken: cancellationToken);
 
             _logger.LogDebug(
-                "Published RabbitMQ message {MessageType} with id {MessageId} to exchange {ExchangeName} using routing key {RoutingKey}.",
+                "Published and confirmed RabbitMQ message {MessageType} with id {MessageId} to exchange {ExchangeName} using routing key {RoutingKey}.",
                 messageType,
                 messageId,
                 _options.ExchangeName,
