@@ -26,4 +26,7 @@ jobs:
         run: dotnet restore ./LogisticsHub.sln
 
       - name: Build solution
-        run: dotnet build ./LogisticsHub.sln --configuration Release --no-restore
+        run: dotnet build ./LogisticsHub.sln --no-restore
+
+      - name: Test solution
+        run: dotnet test ./LogisticsHub.sln --no-build --verbosity normal
