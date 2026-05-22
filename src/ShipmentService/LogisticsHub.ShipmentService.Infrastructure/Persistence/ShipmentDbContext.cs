@@ -48,15 +48,49 @@ public class ShipmentDbContext : DbContext, IShipmentDbContext
         await ShipmentOutboxMessages.AddAsync(outboxMessage, cancellationToken);
     }
 
-    public async Task<IReadOnlyList<ShipmentOutboxMessage>> GetUnprocessedShipmentOutboxMessagesAsync(
+    public async Task<IReadOnlyList<ShipmentOutboxMessage>> ClaimShipmentOutboxMessagesAsync(
         int batchSize,
+        string lockedBy,
+        DateTime lockedAtUtc,
+        TimeSpan lockTimeout,
         CancellationToken cancellationToken = default)
     {
+        var lockExpiresBefore = lockedAtUtc.Subtract(lockTimeout);
+
+        await Database.ExecuteSqlInterpolatedAsync(
+            BuildClaimShipmentOutboxMessagesSql(batchSize, lockedBy, lockedAtUtc, lockExpiresBefore),
+            cancellationToken);
+
         return await ShipmentOutboxMessages
-            .Where(message => message.ProcessedAtUtc == null)
+            .Where(message =>
+                message.ProcessedAtUtc == null
+                && message.LockedBy == lockedBy
+                && message.LockedAtUtc == lockedAtUtc)
             .OrderBy(message => message.OccurredAtUtc)
-            .Take(batchSize)
             .ToListAsync(cancellationToken);
+    }
+
+    private static FormattableString BuildClaimShipmentOutboxMessagesSql(
+        int batchSize,
+        string lockedBy,
+        DateTime lockedAtUtc,
+        DateTime lockExpiresBefore)
+    {
+        // Raw SQL is used for atomic multi-replica row claiming with SQL Server lock hints.
+        // EF LINQ/ExecuteUpdate cannot safely express this ordered TOP update with UPDLOCK/READPAST/ROWLOCK.
+        return $"""
+            ;WITH messages AS
+            (
+                SELECT TOP({batchSize}) *
+                FROM dbo.shipment_outbox_messages WITH (UPDLOCK, READPAST, ROWLOCK)
+                WHERE processed_at_utc IS NULL
+                    AND (locked_at_utc IS NULL OR locked_at_utc < {lockExpiresBefore})
+                ORDER BY occurred_at_utc
+            )
+            UPDATE messages
+            SET locked_by = {lockedBy},
+                locked_at_utc = {lockedAtUtc}
+            """;
     }
 
     public async Task<bool> HasShipmentInboxMessageAsync(

@@ -10,10 +10,12 @@ public sealed class ShipmentOutboxPublisherBackgroundService : BackgroundService
 {
     private static readonly JsonSerializerOptions JsonSerializerOptions = new(JsonSerializerDefaults.Web);
     private static readonly TimeSpan PollingInterval = TimeSpan.FromSeconds(5);
+    private static readonly TimeSpan LockTimeout = TimeSpan.FromMinutes(5);
     private const int BatchSize = 20;
 
     private readonly IServiceScopeFactory _serviceScopeFactory;
     private readonly ILogger<ShipmentOutboxPublisherBackgroundService> _logger;
+    private readonly string _instanceId = $"{Environment.MachineName}-{Guid.NewGuid():N}";
 
     public ShipmentOutboxPublisherBackgroundService(
         IServiceScopeFactory serviceScopeFactory,
@@ -55,9 +57,27 @@ public sealed class ShipmentOutboxPublisherBackgroundService : BackgroundService
         var dbContext = scope.ServiceProvider.GetRequiredService<IShipmentDbContext>();
         var publisher = scope.ServiceProvider.GetRequiredService<IRabbitMqPublisher>();
 
-        var messages = await dbContext.GetUnprocessedShipmentOutboxMessagesAsync(
+        var lockedAtUtc = DateTime.UtcNow;
+        var messages = await dbContext.ClaimShipmentOutboxMessagesAsync(
             BatchSize,
+            _instanceId,
+            lockedAtUtc,
+            LockTimeout,
             cancellationToken);
+
+        if (messages.Count == 0)
+        {
+            _logger.LogDebug(
+                "Shipment outbox publisher {PublisherInstanceId} found no claimable messages.",
+                _instanceId);
+        }
+        else
+        {
+            _logger.LogInformation(
+                "Shipment outbox publisher {PublisherInstanceId} claimed {MessageCount} messages.",
+                _instanceId,
+                messages.Count);
+        }
 
         var hadFailure = false;
 
@@ -68,12 +88,21 @@ public sealed class ShipmentOutboxPublisherBackgroundService : BackgroundService
                 await PublishAsync(publisher, message, cancellationToken);
 
                 message.ProcessedAtUtc = DateTime.UtcNow;
+                message.LockedBy = null;
+                message.LockedAtUtc = null;
                 message.Error = null;
+
+                _logger.LogDebug(
+                    "Shipment outbox publisher {PublisherInstanceId} published message {OutboxMessageId}.",
+                    _instanceId,
+                    message.Id);
             }
             catch (Exception exception)
             {
                 hadFailure = true;
                 message.RetryCount++;
+                message.LockedBy = null;
+                message.LockedAtUtc = null;
                 message.Error = exception.Message;
 
                 _logger.LogError(

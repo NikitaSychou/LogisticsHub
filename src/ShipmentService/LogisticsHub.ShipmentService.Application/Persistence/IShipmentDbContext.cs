@@ -14,8 +14,11 @@ public interface IShipmentDbContext
 
     Task AddShipmentOutboxMessageAsync(ShipmentOutboxMessage outboxMessage, CancellationToken cancellationToken = default);
 
-    Task<IReadOnlyList<ShipmentOutboxMessage>> GetUnprocessedShipmentOutboxMessagesAsync(
+    Task<IReadOnlyList<ShipmentOutboxMessage>> ClaimShipmentOutboxMessagesAsync(
         int batchSize,
+        string lockedBy,
+        DateTime lockedAtUtc,
+        TimeSpan lockTimeout,
         CancellationToken cancellationToken = default);
 
     Task<bool> HasShipmentInboxMessageAsync(Guid eventId, CancellationToken cancellationToken = default);

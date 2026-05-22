@@ -35,6 +35,13 @@ public sealed class ShipmentOutboxMessageConfiguration : IEntityTypeConfiguratio
         builder.Property(x => x.ProcessedAtUtc)
             .HasColumnName("processed_at_utc");
 
+        builder.Property(x => x.LockedBy)
+            .HasColumnName("locked_by")
+            .HasMaxLength(256);
+
+        builder.Property(x => x.LockedAtUtc)
+            .HasColumnName("locked_at_utc");
+
         builder.Property(x => x.Error)
             .HasColumnName("error");
 

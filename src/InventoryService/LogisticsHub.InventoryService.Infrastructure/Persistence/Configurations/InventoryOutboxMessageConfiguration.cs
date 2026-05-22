@@ -35,6 +35,13 @@ public sealed class InventoryOutboxMessageConfiguration : IEntityTypeConfigurati
         builder.Property(message => message.ProcessedAtUtc)
             .HasColumnName("processed_at_utc");
 
+        builder.Property(message => message.LockedBy)
+            .HasColumnName("locked_by")
+            .HasMaxLength(256);
+
+        builder.Property(message => message.LockedAtUtc)
+            .HasColumnName("locked_at_utc");
+
         builder.Property(message => message.Error)
             .HasColumnName("error");
 
