@@ -3,6 +3,7 @@ using LogisticsHub.InventoryService.Application.StockReservations;
 using LogisticsHub.InventoryService.Consumers;
 using LogisticsHub.InventoryService.Infrastructure.DependencyInjection;
 using LogisticsHub.InventoryService.Outbox;
+using LogisticsHub.InventoryService;
 using LogisticsHub.Messaging.RabbitMQ;
 using System.Text.Json.Serialization;
 
@@ -32,6 +33,8 @@ builder.Services.AddHostedService<StockReservationRequestedConsumer>();
 builder.Services.AddHostedService<InventoryOutboxPublisherBackgroundService>();
 
 var app = builder.Build();
+
+app.UseCorrelationId();
 
 if (app.Environment.IsDevelopment())
 {

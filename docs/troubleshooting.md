@@ -21,6 +21,10 @@ If using Docker Compose for dependencies, check container status with `docker co
 
 InventoryService and ShipmentService health checks verify RabbitMQ connectivity by opening a connection and channel. They do not validate every exchange, queue, or binding.
 
+## Correlation IDs
+
+HTTP responses include an `X-Correlation-ID` header. Send the same header on requests to follow related Gateway and service logs. RabbitMQ message-level correlation is not implemented yet; `EventId` still identifies individual integration events.
+
 ## RabbitMQ Queues And DLQs
 
 Consumers declare their queues, bindings, and dead-letter queues when they connect. Failed consumer messages are retried briefly, then nacked with `requeue: false` so they can be routed to the corresponding DLQ.

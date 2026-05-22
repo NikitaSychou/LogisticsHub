@@ -2,6 +2,7 @@ using LogisticsHub.ShipmentService.Application.Shipments;
 using LogisticsHub.ShipmentService.Consumers;
 using LogisticsHub.ShipmentService.Infrastructure.DependencyInjection;
 using LogisticsHub.Messaging.RabbitMQ;
+using LogisticsHub.ShipmentService;
 using LogisticsHub.ShipmentService.Outbox;
 using System.Text.Json.Serialization;
 
@@ -36,6 +37,8 @@ builder.Services.AddHostedService<StockReservationFailedConsumer>();
 builder.Services.AddHostedService<ShipmentOutboxPublisherBackgroundService>();
 
 var app = builder.Build();
+
+app.UseCorrelationId();
 
 if (app.Environment.IsDevelopment())
 {

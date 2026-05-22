@@ -1,3 +1,5 @@
+using LogisticsHub.Gateway;
+
 const string ReverseProxySectionName = "ReverseProxy";
 const string HealthEndpointPath = "/health";
 
@@ -18,6 +20,8 @@ builder.Services.AddHealthChecks();
 builder.Services.AddOpenApi();
 
 var app = builder.Build();
+
+app.UseCorrelationId();
 
 if (app.Environment.IsDevelopment())
 {
