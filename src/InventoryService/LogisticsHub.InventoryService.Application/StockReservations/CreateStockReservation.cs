@@ -12,6 +12,7 @@ public sealed class CreateStockReservation : IRequestHandler<CreateStockReservat
 {
     private const int MaxConcurrencyAttempts = 3;
     private const string ConcurrencyFailureReason = "Stock reservation could not be completed due to concurrent inventory updates.";
+    private const string StockReservationRequestedEventType = "StockReservationRequestedIntegrationEvent";
 
     private static readonly JsonSerializerOptions JsonSerializerOptions = new(JsonSerializerDefaults.Web);
 
@@ -311,16 +312,7 @@ public sealed class CreateStockReservation : IRequestHandler<CreateStockReservat
         DateTime now,
         CancellationToken cancellationToken)
     {
-        await _dbContext.AddInventoryInboxMessageAsync(
-            new InventoryInboxMessage
-            {
-                Id = Guid.NewGuid(),
-                EventId = eventId,
-                Type = "StockReservationRequestedIntegrationEvent",
-                ProcessedAtUtc = now,
-                CreatedAtUtc = now
-            },
-            cancellationToken);
+        await _dbContext.AddInventoryInboxMessageAsync(CreateInboxMessage(eventId, now), cancellationToken);
     }
 
     private async Task AddReservedOutboxMessageAsync(
@@ -329,19 +321,8 @@ public sealed class CreateStockReservation : IRequestHandler<CreateStockReservat
         DateTime now,
         CancellationToken cancellationToken)
     {
-        var integrationEvent = new StockReservedIntegrationEvent(
-            Guid.NewGuid(),
-            now,
-            command.ShipmentId,
-            reservationId);
-
-        await AddOutboxMessageAsync(
-            integrationEvent.EventId,
-            integrationEvent.OccurredAtUtc,
-            typeof(StockReservedIntegrationEvent).FullName!,
-            StockReservationRoutingKeys.Reserved,
-            integrationEvent,
-            now,
+        await _dbContext.AddInventoryOutboxMessageAsync(
+            CreateReservedOutboxMessage(command, reservationId, now),
             cancellationToken);
     }
 
@@ -351,42 +332,80 @@ public sealed class CreateStockReservation : IRequestHandler<CreateStockReservat
         DateTime now,
         CancellationToken cancellationToken)
     {
+        await _dbContext.AddInventoryOutboxMessageAsync(
+            CreateFailedOutboxMessage(command, reason, now),
+            cancellationToken);
+    }
+
+    private static InventoryInboxMessage CreateInboxMessage(Guid eventId, DateTime now)
+    {
+        return new InventoryInboxMessage
+        {
+            Id = Guid.NewGuid(),
+            EventId = eventId,
+            Type = StockReservationRequestedEventType,
+            ProcessedAtUtc = now,
+            CreatedAtUtc = now
+        };
+    }
+
+    private static InventoryOutboxMessage CreateReservedOutboxMessage(
+        CreateStockReservationCommand command,
+        Guid reservationId,
+        DateTime now)
+    {
+        var integrationEvent = new StockReservedIntegrationEvent(
+            Guid.NewGuid(),
+            now,
+            command.ShipmentId,
+            reservationId);
+
+        return CreateOutboxMessage(
+            integrationEvent.EventId,
+            integrationEvent.OccurredAtUtc,
+            typeof(StockReservedIntegrationEvent).FullName!,
+            StockReservationRoutingKeys.Reserved,
+            integrationEvent,
+            now);
+    }
+
+    private static InventoryOutboxMessage CreateFailedOutboxMessage(
+        CreateStockReservationCommand command,
+        string reason,
+        DateTime now)
+    {
         var integrationEvent = new StockReservationFailedIntegrationEvent(
             Guid.NewGuid(),
             now,
             command.ShipmentId,
             reason);
 
-        await AddOutboxMessageAsync(
+        return CreateOutboxMessage(
             integrationEvent.EventId,
             integrationEvent.OccurredAtUtc,
             typeof(StockReservationFailedIntegrationEvent).FullName!,
             StockReservationRoutingKeys.Failed,
             integrationEvent,
-            now,
-            cancellationToken);
+            now);
     }
 
-    private async Task AddOutboxMessageAsync<TMessage>(
+    private static InventoryOutboxMessage CreateOutboxMessage<TMessage>(
         Guid id,
         DateTime occurredAtUtc,
         string type,
         string routingKey,
         TMessage message,
-        DateTime now,
-        CancellationToken cancellationToken)
+        DateTime now)
     {
-        await _dbContext.AddInventoryOutboxMessageAsync(
-            new InventoryOutboxMessage
-            {
-                Id = id,
-                OccurredAtUtc = occurredAtUtc,
-                Type = type,
-                RoutingKey = routingKey,
-                Payload = JsonSerializer.Serialize(message, JsonSerializerOptions),
-                CreatedAtUtc = now
-            },
-            cancellationToken);
+        return new InventoryOutboxMessage
+        {
+            Id = id,
+            OccurredAtUtc = occurredAtUtc,
+            Type = type,
+            RoutingKey = routingKey,
+            Payload = JsonSerializer.Serialize(message, JsonSerializerOptions),
+            CreatedAtUtc = now
+        };
     }
 
     private sealed record StockReservationAttemptResult(
