@@ -19,6 +19,8 @@ public sealed class StockReservationsController : ControllerBase
     }
 
     [HttpGet("{reservationId:guid}")]
+    [ProducesResponseType(typeof(GetStockReservationResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetAsync(
         Guid reservationId,
         CancellationToken cancellationToken)
@@ -34,6 +36,9 @@ public sealed class StockReservationsController : ControllerBase
     }
 
     [HttpPost]
+    [ProducesResponseType(typeof(CreateStockReservationResponse), StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
     public async Task<IActionResult> CreateAsync(
         CreateStockReservationRequest request,
         CancellationToken cancellationToken)

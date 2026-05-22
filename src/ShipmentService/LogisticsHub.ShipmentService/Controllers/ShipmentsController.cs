@@ -19,6 +19,8 @@ public sealed class ShipmentsController : ControllerBase
     }
 
     [HttpGet("{id:guid}")]
+    [ProducesResponseType(typeof(GetShipmentResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetAsync(
         Guid id,
         CancellationToken cancellationToken)
@@ -36,6 +38,8 @@ public sealed class ShipmentsController : ControllerBase
     }
 
     [HttpPost]
+    [ProducesResponseType(typeof(CreateShipmentResult), StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> CreateAsync(
         CreateShipmentRequest request,
         CancellationToken cancellationToken)

@@ -41,7 +41,13 @@ Duplicate `EventId` deliveries are ignored through inbox tables. Shipment result
 | InventoryService | `http://localhost:5101` |
 | ShipmentService | `http://localhost:5102` |
 
-Swagger UI is available at `/swagger` in Development.
+Swagger UI is available in Development:
+
+- Gateway: `http://localhost:5100/swagger`
+- InventoryService: `http://localhost:5101/swagger`
+- ShipmentService: `http://localhost:5102/swagger`
+
+Gateway Swagger documents Gateway endpoints only; use the direct service Swagger pages for InventoryService and ShipmentService APIs.
 
 RabbitMQ and SQL Server must be running locally. Docker Compose can start these local dependencies; the .NET services still run with `dotnet run`.
 
