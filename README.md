@@ -54,7 +54,12 @@ Outbox publishers use row claiming for multiple replicas and bounded retry sched
 ```powershell
 dotnet restore .\LogisticsHub.sln
 dotnet build .\LogisticsHub.sln
+dotnet test .\LogisticsHub.sln
 ```
+
+## Tests
+
+Test projects live under `tests/`. The current test suite uses Application-level tests for reservation reliability behavior and does not require RabbitMQ or SQL Server.
 
 ## Database Rule
 
@@ -73,5 +78,5 @@ Database changes should be made with manual SQL scripts.
 
 1. Create a feature branch from `master`.
 2. Open a pull request to `master`.
-3. Wait for GitHub Actions to pass.
+3. Wait for GitHub Actions to restore, build, and test the solution.
 4. Merge after checks pass.
