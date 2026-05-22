@@ -10,6 +10,8 @@ public sealed class FakeShipmentDbContext : IShipmentDbContext
     public List<ShipmentInboxMessage> InboxMessages { get; } = [];
     public List<ShipmentOutboxMessage> OutboxMessages { get; } = [];
 
+    public bool SaveChangesHandlingDuplicateInboxEventResult { get; set; } = true;
+
     public Task<Shipment?> GetShipmentByIdAsync(Guid id, CancellationToken cancellationToken = default)
     {
         return Task.FromResult(Shipments.SingleOrDefault(shipment => shipment.Id == id));
@@ -70,6 +72,6 @@ public sealed class FakeShipmentDbContext : IShipmentDbContext
 
     public Task<bool> SaveChangesAsyncHandlingDuplicateInboxEventAsync(CancellationToken cancellationToken = default)
     {
-        return Task.FromResult(true);
+        return Task.FromResult(SaveChangesHandlingDuplicateInboxEventResult);
     }
 }
