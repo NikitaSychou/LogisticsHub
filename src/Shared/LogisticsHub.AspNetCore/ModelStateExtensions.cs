@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Mvc.ModelBinding;
 
-namespace LogisticsHub.ShipmentService.Validation;
+namespace LogisticsHub.AspNetCore;
 
 public static class ModelStateExtensions
 {

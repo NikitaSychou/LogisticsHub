@@ -1,3 +1,4 @@
+using LogisticsHub.AspNetCore;
 using LogisticsHub.InventoryService.Application.InventoryItems;
 using LogisticsHub.InventoryService.Contracts;
 using LogisticsHub.InventoryService.Mapping;

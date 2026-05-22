@@ -1,4 +1,4 @@
-using LogisticsHub.Gateway;
+using LogisticsHub.AspNetCore;
 
 const string ReverseProxySectionName = "ReverseProxy";
 const string HealthEndpointPath = "/health";
