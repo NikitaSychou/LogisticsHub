@@ -9,7 +9,8 @@ LogisticsHub is a microservices backend project for a shipment and inventory wor
 - **ShipmentService** - shipment creation and reservation status tracking.
 - **SQL Server database per service** - `InventoryDb` and `ShipmentDb`.
 - **RabbitMQ integration events** - asynchronous service communication.
-- **Outbox/inbox idempotency** - reliable publishing and duplicate message handling.
+- **Outbox/inbox idempotency** - reliable publishing, duplicate message handling, and manual retry visibility.
+- **RabbitMQ reliability basics** - bounded consumer retry, DLQs, and RabbitMQ health checks for InventoryService and ShipmentService.
 - **MediatR CQRS-style handlers** - application use cases are commands and queries.
 - **Mapperly API mapping** - source-generated DTO mapping in API projects.
 
@@ -30,7 +31,7 @@ POST /shipments
   -> ShipmentService
 ```
 
-Duplicate `EventId` deliveries are ignored through inbox tables. Shipment result handlers also guard state so stale reservation result events do not overwrite final shipment states.
+Duplicate `EventId` deliveries are ignored through inbox tables. Shipment result handlers also guard state so stale reservation result events do not overwrite final shipment states. Failed consumer messages are retried briefly, then sent to RabbitMQ dead-letter queues.
 
 ## Local URLs
 
@@ -43,6 +44,10 @@ Duplicate `EventId` deliveries are ignored through inbox tables. Shipment result
 Swagger UI is available at `/swagger` in Development.
 
 RabbitMQ and SQL Server must be running locally. Docker Compose is not present yet.
+
+InventoryService and ShipmentService `/health` endpoints check RabbitMQ connectivity. They do not validate every exchange, queue, or binding.
+
+Outbox publishers use row claiming for multiple replicas and bounded retry scheduling with a poison-message state for messages that keep failing.
 
 ## Build
 
