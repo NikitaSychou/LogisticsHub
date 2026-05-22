@@ -118,6 +118,36 @@ public sealed class CreateStockReservationTests
         Assert.Empty(dbContext.OutboxMessages);
     }
 
+    [Fact]
+    public async Task Handle_WhenEventIdIsEmpty_WritesFailureOutboxMessageWithoutInboxMessage()
+    {
+        // Arrange
+        var dbContext = new FakeInventoryDbContext();
+        var command = CreateCommand(Guid.Empty, quantity: 5);
+        var handler = CreateHandler(dbContext);
+
+        // Act
+        var result = await handler.Handle(command, CancellationToken.None);
+
+        // Assert
+        Assert.False(result.AlreadyProcessed);
+        Assert.Null(result.Reservation);
+        Assert.Equal("Event ID is required.", result.FailureReason);
+        Assert.Empty(dbContext.InboxMessages);
+
+        var outboxMessage = Assert.Single(dbContext.OutboxMessages);
+        Assert.Equal(typeof(StockReservationFailedIntegrationEvent).FullName, outboxMessage.Type);
+        Assert.Equal(StockReservationRoutingKeys.Failed, outboxMessage.RoutingKey);
+
+        var integrationEvent = JsonSerializer.Deserialize<StockReservationFailedIntegrationEvent>(
+            outboxMessage.Payload,
+            new JsonSerializerOptions(JsonSerializerDefaults.Web));
+
+        Assert.NotNull(integrationEvent);
+        Assert.Equal(command.ShipmentId, integrationEvent.ShipmentId);
+        Assert.Equal(result.FailureReason, integrationEvent.Reason);
+    }
+
     private static CreateStockReservation CreateHandler(FakeInventoryDbContext dbContext)
     {
         return new CreateStockReservation(
