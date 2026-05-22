@@ -49,6 +49,11 @@ InventoryService and ShipmentService `/health` endpoints check RabbitMQ connecti
 
 Outbox publishers use row claiming for multiple replicas and bounded retry scheduling with a poison-message state for messages that keep failing.
 
+For local setup and operations notes, see:
+
+- [Local run guide](docs/local-run.md)
+- [Troubleshooting](docs/troubleshooting.md)
+
 ## Build
 
 ```powershell
