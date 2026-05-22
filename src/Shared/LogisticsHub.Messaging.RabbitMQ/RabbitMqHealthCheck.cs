@@ -29,10 +29,6 @@ public sealed class RabbitMqHealthCheck : IHealthCheck
             await using var connection = await factory.CreateConnectionAsync(cancellationToken);
             await using var channel = await connection.CreateChannelAsync(cancellationToken: cancellationToken);
 
-            await channel.ExchangeDeclarePassiveAsync(
-                _options.ExchangeName,
-                cancellationToken: cancellationToken);
-
             return HealthCheckResult.Healthy("RabbitMQ is available.");
         }
         catch (Exception exception)
