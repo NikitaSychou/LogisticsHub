@@ -24,7 +24,7 @@ The local appsettings used by `dotnet run` still point to local SQL Server datab
 - `CompanyDb`
 
 The expected local SQL Server instance for the checked-in local appsettings is `localhost\SQLEXPRESS` with Windows Authentication.
-CompanyService connects to `CompanyDb` for persistence wiring and its health check, but Company/Address CRUD is not implemented yet.
+CompanyService connects to `CompanyDb` for health checks and minimal Company/Address CRUD.
 
 For containers, `docker-compose.yml` overrides connection strings and RabbitMQ settings so services use Docker service names such as `sqlserver` and `rabbitmq`.
 
@@ -76,8 +76,8 @@ Swagger UI is available in Development:
 | InventoryService | `http://localhost:5101/swagger` |
 | ShipmentService | `http://localhost:5102/swagger` |
 
-Gateway Swagger documents Gateway endpoints only. Use the direct service Swagger pages for InventoryService and ShipmentService APIs.
-CompanyService currently exposes only shell endpoints such as `/health` and Development Swagger; Company/Address CRUD is not implemented yet. Its `/health` endpoint checks CompanyDb connectivity.
+Gateway Swagger documents Gateway endpoints only. Use the direct service Swagger pages for service APIs.
+CompanyService exposes `/health`, Development Swagger, and minimal Company/Address CRUD. Through Gateway, CompanyService routes are available under `/company`.
 
 For a Gateway-first end-to-end check of inventory creation, shipment creation, RabbitMQ stock reservation, and final shipment status, see [Manual smoke test](manual-smoke-test.md).
 

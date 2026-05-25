@@ -81,7 +81,7 @@ Outbox compatibility:
 
 ## CompanyDb
 
-`CompanyDb` is a manual schema baseline for the planned CompanyService data boundary. CompanyService connects to this database for infrastructure wiring and health checks, but no Company/Address CRUD API exists yet.
+`CompanyDb` is the manual schema baseline for the CompanyService data boundary. CompanyService connects to this database for health checks and minimal Company/Address CRUD.
 
 The baseline contains:
 
@@ -117,7 +117,7 @@ Known differences between exported schema and EF mappings:
 | Extra table | `dbo.shipment_status_history` exists in `ShipmentDb` but is not mapped by current code. | No current runtime dependency; keep documented as local schema state. |
 | Delete behavior | EF configures cascade delete for `stock_reservation_items` -> `stock_reservations` and `shipment_items` -> `shipments`, but the exported FKs do not include `ON DELETE CASCADE`. | No current application delete workflow depends on this, but it is a schema/model mismatch. |
 | Inventory outbox polling index | ShipmentDb has an unprocessed outbox index; InventoryDb does not. | Not a functional blocker; possible future performance gap. |
-| CompanyDb code mapping | `CompanyDb.schema.sql` now has CompanyService domain entities and EF mappings, but no CRUD endpoints. | Intentional staging step; runtime use is limited to persistence registration and health checks. |
+| CompanyDb code mapping | `CompanyDb.schema.sql` has CompanyService domain entities, EF mappings, and minimal CRUD endpoints. | Manual SQL remains the source of truth; no EF migrations are used. |
 
 ## Local Smoke Testing
 

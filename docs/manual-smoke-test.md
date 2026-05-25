@@ -112,7 +112,7 @@ Invoke-RestMethod http://localhost:5102/health
 
 Expected result for each service is `Healthy`.
 
-CompanyService currently exposes only shell endpoints and is not part of this business smoke-test path; its health check verifies CompanyDb connectivity. InventoryService and ShipmentService health checks verify RabbitMQ connectivity. They do not prove that the full SQL schema exists.
+CompanyService is available for company/address API checks but is not part of this inventory-to-shipment business smoke-test path; its health check verifies CompanyDb connectivity. InventoryService and ShipmentService health checks verify RabbitMQ connectivity. They do not prove that the full SQL schema exists.
 
 ## Smoke-Test Values
 
