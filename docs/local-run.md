@@ -9,7 +9,7 @@ This guide covers the local application workflow for reviewers and contributors.
 - RabbitMQ available locally or through Docker Compose
 - Redis available locally or through Docker Compose for future local infrastructure work
 
-Docker Compose can start SQL Server, RabbitMQ, Redis, Gateway, InventoryService, and ShipmentService for local development:
+Docker Compose can start SQL Server, RabbitMQ, Redis, Gateway, CompanyService, InventoryService, and ShipmentService for local development:
 
 ```powershell
 docker compose up --build
@@ -41,6 +41,7 @@ This creates `InventoryDb` and `ShipmentDb` in the `logisticshub-sqlserver` cont
 | Service | Project | Local URL |
 |---|---|---|
 | Gateway | `src/Gateway/LogisticsHub.Gateway` | `http://localhost:5100` |
+| CompanyService | `src/CompanyService/LogisticsHub.CompanyService` | `http://localhost:5103` |
 | InventoryService | `src/InventoryService/LogisticsHub.InventoryService` | `http://localhost:5101` |
 | ShipmentService | `src/ShipmentService/LogisticsHub.ShipmentService` | `http://localhost:5102` |
 
@@ -60,6 +61,7 @@ To run the backend services directly on the host:
 ```powershell
 dotnet run --project .\src\InventoryService\LogisticsHub.InventoryService\LogisticsHub.InventoryService.csproj
 dotnet run --project .\src\ShipmentService\LogisticsHub.ShipmentService\LogisticsHub.ShipmentService.csproj
+dotnet run --project .\src\CompanyService\LogisticsHub.CompanyService\LogisticsHub.CompanyService.csproj
 dotnet run --project .\src\Gateway\LogisticsHub.Gateway\LogisticsHub.Gateway.csproj
 ```
 
@@ -68,10 +70,12 @@ Swagger UI is available in Development:
 | Service | Swagger UI |
 |---|---|
 | Gateway | `http://localhost:5100/swagger` |
+| CompanyService | `http://localhost:5103/swagger` |
 | InventoryService | `http://localhost:5101/swagger` |
 | ShipmentService | `http://localhost:5102/swagger` |
 
 Gateway Swagger documents Gateway endpoints only. Use the direct service Swagger pages for InventoryService and ShipmentService APIs.
+CompanyService currently exposes only shell endpoints such as `/health` and Development Swagger; Company/Address CRUD is not implemented yet.
 
 For a Gateway-first end-to-end check of inventory creation, shipment creation, RabbitMQ stock reservation, and final shipment status, see [Manual smoke test](manual-smoke-test.md).
 
@@ -82,6 +86,7 @@ Compose exposes the same local service ports:
 | Service | URL |
 |---|---|
 | Gateway | `http://localhost:5100` |
+| CompanyService | `http://localhost:5103` |
 | InventoryService | `http://localhost:5101` |
 | ShipmentService | `http://localhost:5102` |
 | RabbitMQ Management | `http://localhost:15672` |
