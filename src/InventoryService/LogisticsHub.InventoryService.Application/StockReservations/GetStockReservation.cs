@@ -1,9 +1,10 @@
 using LogisticsHub.InventoryService.Application.Persistence;
+using LogisticsHub.Results;
 using MediatR;
 
 namespace LogisticsHub.InventoryService.Application.StockReservations;
 
-public sealed class GetStockReservation : IRequestHandler<GetStockReservationQuery, StockReservationResult?>
+public sealed class GetStockReservation : IRequestHandler<GetStockReservationQuery, Result<StockReservationResult>>
 {
     private readonly IInventoryDbContext _dbContext;
 
@@ -12,7 +13,7 @@ public sealed class GetStockReservation : IRequestHandler<GetStockReservationQue
         _dbContext = dbContext;
     }
 
-    public async Task<StockReservationResult?> Handle(
+    public async Task<Result<StockReservationResult>> Handle(
         GetStockReservationQuery query,
         CancellationToken cancellationToken)
     {
@@ -20,7 +21,7 @@ public sealed class GetStockReservation : IRequestHandler<GetStockReservationQue
 
         if (stockReservation is null)
         {
-            return null;
+            return Result<StockReservationResult>.Failure(StockReservationErrors.NotFound(query.ReservationId));
         }
 
         var items = stockReservation.Items
@@ -28,10 +29,11 @@ public sealed class GetStockReservation : IRequestHandler<GetStockReservationQue
             .Select(item => new StockReservationItemResult(item.Item!.Sku, item.Quantity))
             .ToArray();
 
-        return new StockReservationResult(
-            stockReservation.Id,
-            stockReservation.ShipmentId,
-            stockReservation.Status,
-            items);
+        return Result<StockReservationResult>.Success(
+            new StockReservationResult(
+                stockReservation.Id,
+                stockReservation.ShipmentId,
+                stockReservation.Status,
+                items));
     }
 }

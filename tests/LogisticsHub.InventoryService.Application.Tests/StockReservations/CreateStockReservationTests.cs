@@ -4,6 +4,7 @@ using LogisticsHub.InventoryService.Application.Persistence;
 using LogisticsHub.InventoryService.Application.StockReservations;
 using LogisticsHub.InventoryService.Application.Tests.Fakes;
 using LogisticsHub.InventoryService.Domain.Entities;
+using LogisticsHub.Results;
 using Microsoft.Extensions.Logging.Abstractions;
 using Xunit;
 
@@ -29,7 +30,7 @@ public sealed class CreateStockReservationTests
         // Assert
         Assert.False(result.AlreadyProcessed);
         Assert.NotNull(result.Reservation);
-        Assert.Null(result.FailureReason);
+        Assert.Equal(Error.None, result.Error);
         Assert.Single(dbContext.StockReservations);
         Assert.Equal(7, item.StockBalance!.Reserved);
         Assert.Single(dbContext.InboxMessages);
@@ -66,7 +67,8 @@ public sealed class CreateStockReservationTests
         // Assert
         Assert.False(result.AlreadyProcessed);
         Assert.Null(result.Reservation);
-        Assert.Equal("Insufficient stock for SKU 'TEST-SKU-001'.", result.FailureReason);
+        Assert.Equal("stock_reservation.insufficient_stock", result.Error.Code);
+        Assert.Equal("Insufficient stock for SKU 'TEST-SKU-001'.", result.Error.Description);
         Assert.Empty(dbContext.StockReservations);
         Assert.Equal(8, item.StockBalance!.Reserved);
         Assert.Single(dbContext.InboxMessages);
@@ -82,7 +84,7 @@ public sealed class CreateStockReservationTests
 
         Assert.NotNull(integrationEvent);
         Assert.Equal(command.ShipmentId, integrationEvent.ShipmentId);
-        Assert.Equal(result.FailureReason, integrationEvent.Reason);
+        Assert.Equal(result.Error.Description, integrationEvent.Reason);
     }
 
     [Fact]
@@ -112,7 +114,7 @@ public sealed class CreateStockReservationTests
         // Assert
         Assert.True(result.AlreadyProcessed);
         Assert.Null(result.Reservation);
-        Assert.Null(result.FailureReason);
+        Assert.Equal(Error.None, result.Error);
         Assert.Empty(dbContext.StockReservations);
         Assert.Equal(2, item.StockBalance!.Reserved);
         Assert.Single(dbContext.InboxMessages);
@@ -133,7 +135,8 @@ public sealed class CreateStockReservationTests
         // Assert
         Assert.False(result.AlreadyProcessed);
         Assert.Null(result.Reservation);
-        Assert.Equal("Event ID is required.", result.FailureReason);
+        Assert.Equal("stock_reservation.event_id_required", result.Error.Code);
+        Assert.Equal("Event ID is required.", result.Error.Description);
         Assert.Empty(dbContext.InboxMessages);
 
         var outboxMessage = Assert.Single(dbContext.OutboxMessages);
@@ -146,7 +149,7 @@ public sealed class CreateStockReservationTests
 
         Assert.NotNull(integrationEvent);
         Assert.Equal(command.ShipmentId, integrationEvent.ShipmentId);
-        Assert.Equal(result.FailureReason, integrationEvent.Reason);
+        Assert.Equal(result.Error.Description, integrationEvent.Reason);
     }
 
     [Fact]
@@ -169,7 +172,7 @@ public sealed class CreateStockReservationTests
         // Assert
         Assert.True(result.AlreadyProcessed);
         Assert.Null(result.Reservation);
-        Assert.Null(result.FailureReason);
+        Assert.Equal(Error.None, result.Error);
     }
 
     private static CreateStockReservation CreateHandler(FakeInventoryDbContext dbContext)

@@ -9,6 +9,7 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\LogisticsHub.ShipmentService.Domain\LogisticsHub.ShipmentService.Domain.csproj" />
+    <ProjectReference Include="..\..\Shared\LogisticsHub.Results\LogisticsHub.Results.csproj" />
     <ProjectReference Include="..\..\Shared\LogisticsHub.IntegrationEvents\LogisticsHub.IntegrationEvents.csproj" />
   </ItemGroup>
 </Project>

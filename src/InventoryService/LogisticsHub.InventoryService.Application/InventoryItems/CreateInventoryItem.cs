@@ -1,10 +1,11 @@
 using LogisticsHub.InventoryService.Application.Persistence;
 using LogisticsHub.InventoryService.Domain.Entities;
+using LogisticsHub.Results;
 using MediatR;
 
 namespace LogisticsHub.InventoryService.Application.InventoryItems;
 
-public sealed class CreateInventoryItem : IRequestHandler<CreateInventoryItemCommand, InventoryItemResult?>
+public sealed class CreateInventoryItem : IRequestHandler<CreateInventoryItemCommand, Result<InventoryItemResult>>
 {
     private readonly IInventoryDbContext _dbContext;
 
@@ -13,7 +14,7 @@ public sealed class CreateInventoryItem : IRequestHandler<CreateInventoryItemCom
         _dbContext = dbContext;
     }
 
-    public async Task<InventoryItemResult?> Handle(
+    public async Task<Result<InventoryItemResult>> Handle(
         CreateInventoryItemCommand command,
         CancellationToken cancellationToken)
     {
@@ -22,7 +23,7 @@ public sealed class CreateInventoryItem : IRequestHandler<CreateInventoryItemCom
         var existingItem = await _dbContext.GetItemBySkuAsync(command.Sku, cancellationToken);
         if (existingItem is not null)
         {
-            return null;
+            return Result<InventoryItemResult>.Failure(InventoryItemErrors.AlreadyExists(command.Sku));
         }
 
         var now = DateTime.UtcNow;
@@ -48,6 +49,7 @@ public sealed class CreateInventoryItem : IRequestHandler<CreateInventoryItemCom
         await _dbContext.AddStockBalanceAsync(stockBalance, cancellationToken);
         await _dbContext.SaveChangesAsync(cancellationToken);
 
-        return new InventoryItemResult(item.Sku, item.Name, stockBalance.OnHand - stockBalance.Reserved);
+        return Result<InventoryItemResult>.Success(
+            new InventoryItemResult(item.Sku, item.Name, stockBalance.OnHand - stockBalance.Reserved));
     }
 }
