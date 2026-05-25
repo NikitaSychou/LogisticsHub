@@ -5,7 +5,7 @@ LogisticsHub is a microservices backend project for a shipment and inventory wor
 ## Architecture
 
 - **Gateway** - YARP reverse proxy.
-- **CompanyService** - service shell with CompanyDb persistence wiring for future company and address ownership.
+- **CompanyService** - company master data and company addresses backed by CompanyDb.
 - **InventoryService** - inventory items, stock balances, and stock reservations.
 - **ShipmentService** - shipment creation and reservation status tracking.
 - **SQL Server database per service** - `InventoryDb`, `ShipmentDb`, and the manual `CompanyDb` baseline.
@@ -55,6 +55,8 @@ Gateway Swagger documents Gateway endpoints only; use the direct service Swagger
 Docker Compose can start RabbitMQ, Redis, SQL Server, and the four ASP.NET Core services for local review. You can still run the .NET services directly with `dotnet run`.
 
 CompanyService `/health` checks CompanyDb connectivity. InventoryService and ShipmentService `/health` endpoints check RabbitMQ connectivity. They do not validate every exchange, queue, or binding.
+
+CompanyService exposes the minimal local company/address API through the Gateway under `/company`, including `POST /company/companies`, `GET /company/companies/{id}`, `GET /company/companies`, `PUT /company/companies/{id}`, `POST /company/companies/{companyId}/addresses`, and `GET /company/companies/{companyId}/addresses`.
 
 Outbox publishers use row claiming for multiple replicas and bounded retry scheduling with a poison-message state for messages that keep failing.
 
