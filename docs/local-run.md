@@ -14,12 +14,14 @@ Docker Compose can start SQL Server, RabbitMQ, Gateway, InventoryService, and Sh
 docker compose up --build
 ```
 
-The compose file does not create database schema. `InventoryDb` and `ShipmentDb` must be prepared manually before full application flow testing.
+The compose file does not create database schema. `InventoryDb` and `ShipmentDb` must be prepared manually before full application flow testing. The current local SQL Express schema is documented in [Database schema](database-schema.md).
 
 The local appsettings used by `dotnet run` still point to local SQL Server databases:
 
 - `InventoryDb`
 - `ShipmentDb`
+
+The expected local SQL Server instance for the checked-in local appsettings is `localhost\SQLEXPRESS` with Windows Authentication.
 
 For containers, `docker-compose.yml` overrides connection strings and RabbitMQ settings so services use Docker service names such as `sqlserver` and `rabbitmq`.
 
@@ -94,3 +96,9 @@ dotnet ef database update
 ```
 
 Database schema changes should be handled with manual SQL outside EF migrations.
+
+After manual schema changes, refresh the schema snapshots from the repository root:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File .\export-local-db-schema.ps1
+```
