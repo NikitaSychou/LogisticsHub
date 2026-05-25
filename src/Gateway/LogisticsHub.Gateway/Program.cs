@@ -22,6 +22,7 @@ builder.Services.AddOpenApi();
 var app = builder.Build();
 
 app.UseCorrelationId();
+app.UseApiExceptionHandling();
 
 if (app.Environment.IsDevelopment())
 {

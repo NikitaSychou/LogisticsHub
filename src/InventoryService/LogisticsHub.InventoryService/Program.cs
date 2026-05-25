@@ -1,6 +1,5 @@
 using LogisticsHub.AspNetCore;
 using LogisticsHub.InventoryService.Application.InventoryItems;
-using LogisticsHub.InventoryService.Application.StockReservations;
 using LogisticsHub.InventoryService.Consumers;
 using LogisticsHub.InventoryService.Infrastructure.DependencyInjection;
 using LogisticsHub.InventoryService.Outbox;
@@ -35,6 +34,7 @@ builder.Services.AddHostedService<InventoryOutboxPublisherBackgroundService>();
 var app = builder.Build();
 
 app.UseCorrelationId();
+app.UseApiExceptionHandling();
 
 if (app.Environment.IsDevelopment())
 {
