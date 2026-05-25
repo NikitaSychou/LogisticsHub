@@ -18,7 +18,7 @@ The export helper is schema-only. It does not script table data and does not mod
 - `ShipmentDb.schema.sql`
 - `CompanyDb.schema.sql`
 
-`InventoryDb.schema.sql` and `ShipmentDb.schema.sql` were exported from local SQL Express. `CompanyDb.schema.sql` is a manual baseline for future CompanyService persistence and is not connected to application code yet.
+`InventoryDb.schema.sql` and `ShipmentDb.schema.sql` were exported from local SQL Express. `CompanyDb.schema.sql` is the manual baseline used by CompanyService persistence wiring and health checks.
 
 EF Core migrations are intentionally not used in this repository. Database schema changes should be made with manual SQL. Re-export existing local SQL Express schemas with the helper script where applicable, and review any manual snapshots directly.
 
@@ -81,7 +81,7 @@ Outbox compatibility:
 
 ## CompanyDb
 
-`CompanyDb` is a manual schema baseline for the planned CompanyService data boundary. CompanyService does not connect to this database yet, and no Company/Address CRUD API exists yet.
+`CompanyDb` is a manual schema baseline for the planned CompanyService data boundary. CompanyService connects to this database for infrastructure wiring and health checks, but no Company/Address CRUD API exists yet.
 
 The baseline contains:
 
@@ -117,7 +117,7 @@ Known differences between exported schema and EF mappings:
 | Extra table | `dbo.shipment_status_history` exists in `ShipmentDb` but is not mapped by current code. | No current runtime dependency; keep documented as local schema state. |
 | Delete behavior | EF configures cascade delete for `stock_reservation_items` -> `stock_reservations` and `shipment_items` -> `shipments`, but the exported FKs do not include `ON DELETE CASCADE`. | No current application delete workflow depends on this, but it is a schema/model mismatch. |
 | Inventory outbox polling index | ShipmentDb has an unprocessed outbox index; InventoryDb does not. | Not a functional blocker; possible future performance gap. |
-| CompanyDb code mapping | `CompanyDb.schema.sql` exists before any CompanyService DbContext, entities, or CRUD endpoints. | Intentional staging step; there is no runtime dependency yet. |
+| CompanyDb code mapping | `CompanyDb.schema.sql` now has CompanyService domain entities and EF mappings, but no CRUD endpoints. | Intentional staging step; runtime use is limited to persistence registration and health checks. |
 
 ## Local Smoke Testing
 
@@ -126,7 +126,7 @@ For the full local flow, the databases must exist before the services run:
 - `InventoryDb`
 - `ShipmentDb`
 
-`CompanyDb` can also be bootstrapped locally, but it is not required for the current smoke-test flow.
+`CompanyDb` can also be bootstrapped locally. It is required for CompanyService health, but it is not used by the current inventory-to-shipment smoke-test flow.
 
 Inventory seed data does not need to be inserted manually after the schema exists. Use the Inventory API to create an item and starting stock:
 

@@ -17,7 +17,7 @@ Use Gateway endpoints for the smoke-test path. Direct service URLs are included 
 ## Prerequisites
 
 - .NET SDK 10
-- SQL Server with `InventoryDb` and `ShipmentDb` prepared
+- SQL Server with `InventoryDb` and `ShipmentDb` prepared; `CompanyDb` is also required when checking CompanyService health
 - RabbitMQ
 - Gateway, InventoryService, and ShipmentService running in Development
 
@@ -93,7 +93,7 @@ The script creates `InventoryDb`, `ShipmentDb`, and `CompanyDb` in the `logistic
 - `ShipmentDb.schema.sql`
 - `CompanyDb.schema.sql`
 
-It does not insert seed or business data. `CompanyDb` is bootstrapped for future CompanyService work and is not part of this business smoke-test path. If a database already contains a partial or unexpected schema, the script stops and leaves it unchanged.
+It does not insert seed or business data. `CompanyDb` is required for CompanyService health and persistence wiring, but it is not part of this business smoke-test path. If a database already contains a partial or unexpected schema, the script stops and leaves it unchanged.
 
 RabbitMQ Management uses the local default credentials:
 
@@ -112,7 +112,7 @@ Invoke-RestMethod http://localhost:5102/health
 
 Expected result for each service is `Healthy`.
 
-CompanyService currently exposes only shell endpoints and is not part of this business smoke-test path. InventoryService and ShipmentService health checks verify RabbitMQ connectivity. They do not prove that the full SQL schema exists.
+CompanyService currently exposes only shell endpoints and is not part of this business smoke-test path; its health check verifies CompanyDb connectivity. InventoryService and ShipmentService health checks verify RabbitMQ connectivity. They do not prove that the full SQL schema exists.
 
 ## Smoke-Test Values
 

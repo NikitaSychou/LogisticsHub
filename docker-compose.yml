@@ -23,6 +23,9 @@ services:
     container_name: logisticshub-companyservice
     environment:
       ASPNETCORE_ENVIRONMENT: Development
+      ConnectionStrings__CompanyDb: "Server=sqlserver,1433;Database=CompanyDb;User Id=sa;Password=LogisticsHub_DevPassword123!;TrustServerCertificate=True;"
+    depends_on:
+      - sqlserver
     ports:
       - "5103:8080"
 

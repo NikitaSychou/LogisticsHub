@@ -21,9 +21,10 @@ The local appsettings used by `dotnet run` still point to local SQL Server datab
 
 - `InventoryDb`
 - `ShipmentDb`
+- `CompanyDb`
 
 The expected local SQL Server instance for the checked-in local appsettings is `localhost\SQLEXPRESS` with Windows Authentication.
-CompanyService does not connect to `CompanyDb` yet.
+CompanyService connects to `CompanyDb` for persistence wiring and its health check, but Company/Address CRUD is not implemented yet.
 
 For containers, `docker-compose.yml` overrides connection strings and RabbitMQ settings so services use Docker service names such as `sqlserver` and `rabbitmq`.
 
@@ -35,7 +36,7 @@ When running the full application through Docker Compose, prepare the SQL Server
 powershell -NoProfile -ExecutionPolicy Bypass -File .\bootstrap-docker-sql.ps1
 ```
 
-This creates `InventoryDb`, `ShipmentDb`, and `CompanyDb` in the `logisticshub-sqlserver` container if needed and applies the checked-in schema snapshots. `CompanyDb` is prepared for future CompanyService work; the current application does not use it yet.
+This creates `InventoryDb`, `ShipmentDb`, and `CompanyDb` in the `logisticshub-sqlserver` container if needed and applies the checked-in schema snapshots. `CompanyDb` is required for CompanyService health, but it is not part of the current business smoke-test path.
 
 ## Services
 
@@ -76,7 +77,7 @@ Swagger UI is available in Development:
 | ShipmentService | `http://localhost:5102/swagger` |
 
 Gateway Swagger documents Gateway endpoints only. Use the direct service Swagger pages for InventoryService and ShipmentService APIs.
-CompanyService currently exposes only shell endpoints such as `/health` and Development Swagger; Company/Address CRUD is not implemented yet.
+CompanyService currently exposes only shell endpoints such as `/health` and Development Swagger; Company/Address CRUD is not implemented yet. Its `/health` endpoint checks CompanyDb connectivity.
 
 For a Gateway-first end-to-end check of inventory creation, shipment creation, RabbitMQ stock reservation, and final shipment status, see [Manual smoke test](manual-smoke-test.md).
 
