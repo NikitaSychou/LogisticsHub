@@ -1,4 +1,57 @@
 services:
+  gateway:
+    build:
+      context: .
+      dockerfile: src/Gateway/LogisticsHub.Gateway/Dockerfile
+    container_name: logisticshub-gateway
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ReverseProxy__Clusters__shipment-cluster__Destinations__shipment-destination__Address: http://shipmentservice:8080/
+      ReverseProxy__Clusters__inventory-cluster__Destinations__inventory-destination__Address: http://inventoryservice:8080/
+    depends_on:
+      - inventoryservice
+      - shipmentservice
+    ports:
+      - "5100:8080"
+
+  inventoryservice:
+    build:
+      context: .
+      dockerfile: src/InventoryService/LogisticsHub.InventoryService/Dockerfile
+    container_name: logisticshub-inventoryservice
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ConnectionStrings__InventoryDb: "Server=sqlserver,1433;Database=InventoryDb;User Id=sa;Password=LogisticsHub_DevPassword123!;TrustServerCertificate=True;"
+      RabbitMq__HostName: rabbitmq
+      RabbitMq__Port: 5672
+      RabbitMq__UserName: guest
+      RabbitMq__Password: guest
+      RabbitMq__ExchangeName: logisticshub.events
+    depends_on:
+      - rabbitmq
+      - sqlserver
+    ports:
+      - "5101:8080"
+
+  shipmentservice:
+    build:
+      context: .
+      dockerfile: src/ShipmentService/LogisticsHub.ShipmentService/Dockerfile
+    container_name: logisticshub-shipmentservice
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ConnectionStrings__ShipmentDb: "Server=sqlserver,1433;Database=ShipmentDb;User Id=sa;Password=LogisticsHub_DevPassword123!;TrustServerCertificate=True;"
+      RabbitMq__HostName: rabbitmq
+      RabbitMq__Port: 5672
+      RabbitMq__UserName: guest
+      RabbitMq__Password: guest
+      RabbitMq__ExchangeName: logisticshub.events
+    depends_on:
+      - rabbitmq
+      - sqlserver
+    ports:
+      - "5102:8080"
+
   rabbitmq:
     image: rabbitmq:3-management
     container_name: logisticshub-rabbitmq

@@ -5,23 +5,23 @@ This guide covers the local application workflow for reviewers and contributors.
 ## Prerequisites
 
 - .NET SDK 10
-- SQL Server available locally
-- RabbitMQ available locally
+- SQL Server available locally or through Docker Compose
+- RabbitMQ available locally or through Docker Compose
 
-Docker Compose can start SQL Server and RabbitMQ for local development:
+Docker Compose can start SQL Server, RabbitMQ, Gateway, InventoryService, and ShipmentService for local development:
 
 ```powershell
-docker compose up -d
+docker compose up --build
 ```
 
-The compose file starts dependencies only. It does not run Gateway, InventoryService, or ShipmentService, and it does not create database schema.
+The compose file does not create database schema. `InventoryDb` and `ShipmentDb` must be prepared manually before full application flow testing.
 
-The service connection strings currently point to local SQL Server databases:
+The local appsettings used by `dotnet run` still point to local SQL Server databases:
 
 - `InventoryDb`
 - `ShipmentDb`
 
-RabbitMQ is configured through each service's `RabbitMq` section and currently uses `localhost:5672`.
+For containers, `docker-compose.yml` overrides connection strings and RabbitMQ settings so services use Docker service names such as `sqlserver` and `rabbitmq`.
 
 ## Services
 
@@ -40,9 +40,9 @@ Start local dependencies first:
 1. SQL Server
 2. RabbitMQ
 
-You can use locally installed dependencies or the Docker Compose dependencies.
+You can run everything through Docker Compose, or use locally installed dependencies with `dotnet run`.
 
-Then start the backend services:
+To run the backend services directly on the host:
 
 ```powershell
 dotnet run --project .\src\InventoryService\LogisticsHub.InventoryService\LogisticsHub.InventoryService.csproj
@@ -59,6 +59,20 @@ Swagger UI is available in Development:
 | ShipmentService | `http://localhost:5102/swagger` |
 
 Gateway Swagger documents Gateway endpoints only. Use the direct service Swagger pages for InventoryService and ShipmentService APIs.
+
+## Docker Compose Notes
+
+Compose exposes the same local service ports:
+
+| Service | URL |
+|---|---|
+| Gateway | `http://localhost:5100` |
+| InventoryService | `http://localhost:5101` |
+| ShipmentService | `http://localhost:5102` |
+| RabbitMQ Management | `http://localhost:15672` |
+| SQL Server | `localhost,1433` |
+
+`depends_on` controls container start order only. SQL Server and RabbitMQ may still need time to become ready, so check container logs if a service fails during startup.
 
 ## Tests
 
