@@ -7,8 +7,9 @@ This guide covers the local application workflow for reviewers and contributors.
 - .NET SDK 10
 - SQL Server available locally or through Docker Compose
 - RabbitMQ available locally or through Docker Compose
+- Redis available locally or through Docker Compose for future local infrastructure work
 
-Docker Compose can start SQL Server, RabbitMQ, Gateway, InventoryService, and ShipmentService for local development:
+Docker Compose can start SQL Server, RabbitMQ, Redis, Gateway, InventoryService, and ShipmentService for local development:
 
 ```powershell
 docker compose up --build
@@ -24,6 +25,8 @@ The local appsettings used by `dotnet run` still point to local SQL Server datab
 The expected local SQL Server instance for the checked-in local appsettings is `localhost\SQLEXPRESS` with Windows Authentication.
 
 For containers, `docker-compose.yml` overrides connection strings and RabbitMQ settings so services use Docker service names such as `sqlserver` and `rabbitmq`.
+
+Redis is exposed by Docker Compose for local infrastructure integration work, but the current application code does not use Redis yet.
 
 When running the full application through Docker Compose, prepare the SQL Server container databases from the repository root after SQL Server starts:
 
@@ -82,9 +85,22 @@ Compose exposes the same local service ports:
 | InventoryService | `http://localhost:5101` |
 | ShipmentService | `http://localhost:5102` |
 | RabbitMQ Management | `http://localhost:15672` |
+| Redis | `localhost:6379` |
 | SQL Server | `localhost,1433` |
 
 `depends_on` controls container start order only. SQL Server and RabbitMQ may still need time to become ready, so check container logs if a service fails during startup.
+
+To check the Redis container directly:
+
+```powershell
+docker compose exec redis redis-cli ping
+```
+
+Expected response:
+
+```text
+PONG
+```
 
 ## Tests
 

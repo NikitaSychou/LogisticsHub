@@ -1,6 +1,6 @@
 # Troubleshooting
 
-This project uses local SQL Server, RabbitMQ, and three ASP.NET Core services. Start with the smallest check that proves which part is failing.
+This project uses local SQL Server, RabbitMQ, Redis, and three ASP.NET Core services. Start with the smallest check that proves which part is failing.
 
 ## Startup Checks
 
@@ -28,6 +28,12 @@ docker compose logs gateway
 | ShipmentService | `http://localhost:5102/health` |
 
 InventoryService and ShipmentService health checks verify RabbitMQ connectivity by opening a connection and channel. They do not validate every exchange, queue, or binding.
+
+Redis is available in Docker Compose for local infrastructure work, but current application health checks do not depend on Redis. Check it directly with:
+
+```powershell
+docker compose exec redis redis-cli ping
+```
 
 ## Correlation IDs
 

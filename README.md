@@ -49,7 +49,7 @@ Swagger UI is available in Development:
 
 Gateway Swagger documents Gateway endpoints only; use the direct service Swagger pages for InventoryService and ShipmentService APIs.
 
-Docker Compose can start RabbitMQ, SQL Server, and the three ASP.NET Core services for local review. You can still run the .NET services directly with `dotnet run`.
+Docker Compose can start RabbitMQ, Redis, SQL Server, and the three ASP.NET Core services for local review. You can still run the .NET services directly with `dotnet run`.
 
 InventoryService and ShipmentService `/health` endpoints check RabbitMQ connectivity. They do not validate every exchange, queue, or binding.
 
