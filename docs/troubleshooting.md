@@ -1,6 +1,6 @@
 # Troubleshooting
 
-This project uses local SQL Server, RabbitMQ, Redis, and three ASP.NET Core services. Start with the smallest check that proves which part is failing.
+This project uses local SQL Server, RabbitMQ, Redis, Gateway, CompanyService, InventoryService, and ShipmentService. Start with the smallest check that proves which part is failing.
 
 ## Startup Checks
 
@@ -16,6 +16,7 @@ If using Docker Compose, check container status with `docker compose ps`. Rabbit
 ```powershell
 docker compose logs inventoryservice
 docker compose logs shipmentservice
+docker compose logs companyservice
 docker compose logs gateway
 ```
 
@@ -24,6 +25,7 @@ docker compose logs gateway
 | Service | Health endpoint |
 |---|---|
 | Gateway | `http://localhost:5100/health` |
+| CompanyService | `http://localhost:5103/health` |
 | InventoryService | `http://localhost:5101/health` |
 | ShipmentService | `http://localhost:5102/health` |
 

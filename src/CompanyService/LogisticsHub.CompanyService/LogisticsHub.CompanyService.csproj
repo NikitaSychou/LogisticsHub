@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.8" />
+    <PackageReference Include="Swashbuckle.AspNetCore.SwaggerUI" Version="10.1.7" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\LogisticsHub.CompanyService.Application\LogisticsHub.CompanyService.Application.csproj" />
+    <ProjectReference Include="..\LogisticsHub.CompanyService.Infrastructure\LogisticsHub.CompanyService.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\Shared\LogisticsHub.AspNetCore\LogisticsHub.AspNetCore.csproj" />
+  </ItemGroup>
+</Project>

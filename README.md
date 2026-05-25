@@ -5,6 +5,7 @@ LogisticsHub is a microservices backend project for a shipment and inventory wor
 ## Architecture
 
 - **Gateway** - YARP reverse proxy.
+- **CompanyService** - service shell for future company and address ownership.
 - **InventoryService** - inventory items, stock balances, and stock reservations.
 - **ShipmentService** - shipment creation and reservation status tracking.
 - **SQL Server database per service** - `InventoryDb` and `ShipmentDb`.
@@ -38,18 +39,20 @@ Duplicate `EventId` deliveries are ignored through inbox tables. Shipment result
 | Service | URL |
 |---|---|
 | Gateway | `http://localhost:5100` |
+| CompanyService | `http://localhost:5103` |
 | InventoryService | `http://localhost:5101` |
 | ShipmentService | `http://localhost:5102` |
 
 Swagger UI is available in Development:
 
 - Gateway: `http://localhost:5100/swagger`
+- CompanyService: `http://localhost:5103/swagger`
 - InventoryService: `http://localhost:5101/swagger`
 - ShipmentService: `http://localhost:5102/swagger`
 
-Gateway Swagger documents Gateway endpoints only; use the direct service Swagger pages for InventoryService and ShipmentService APIs.
+Gateway Swagger documents Gateway endpoints only; use the direct service Swagger pages for service APIs.
 
-Docker Compose can start RabbitMQ, Redis, SQL Server, and the three ASP.NET Core services for local review. You can still run the .NET services directly with `dotnet run`.
+Docker Compose can start RabbitMQ, Redis, SQL Server, and the four ASP.NET Core services for local review. You can still run the .NET services directly with `dotnet run`.
 
 InventoryService and ShipmentService `/health` endpoints check RabbitMQ connectivity. They do not validate every exchange, queue, or binding.
 

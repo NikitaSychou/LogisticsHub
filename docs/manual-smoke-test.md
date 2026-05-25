@@ -75,6 +75,7 @@ Compose exposes:
 | Component | URL |
 |---|---|
 | Gateway | `http://localhost:5100` |
+| CompanyService | `http://localhost:5103` |
 | InventoryService | `http://localhost:5101` |
 | ShipmentService | `http://localhost:5102` |
 | RabbitMQ Management | `http://localhost:15672` |
@@ -103,13 +104,14 @@ guest / guest
 
 ```powershell
 Invoke-RestMethod http://localhost:5100/health
+Invoke-RestMethod http://localhost:5103/health
 Invoke-RestMethod http://localhost:5101/health
 Invoke-RestMethod http://localhost:5102/health
 ```
 
 Expected result for each service is `Healthy`.
 
-InventoryService and ShipmentService health checks verify RabbitMQ connectivity. They do not prove that the full SQL schema exists.
+CompanyService currently exposes only shell endpoints and is not part of this business smoke-test path. InventoryService and ShipmentService health checks verify RabbitMQ connectivity. They do not prove that the full SQL schema exists.
 
 ## Smoke-Test Values
 
@@ -295,6 +297,7 @@ Each consumer also declares a matching `.dlq` dead-letter queue. During a succes
 ```powershell
 docker compose ps
 docker compose logs gateway
+docker compose logs companyservice
 docker compose logs inventoryservice
 docker compose logs shipmentservice
 docker compose logs rabbitmq

@@ -8,11 +8,23 @@ services:
       ASPNETCORE_ENVIRONMENT: Development
       ReverseProxy__Clusters__shipment-cluster__Destinations__shipment-destination__Address: http://shipmentservice:8080/
       ReverseProxy__Clusters__inventory-cluster__Destinations__inventory-destination__Address: http://inventoryservice:8080/
+      ReverseProxy__Clusters__company-cluster__Destinations__company-destination__Address: http://companyservice:8080/
     depends_on:
+      - companyservice
       - inventoryservice
       - shipmentservice
     ports:
       - "5100:8080"
+
+  companyservice:
+    build:
+      context: .
+      dockerfile: src/CompanyService/LogisticsHub.CompanyService/Dockerfile
+    container_name: logisticshub-companyservice
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+    ports:
+      - "5103:8080"
 
   inventoryservice:
     build:
