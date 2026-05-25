@@ -15,7 +15,7 @@ Docker Compose can start SQL Server, RabbitMQ, Redis, Gateway, CompanyService, I
 docker compose up --build
 ```
 
-The compose file does not create database schema. `InventoryDb` and `ShipmentDb` must be prepared manually before full application flow testing. The current local SQL Express schema is documented in [Database schema](database-schema.md).
+The compose file does not create database schema automatically. `InventoryDb`, `ShipmentDb`, and the manual `CompanyDb` baseline are documented in [Database schema](database-schema.md).
 
 The local appsettings used by `dotnet run` still point to local SQL Server databases:
 
@@ -23,6 +23,7 @@ The local appsettings used by `dotnet run` still point to local SQL Server datab
 - `ShipmentDb`
 
 The expected local SQL Server instance for the checked-in local appsettings is `localhost\SQLEXPRESS` with Windows Authentication.
+CompanyService does not connect to `CompanyDb` yet.
 
 For containers, `docker-compose.yml` overrides connection strings and RabbitMQ settings so services use Docker service names such as `sqlserver` and `rabbitmq`.
 
@@ -34,7 +35,7 @@ When running the full application through Docker Compose, prepare the SQL Server
 powershell -NoProfile -ExecutionPolicy Bypass -File .\bootstrap-docker-sql.ps1
 ```
 
-This creates `InventoryDb` and `ShipmentDb` in the `logisticshub-sqlserver` container if needed and applies the checked-in schema snapshots.
+This creates `InventoryDb`, `ShipmentDb`, and `CompanyDb` in the `logisticshub-sqlserver` container if needed and applies the checked-in schema snapshots. `CompanyDb` is prepared for future CompanyService work; the current application does not use it yet.
 
 ## Services
 

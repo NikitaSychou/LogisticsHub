@@ -87,12 +87,13 @@ After SQL Server is running, bootstrap the container databases from the checked-
 powershell -NoProfile -ExecutionPolicy Bypass -File .\bootstrap-docker-sql.ps1
 ```
 
-The script creates `InventoryDb` and `ShipmentDb` in the `logisticshub-sqlserver` container if they do not exist, then applies:
+The script creates `InventoryDb`, `ShipmentDb`, and `CompanyDb` in the `logisticshub-sqlserver` container if they do not exist, then applies:
 
 - `InventoryDb.schema.sql`
 - `ShipmentDb.schema.sql`
+- `CompanyDb.schema.sql`
 
-It does not insert seed or business data. If a database already contains a partial or unexpected schema, the script stops and leaves it unchanged.
+It does not insert seed or business data. `CompanyDb` is bootstrapped for future CompanyService work and is not part of this business smoke-test path. If a database already contains a partial or unexpected schema, the script stops and leaves it unchanged.
 
 RabbitMQ Management uses the local default credentials:
 

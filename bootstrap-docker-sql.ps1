@@ -38,6 +38,14 @@ $databases = @(
             "shipment_status_history",
             "shipments"
         )
+    },
+    @{
+        Name = "CompanyDb"
+        SchemaFile = "CompanyDb.schema.sql"
+        ExpectedTables = @(
+            "companies",
+            "company_addresses"
+        )
     }
 )
 

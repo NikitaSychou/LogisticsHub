@@ -8,7 +8,7 @@ LogisticsHub is a microservices backend project for a shipment and inventory wor
 - **CompanyService** - service shell for future company and address ownership.
 - **InventoryService** - inventory items, stock balances, and stock reservations.
 - **ShipmentService** - shipment creation and reservation status tracking.
-- **SQL Server database per service** - `InventoryDb` and `ShipmentDb`.
+- **SQL Server database per service** - `InventoryDb`, `ShipmentDb`, and the manual `CompanyDb` baseline.
 - **RabbitMQ integration events** - asynchronous service communication.
 - **Outbox/inbox idempotency** - reliable publishing, duplicate message handling, and manual retry visibility.
 - **RabbitMQ reliability basics** - bounded consumer retry, DLQs, and RabbitMQ health checks for InventoryService and ShipmentService.
@@ -79,7 +79,7 @@ dotnet test .\LogisticsHub.sln
 docker compose up --build
 ```
 
-Docker Compose does not create database schema. `InventoryDb` and `ShipmentDb` must still be prepared manually before full application flow testing.
+Docker Compose does not create database schema automatically. `bootstrap-docker-sql.ps1` prepares `InventoryDb`, `ShipmentDb`, and `CompanyDb` from the checked-in schema snapshots. The current business smoke-test path uses `InventoryDb` and `ShipmentDb`; `CompanyDb` is a baseline for future CompanyService work.
 
 The current local SQL Express schema can be exported with `export-local-db-schema.ps1`; see [Database schema](docs/database-schema.md).
 

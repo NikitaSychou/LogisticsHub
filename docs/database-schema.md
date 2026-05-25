@@ -4,6 +4,7 @@ LogisticsHub uses one SQL Server database per service:
 
 - `InventoryDb`
 - `ShipmentDb`
+- `CompanyDb`
 
 The current local schema was exported from `localhost\SQLEXPRESS` with Windows Authentication by running:
 
@@ -15,8 +16,11 @@ The export helper is schema-only. It does not script table data and does not mod
 
 - `InventoryDb.schema.sql`
 - `ShipmentDb.schema.sql`
+- `CompanyDb.schema.sql`
 
-EF Core migrations are intentionally not used in this repository. Database schema changes should be made with manual SQL and then re-exported with the helper script.
+`InventoryDb.schema.sql` and `ShipmentDb.schema.sql` were exported from local SQL Express. `CompanyDb.schema.sql` is a manual baseline for future CompanyService persistence and is not connected to application code yet.
+
+EF Core migrations are intentionally not used in this repository. Database schema changes should be made with manual SQL. Re-export existing local SQL Express schemas with the helper script where applicable, and review any manual snapshots directly.
 
 ## InventoryDb
 
@@ -75,6 +79,28 @@ Outbox compatibility:
 
 - `shipment_outbox_messages` contains `processed_at_utc`, `failed_at_utc`, `next_attempt_at_utc`, `locked_at_utc`, `locked_by`, and `occurred_at_utc`, which are required by the raw row-claiming SQL in `ShipmentDbContext`.
 
+## CompanyDb
+
+`CompanyDb` is a manual schema baseline for the planned CompanyService data boundary. CompanyService does not connect to this database yet, and no Company/Address CRUD API exists yet.
+
+The baseline contains:
+
+| Table | Purpose |
+|---|---|
+| `dbo.companies` | Future company master records. |
+| `dbo.company_addresses` | Future typed addresses owned by a company. |
+
+Important manual constraints and indexes:
+
+- `CK_companies_status` allows only `Active` and `Inactive`.
+- `CK_company_addresses_address_type` allows only `Legal`, `Billing`, `Shipping`, and `Warehouse`.
+- `FK_company_addresses_companies` enforces address ownership by company.
+- `CK_company_addresses_country_code_length` requires two-character country codes.
+- Check constraints prevent empty `companies.name`, `company_addresses.city`, and `company_addresses.line1`.
+- `IX_Companies_Name` supports company-name lookup.
+- `UX_Companies_ExternalCode` enforces unique non-null external company codes.
+- `IX_CompanyAddresses_CompanyId` and `IX_CompanyAddresses_AddressType` support address lookup by owner and type.
+
 ## Comparison Notes
 
 The exported local SQL Express schema is usable for the current local smoke-test path, but it is not a pure EF-generated schema. The database contains deliberate manual SQL details that are not represented in the EF mappings.
@@ -91,6 +117,7 @@ Known differences between exported schema and EF mappings:
 | Extra table | `dbo.shipment_status_history` exists in `ShipmentDb` but is not mapped by current code. | No current runtime dependency; keep documented as local schema state. |
 | Delete behavior | EF configures cascade delete for `stock_reservation_items` -> `stock_reservations` and `shipment_items` -> `shipments`, but the exported FKs do not include `ON DELETE CASCADE`. | No current application delete workflow depends on this, but it is a schema/model mismatch. |
 | Inventory outbox polling index | ShipmentDb has an unprocessed outbox index; InventoryDb does not. | Not a functional blocker; possible future performance gap. |
+| CompanyDb code mapping | `CompanyDb.schema.sql` exists before any CompanyService DbContext, entities, or CRUD endpoints. | Intentional staging step; there is no runtime dependency yet. |
 
 ## Local Smoke Testing
 
@@ -98,6 +125,8 @@ For the full local flow, the databases must exist before the services run:
 
 - `InventoryDb`
 - `ShipmentDb`
+
+`CompanyDb` can also be bootstrapped locally, but it is not required for the current smoke-test flow.
 
 Inventory seed data does not need to be inserted manually after the schema exists. Use the Inventory API to create an item and starting stock:
 
@@ -125,5 +154,6 @@ Review changes to:
 
 - `InventoryDb.schema.sql`
 - `ShipmentDb.schema.sql`
+- `CompanyDb.schema.sql`
 
 Do not use EF Core migrations for this project.
