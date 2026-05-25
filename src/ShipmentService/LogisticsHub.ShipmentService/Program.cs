@@ -39,6 +39,7 @@ builder.Services.AddHostedService<ShipmentOutboxPublisherBackgroundService>();
 var app = builder.Build();
 
 app.UseCorrelationId();
+app.UseApiExceptionHandling();
 
 if (app.Environment.IsDevelopment())
 {

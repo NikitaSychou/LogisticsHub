@@ -6,7 +6,7 @@ namespace LogisticsHub.AspNetCore;
 public sealed class CorrelationIdMiddleware
 {
     public const string CorrelationIdHeaderName = "X-Correlation-ID";
-    public const string CorrelationIdScopeName = "CorrelationId";
+    public const string CorrelationIdName = "CorrelationId";
 
     private readonly RequestDelegate _next;
     private readonly ILogger<CorrelationIdMiddleware> _logger;
@@ -22,6 +22,7 @@ public sealed class CorrelationIdMiddleware
     public async Task InvokeAsync(HttpContext context)
     {
         var correlationId = GetCorrelationId(context);
+        context.Items[CorrelationIdName] = correlationId;
 
         context.Response.OnStarting(() =>
         {
@@ -31,7 +32,7 @@ public sealed class CorrelationIdMiddleware
 
         using (_logger.BeginScope(new Dictionary<string, object>
         {
-            [CorrelationIdScopeName] = correlationId
+            [CorrelationIdName] = correlationId
         }))
         {
             await _next(context);
