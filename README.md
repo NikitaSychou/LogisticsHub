@@ -5,7 +5,7 @@ LogisticsHub is a microservices backend project for a shipment and inventory wor
 ## Architecture
 
 - **Gateway** - YARP reverse proxy.
-- **CompanyService** - service shell for future company and address ownership.
+- **CompanyService** - service shell with CompanyDb persistence wiring for future company and address ownership.
 - **InventoryService** - inventory items, stock balances, and stock reservations.
 - **ShipmentService** - shipment creation and reservation status tracking.
 - **SQL Server database per service** - `InventoryDb`, `ShipmentDb`, and the manual `CompanyDb` baseline.
@@ -54,7 +54,7 @@ Gateway Swagger documents Gateway endpoints only; use the direct service Swagger
 
 Docker Compose can start RabbitMQ, Redis, SQL Server, and the four ASP.NET Core services for local review. You can still run the .NET services directly with `dotnet run`.
 
-InventoryService and ShipmentService `/health` endpoints check RabbitMQ connectivity. They do not validate every exchange, queue, or binding.
+CompanyService `/health` checks CompanyDb connectivity. InventoryService and ShipmentService `/health` endpoints check RabbitMQ connectivity. They do not validate every exchange, queue, or binding.
 
 Outbox publishers use row claiming for multiple replicas and bounded retry scheduling with a poison-message state for messages that keep failing.
 
@@ -79,7 +79,7 @@ dotnet test .\LogisticsHub.sln
 docker compose up --build
 ```
 
-Docker Compose does not create database schema automatically. `bootstrap-docker-sql.ps1` prepares `InventoryDb`, `ShipmentDb`, and `CompanyDb` from the checked-in schema snapshots. The current business smoke-test path uses `InventoryDb` and `ShipmentDb`; `CompanyDb` is a baseline for future CompanyService work.
+Docker Compose does not create database schema automatically. `bootstrap-docker-sql.ps1` prepares `InventoryDb`, `ShipmentDb`, and `CompanyDb` from the checked-in schema snapshots. The current business smoke-test path uses `InventoryDb` and `ShipmentDb`; CompanyService health uses `CompanyDb`.
 
 The current local SQL Express schema can be exported with `export-local-db-schema.ps1`; see [Database schema](docs/database-schema.md).
 

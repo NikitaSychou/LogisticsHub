@@ -29,7 +29,7 @@ docker compose logs gateway
 | InventoryService | `http://localhost:5101/health` |
 | ShipmentService | `http://localhost:5102/health` |
 
-InventoryService and ShipmentService health checks verify RabbitMQ connectivity by opening a connection and channel. They do not validate every exchange, queue, or binding.
+CompanyService health checks verify CompanyDb connectivity. InventoryService and ShipmentService health checks verify RabbitMQ connectivity by opening a connection and channel. They do not validate every exchange, queue, or binding.
 
 Redis is available in Docker Compose for local infrastructure work, but current application health checks do not depend on Redis. Check it directly with:
 
@@ -76,4 +76,4 @@ Shipment reservation result handlers also guard shipment state. Stale or conflic
 
 EF Core migrations are intentionally not used. Database changes should be handled with manual SQL outside EF migrations.
 
-Docker Compose does not create or recreate database schema automatically. Run `.\bootstrap-docker-sql.ps1` to prepare `InventoryDb`, `ShipmentDb`, and the manual `CompanyDb` baseline in the Docker SQL Server container. CompanyService does not use `CompanyDb` yet.
+Docker Compose does not create or recreate database schema automatically. Run `.\bootstrap-docker-sql.ps1` to prepare `InventoryDb`, `ShipmentDb`, and `CompanyDb` in the Docker SQL Server container. CompanyService uses `CompanyDb` for persistence wiring and health checks, but has no Company/Address CRUD endpoints yet.

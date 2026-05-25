@@ -1,10 +1,14 @@
 using LogisticsHub.AspNetCore;
+using LogisticsHub.CompanyService.Infrastructure.DependencyInjection;
 
 const string HealthEndpointPath = "/health";
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddHealthChecks();
+builder.Services.AddDbInfrastructure(builder.Configuration);
+builder.Services
+    .AddHealthChecks()
+    .AddCompanyDbHealthCheck();
 builder.Services.AddOpenApi();
 
 var app = builder.Build();
