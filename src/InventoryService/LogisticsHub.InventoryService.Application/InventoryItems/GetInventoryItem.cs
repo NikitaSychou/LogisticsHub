@@ -1,9 +1,10 @@
 using LogisticsHub.InventoryService.Application.Persistence;
+using LogisticsHub.Results;
 using MediatR;
 
 namespace LogisticsHub.InventoryService.Application.InventoryItems;
 
-public sealed class GetInventoryItem : IRequestHandler<GetInventoryItemQuery, InventoryItemResult?>
+public sealed class GetInventoryItem : IRequestHandler<GetInventoryItemQuery, Result<InventoryItemResult>>
 {
     private readonly IInventoryDbContext _dbContext;
 
@@ -12,7 +13,7 @@ public sealed class GetInventoryItem : IRequestHandler<GetInventoryItemQuery, In
         _dbContext = dbContext;
     }
 
-    public async Task<InventoryItemResult?> Handle(
+    public async Task<Result<InventoryItemResult>> Handle(
         GetInventoryItemQuery query,
         CancellationToken cancellationToken)
     {
@@ -20,11 +21,11 @@ public sealed class GetInventoryItem : IRequestHandler<GetInventoryItemQuery, In
 
         if (item?.StockBalance is null)
         {
-            return null;
+            return Result<InventoryItemResult>.Failure(InventoryItemErrors.NotFound(query.Sku));
         }
 
         var quantityAvailable = item.StockBalance.OnHand - item.StockBalance.Reserved;
 
-        return new InventoryItemResult(item.Sku, item.Name, quantityAvailable);
+        return Result<InventoryItemResult>.Success(new InventoryItemResult(item.Sku, item.Name, quantityAvailable));
     }
 }

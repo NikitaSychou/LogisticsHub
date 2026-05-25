@@ -1,6 +1,8 @@
+using LogisticsHub.Results;
+
 namespace LogisticsHub.InventoryService.Application.StockReservations;
 
 public sealed record CreateStockReservationResult(
     StockReservationResult? Reservation,
-    string? FailureReason,
+    Error Error,
     bool AlreadyProcessed = false);

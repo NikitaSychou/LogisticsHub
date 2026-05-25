@@ -28,12 +28,12 @@ public sealed class ShipmentsController : ControllerBase
     {
         var result = await _mediator.Send(new GetShipmentQuery(id), cancellationToken);
 
-        if (result is null)
+        if (result.IsFailure)
         {
             return NotFound();
         }
 
-        var response = ShipmentMapper.ToResponse(result);
+        var response = ShipmentMapper.ToResponse(result.Value);
 
         return Ok(response);
     }

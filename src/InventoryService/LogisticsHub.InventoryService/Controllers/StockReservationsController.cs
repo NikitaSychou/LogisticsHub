@@ -28,12 +28,12 @@ public sealed class StockReservationsController : ControllerBase
     {
         var result = await _mediator.Send(new GetStockReservationQuery(reservationId), cancellationToken);
 
-        if (result is null)
+        if (result.IsFailure)
         {
             return NotFound();
         }
 
-        return Ok(StockReservationMapper.ToGetResponse(result));
+        return Ok(StockReservationMapper.ToGetResponse(result.Value));
     }
 
     [HttpPost]
@@ -58,7 +58,7 @@ public sealed class StockReservationsController : ControllerBase
 
         if (result.Reservation is null)
         {
-            return Conflict(new { reason = result.FailureReason });
+            return Conflict(new { reason = result.Error.Description });
         }
 
         var response = StockReservationMapper.ToCreateResponse(result.Reservation);

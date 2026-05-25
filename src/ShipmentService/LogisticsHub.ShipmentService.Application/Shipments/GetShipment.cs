@@ -1,9 +1,10 @@
 using LogisticsHub.ShipmentService.Application.Persistence;
+using LogisticsHub.Results;
 using MediatR;
 
 namespace LogisticsHub.ShipmentService.Application.Shipments;
 
-public sealed class GetShipment : IRequestHandler<GetShipmentQuery, GetShipmentResult?>
+public sealed class GetShipment : IRequestHandler<GetShipmentQuery, Result<GetShipmentResult>>
 {
     private readonly IShipmentDbContext _dbContext;
 
@@ -12,7 +13,7 @@ public sealed class GetShipment : IRequestHandler<GetShipmentQuery, GetShipmentR
         _dbContext = dbContext;
     }
 
-    public async Task<GetShipmentResult?> Handle(
+    public async Task<Result<GetShipmentResult>> Handle(
         GetShipmentQuery query,
         CancellationToken cancellationToken)
     {
@@ -20,24 +21,25 @@ public sealed class GetShipment : IRequestHandler<GetShipmentQuery, GetShipmentR
 
         if (shipment is null)
         {
-            return null;
+            return Result<GetShipmentResult>.Failure(ShipmentErrors.NotFound(query.Id));
         }
 
-        return new GetShipmentResult(
-            shipment.Id,
-            shipment.ShipmentNumber,
-            shipment.Status,
-            shipment.ReservationId,
-            shipment.ReservationFailureReason,
-            shipment.DestinationName,
-            shipment.DestinationAddress,
-            shipment.Comment,
-            shipment.CreatedAt,
-            shipment.UpdatedAt,
-            shipment.DispatchedAt,
-            shipment.CancelledAt,
-            shipment.Items
-                .Select(item => new GetShipmentItemResult(item.Sku, item.Quantity))
-                .ToArray());
+        return Result<GetShipmentResult>.Success(
+            new GetShipmentResult(
+                shipment.Id,
+                shipment.ShipmentNumber,
+                shipment.Status,
+                shipment.ReservationId,
+                shipment.ReservationFailureReason,
+                shipment.DestinationName,
+                shipment.DestinationAddress,
+                shipment.Comment,
+                shipment.CreatedAt,
+                shipment.UpdatedAt,
+                shipment.DispatchedAt,
+                shipment.CancelledAt,
+                shipment.Items
+                    .Select(item => new GetShipmentItemResult(item.Sku, item.Quantity))
+                    .ToArray()));
     }
 }

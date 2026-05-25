@@ -1,5 +1,6 @@
+using LogisticsHub.Results;
 using MediatR;
 
 namespace LogisticsHub.InventoryService.Application.StockReservations;
 
-public sealed record GetStockReservationQuery(Guid ReservationId) : IRequest<StockReservationResult?>;
+public sealed record GetStockReservationQuery(Guid ReservationId) : IRequest<Result<StockReservationResult>>;

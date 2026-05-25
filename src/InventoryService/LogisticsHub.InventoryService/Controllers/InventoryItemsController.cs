@@ -28,12 +28,12 @@ public sealed class InventoryItemsController : ControllerBase
     {
         var result = await _mediator.Send(new GetInventoryItemQuery(sku), cancellationToken);
 
-        if (result is null)
+        if (result.IsFailure)
         {
             return NotFound();
         }
 
-        return Ok(InventoryItemMapper.ToGetResponse(result));
+        return Ok(InventoryItemMapper.ToGetResponse(result.Value));
     }
 
     [HttpPost]
@@ -56,13 +56,13 @@ public sealed class InventoryItemsController : ControllerBase
 
         var result = await _mediator.Send(command, cancellationToken);
 
-        if (result is null)
+        if (result.IsFailure)
         {
             return Conflict();
         }
 
-        var response = InventoryItemMapper.ToCreateResponse(result);
+        var response = InventoryItemMapper.ToCreateResponse(result.Value);
 
-        return Created($"/inventory-items/{result.Sku}", response);
+        return Created($"/inventory-items/{result.Value.Sku}", response);
     }
 }
