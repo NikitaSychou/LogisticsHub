@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="inventory.item.not_found" xml:space="preserve">
+    <value>Inventory item was not found.</value>
+  </data>
+  <data name="inventory.item.already_exists" xml:space="preserve">
+    <value>Inventory item already exists.</value>
+  </data>
+  <data name="stock_reservation.event_id_required" xml:space="preserve">
+    <value>Event ID is required.</value>
+  </data>
+  <data name="stock_reservation.shipment_id_required" xml:space="preserve">
+    <value>Shipment ID is required.</value>
+  </data>
+  <data name="stock_reservation.item_required" xml:space="preserve">
+    <value>At least one item is required.</value>
+  </data>
+  <data name="stock_reservation.sku_required" xml:space="preserve">
+    <value>SKU is required.</value>
+  </data>
+  <data name="stock_reservation.quantity_must_be_greater_than_zero" xml:space="preserve">
+    <value>Quantity must be greater than zero.</value>
+  </data>
+  <data name="stock_reservation.concurrency_failure" xml:space="preserve">
+    <value>Stock reservation could not be completed due to concurrent inventory updates.</value>
+  </data>
+  <data name="stock_reservation.duplicate_sku" xml:space="preserve">
+    <value>Duplicate SKU '{sku}' is not allowed.</value>
+  </data>
+  <data name="stock_reservation.sku_not_found" xml:space="preserve">
+    <value>SKU '{sku}' does not exist.</value>
+  </data>
+  <data name="stock_reservation.sku_inactive" xml:space="preserve">
+    <value>SKU '{sku}' is inactive.</value>
+  </data>
+  <data name="stock_reservation.stock_balance_missing" xml:space="preserve">
+    <value>SKU '{sku}' has no stock balance.</value>
+  </data>
+  <data name="stock_reservation.insufficient_stock" xml:space="preserve">
+    <value>Insufficient stock for SKU '{sku}'.</value>
+  </data>
+  <data name="stock_reservation.not_found" xml:space="preserve">
+    <value>Stock reservation was not found.</value>
+  </data>
+</root>

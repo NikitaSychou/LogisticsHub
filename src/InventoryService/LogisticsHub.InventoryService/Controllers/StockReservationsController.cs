@@ -1,10 +1,12 @@
 using LogisticsHub.AspNetCore;
 using LogisticsHub.InventoryService.Application.StockReservations;
 using LogisticsHub.InventoryService.Contracts;
+using LogisticsHub.InventoryService.Localization;
 using LogisticsHub.InventoryService.Mapping;
 using LogisticsHub.InventoryService.Validation;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Localization;
 
 namespace LogisticsHub.InventoryService.Controllers;
 
@@ -13,10 +15,14 @@ namespace LogisticsHub.InventoryService.Controllers;
 public sealed class StockReservationsController : ControllerBase
 {
     private readonly IMediator _mediator;
+    private readonly IStringLocalizer<InventoryBusinessErrorMessages> _errorLocalizer;
 
-    public StockReservationsController(IMediator mediator)
+    public StockReservationsController(
+        IMediator mediator,
+        IStringLocalizer<InventoryBusinessErrorMessages> errorLocalizer)
     {
         _mediator = mediator;
+        _errorLocalizer = errorLocalizer;
     }
 
     [HttpGet("{reservationId:guid}")]
@@ -58,7 +64,7 @@ public sealed class StockReservationsController : ControllerBase
 
         if (result.Reservation is null)
         {
-            return Conflict(new { reason = result.Error.Description });
+            return Conflict(new { reason = result.Error.ToLocalizedMessage(_errorLocalizer) });
         }
 
         var response = StockReservationMapper.ToCreateResponse(result.Reservation);

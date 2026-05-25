@@ -4,6 +4,8 @@ using LogisticsHub.ShipmentService.Consumers;
 using LogisticsHub.ShipmentService.Infrastructure.DependencyInjection;
 using LogisticsHub.Messaging.RabbitMQ;
 using LogisticsHub.ShipmentService.Outbox;
+using Microsoft.AspNetCore.Localization;
+using System.Globalization;
 using System.Text.Json.Serialization;
 
 const string HealthEndpointPath = "/health";
@@ -14,6 +16,10 @@ builder.Services
     .AddHealthChecks()
     .AddRabbitMqHealthCheck();
 builder.Services.AddOpenApi();
+builder.Services.AddLocalization(options =>
+{
+    options.ResourcesPath = "Resources";
+});
 
 builder.Services
     .AddControllers()
@@ -40,6 +46,12 @@ var app = builder.Build();
 
 app.UseCorrelationId();
 app.UseApiExceptionHandling();
+app.UseRequestLocalization(new RequestLocalizationOptions
+{
+    DefaultRequestCulture = new RequestCulture("en"),
+    SupportedCultures = [new CultureInfo("en"), new CultureInfo("uk")],
+    SupportedUICultures = [new CultureInfo("en"), new CultureInfo("uk")]
+});
 
 if (app.Environment.IsDevelopment())
 {
