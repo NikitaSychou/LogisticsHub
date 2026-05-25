@@ -25,6 +25,14 @@ The expected local SQL Server instance for the checked-in local appsettings is `
 
 For containers, `docker-compose.yml` overrides connection strings and RabbitMQ settings so services use Docker service names such as `sqlserver` and `rabbitmq`.
 
+When running the full application through Docker Compose, prepare the SQL Server container databases from the repository root after SQL Server starts:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File .\bootstrap-docker-sql.ps1
+```
+
+This creates `InventoryDb` and `ShipmentDb` in the `logisticshub-sqlserver` container if needed and applies the checked-in schema snapshots.
+
 ## Services
 
 | Service | Project | Local URL |
