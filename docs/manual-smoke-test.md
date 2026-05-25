@@ -68,7 +68,7 @@ From the repository root:
 docker compose up --build
 ```
 
-Use this path only if the SQL Server container has prepared `InventoryDb` and `ShipmentDb` schemas. Compose app containers do not use `localhost\SQLEXPRESS`; they use the Compose connection strings that point to `sqlserver,1433`.
+Compose app containers do not use `localhost\SQLEXPRESS`; they use the Compose connection strings that point to `sqlserver,1433` with the `sa` login.
 
 Compose exposes:
 
@@ -79,6 +79,19 @@ Compose exposes:
 | ShipmentService | `http://localhost:5102` |
 | RabbitMQ Management | `http://localhost:15672` |
 | SQL Server container | `localhost,1433` |
+
+After SQL Server is running, bootstrap the container databases from the checked-in schema snapshots:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File .\bootstrap-docker-sql.ps1
+```
+
+The script creates `InventoryDb` and `ShipmentDb` in the `logisticshub-sqlserver` container if they do not exist, then applies:
+
+- `InventoryDb.schema.sql`
+- `ShipmentDb.schema.sql`
+
+It does not insert seed or business data. If a database already contains a partial or unexpected schema, the script stops and leaves it unchanged.
 
 RabbitMQ Management uses the local default credentials:
 
@@ -302,6 +315,7 @@ Use the same `X-Correlation-ID` on HTTP requests to connect Gateway and service 
 |---|---|
 | Health endpoint is not `Healthy` | RabbitMQ availability, service logs, container status. |
 | Service exits on startup | SQL connection string, missing database schema, RabbitMQ connection settings. |
+| `POST /inventory/inventory-items` returns `500 Internal Server Error` with SQL error 4060 | The Docker SQL Server container is missing `InventoryDb`; run `.\bootstrap-docker-sql.ps1` after SQL Server is running. |
 | `POST /inventory/inventory-items` returns `409 Conflict` | The SKU already exists; run again with a fresh SKU. |
 | `POST /shipment/shipments` returns `400 Bad Request` | Request must include at least one item; SKU is required; quantity must be greater than zero; duplicate SKUs are rejected. |
 | Shipment stays `ReservationRequested` | Check ShipmentService outbox logs, RabbitMQ queues, InventoryService consumer logs, and InventoryService outbox logs. |
