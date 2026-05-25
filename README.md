@@ -58,6 +58,7 @@ Outbox publishers use row claiming for multiple replicas and bounded retry sched
 For local setup and operations notes, see:
 
 - [Local run guide](docs/local-run.md)
+- [Database schema](docs/database-schema.md)
 - [Troubleshooting](docs/troubleshooting.md)
 
 ## Build
@@ -75,6 +76,8 @@ docker compose up --build
 ```
 
 Docker Compose does not create database schema. `InventoryDb` and `ShipmentDb` must still be prepared manually before full application flow testing.
+
+The current local SQL Express schema can be exported with `export-local-db-schema.ps1`; see [Database schema](docs/database-schema.md).
 
 ## Tests
 
