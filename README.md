@@ -59,6 +59,7 @@ For local setup and operations notes, see:
 
 - [Local run guide](docs/local-run.md)
 - [Database schema](docs/database-schema.md)
+- [Manual smoke test](docs/manual-smoke-test.md)
 - [Troubleshooting](docs/troubleshooting.md)
 
 ## Build
@@ -78,6 +79,8 @@ docker compose up --build
 Docker Compose does not create database schema. `InventoryDb` and `ShipmentDb` must still be prepared manually before full application flow testing.
 
 The current local SQL Express schema can be exported with `export-local-db-schema.ps1`; see [Database schema](docs/database-schema.md).
+
+For the smallest full local workflow through the Gateway, see [Manual smoke test](docs/manual-smoke-test.md).
 
 ## Tests
 

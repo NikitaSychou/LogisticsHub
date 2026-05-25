@@ -62,6 +62,8 @@ Swagger UI is available in Development:
 
 Gateway Swagger documents Gateway endpoints only. Use the direct service Swagger pages for InventoryService and ShipmentService APIs.
 
+For a Gateway-first end-to-end check of inventory creation, shipment creation, RabbitMQ stock reservation, and final shipment status, see [Manual smoke test](manual-smoke-test.md).
+
 ## Docker Compose Notes
 
 Compose exposes the same local service ports:
