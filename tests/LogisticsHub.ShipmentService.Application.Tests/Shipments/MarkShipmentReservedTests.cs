@@ -60,6 +60,36 @@ public sealed class MarkShipmentReservedTests
     }
 
     [Fact]
+    public async Task Handle_WhenEventIdWasAlreadyProcessed_DoesNotChangeState()
+    {
+        // Arrange
+        var dbContext = new FakeShipmentDbContext();
+        var shipment = CreateShipment(ShipmentStatus.ReservationRequested);
+        dbContext.Shipments.Add(shipment);
+
+        var eventId = Guid.NewGuid();
+        dbContext.InboxMessages.Add(new ShipmentInboxMessage
+        {
+            Id = Guid.NewGuid(),
+            EventId = eventId,
+            Type = "StockReservedIntegrationEvent",
+            ProcessedAtUtc = DateTime.UtcNow,
+            CreatedAtUtc = DateTime.UtcNow
+        });
+
+        var command = new MarkShipmentReservedCommand(eventId, shipment.Id, Guid.NewGuid());
+        var handler = new MarkShipmentReserved(dbContext);
+
+        // Act
+        await handler.Handle(command, CancellationToken.None);
+
+        // Assert
+        Assert.Equal(ShipmentStatus.ReservationRequested, shipment.Status);
+        Assert.Null(shipment.ReservationId);
+        Assert.Single(dbContext.InboxMessages);
+    }
+
+    [Fact]
     public async Task Handle_WhenSaveReturnsDuplicateInboxEvent_CompletesWithoutThrowing()
     {
         // Arrange

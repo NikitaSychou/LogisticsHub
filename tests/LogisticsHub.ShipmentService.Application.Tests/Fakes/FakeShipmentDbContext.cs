@@ -11,6 +11,7 @@ public sealed class FakeShipmentDbContext : IShipmentDbContext
     public List<ShipmentOutboxMessage> OutboxMessages { get; } = [];
 
     public bool SaveChangesHandlingDuplicateInboxEventResult { get; set; } = true;
+    public int SaveChangesCallCount { get; private set; }
 
     public Task<Shipment?> GetShipmentByIdAsync(Guid id, CancellationToken cancellationToken = default)
     {
@@ -49,7 +50,24 @@ public sealed class FakeShipmentDbContext : IShipmentDbContext
         TimeSpan lockTimeout,
         CancellationToken cancellationToken = default)
     {
-        return Task.FromResult<IReadOnlyList<ShipmentOutboxMessage>>([]);
+        var lockExpiresBefore = lockedAtUtc.Subtract(lockTimeout);
+        var claimed = OutboxMessages
+            .Where(message =>
+                message.ProcessedAtUtc is null
+                && message.FailedAtUtc is null
+                && (message.NextAttemptAtUtc is null || message.NextAttemptAtUtc <= lockedAtUtc)
+                && (message.LockedAtUtc is null || message.LockedAtUtc <= lockExpiresBefore))
+            .OrderBy(message => message.OccurredAtUtc)
+            .Take(batchSize)
+            .ToArray();
+
+        foreach (var message in claimed)
+        {
+            message.LockedBy = lockedBy;
+            message.LockedAtUtc = lockedAtUtc;
+        }
+
+        return Task.FromResult<IReadOnlyList<ShipmentOutboxMessage>>(claimed);
     }
 
     public Task<bool> HasShipmentInboxMessageAsync(Guid eventId, CancellationToken cancellationToken = default)
@@ -67,6 +85,7 @@ public sealed class FakeShipmentDbContext : IShipmentDbContext
 
     public Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
     {
+        SaveChangesCallCount++;
         return Task.FromResult(1);
     }
 

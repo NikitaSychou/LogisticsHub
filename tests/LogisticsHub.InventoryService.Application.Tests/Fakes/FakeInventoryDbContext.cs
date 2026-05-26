@@ -11,6 +11,7 @@ public sealed class FakeInventoryDbContext : IInventoryDbContext
     public List<InventoryOutboxMessage> OutboxMessages { get; } = [];
 
     public InventorySaveChangesResult SaveChangesResult { get; set; } = InventorySaveChangesResult.Saved;
+    public int SaveChangesCallCount { get; private set; }
 
     public Task<Item?> GetItemBySkuAsync(string sku, CancellationToken cancellationToken = default)
     {
@@ -84,11 +85,29 @@ public sealed class FakeInventoryDbContext : IInventoryDbContext
         TimeSpan lockTimeout,
         CancellationToken cancellationToken = default)
     {
-        return Task.FromResult<IReadOnlyList<InventoryOutboxMessage>>([]);
+        var lockExpiresBefore = lockedAtUtc.Subtract(lockTimeout);
+        var claimed = OutboxMessages
+            .Where(message =>
+                message.ProcessedAtUtc is null
+                && message.FailedAtUtc is null
+                && (message.NextAttemptAtUtc is null || message.NextAttemptAtUtc <= lockedAtUtc)
+                && (message.LockedAtUtc is null || message.LockedAtUtc <= lockExpiresBefore))
+            .OrderBy(message => message.OccurredAtUtc)
+            .Take(batchSize)
+            .ToArray();
+
+        foreach (var message in claimed)
+        {
+            message.LockedBy = lockedBy;
+            message.LockedAtUtc = lockedAtUtc;
+        }
+
+        return Task.FromResult<IReadOnlyList<InventoryOutboxMessage>>(claimed);
     }
 
     public Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
     {
+        SaveChangesCallCount++;
         return Task.FromResult(1);
     }
 
