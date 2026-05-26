@@ -13,10 +13,10 @@ public static partial class ShipmentMapper
             request.Items
                 .Select(ToCommandItem)
                 .ToArray(),
-            request.SenderCompanyId,
-            request.SenderAddressId,
-            request.ReceiverCompanyId,
-            request.ReceiverAddressId);
+            request.SenderCompanyId!.Value,
+            request.SenderAddressId!.Value,
+            request.ReceiverCompanyId!.Value,
+            request.ReceiverAddressId!.Value);
     }
 
     public static partial GetShipmentResponse ToResponse(GetShipmentResult result);

@@ -4,6 +4,7 @@ This guide verifies the smallest full local LogisticsHub flow through the Gatewa
 
 ```text
 create inventory item
+  -> create company/address references
   -> create shipment
   -> ShipmentService outbox
   -> RabbitMQ
@@ -17,7 +18,7 @@ Use Gateway endpoints for the smoke-test path. Direct service URLs are included 
 ## Prerequisites
 
 - .NET SDK 10
-- SQL Server with `InventoryDb` and `ShipmentDb` prepared; `CompanyDb` is also required when checking CompanyService health
+- SQL Server with `InventoryDb`, `ShipmentDb`, and `CompanyDb` prepared
 - RabbitMQ
 - Gateway, InventoryService, and ShipmentService running in Development
 
@@ -93,7 +94,7 @@ The script creates `InventoryDb`, `ShipmentDb`, and `CompanyDb` in the `logistic
 - `ShipmentDb.schema.sql`
 - `CompanyDb.schema.sql`
 
-It does not insert seed or business data. `CompanyDb` is required for CompanyService health and persistence wiring, but it is not part of this business smoke-test path. For an existing Docker `ShipmentDb`, the script also applies the idempotent `ShipmentDb.company-address-columns.sql` patch. Those nullable sender/receiver Company/Address columns are reserved for later ShipmentService work and do not change this smoke-test flow. If a database already contains a partial or unexpected schema, the script stops and leaves it unchanged.
+The script applies schema snapshots and idempotent manual patches. It ensures default CompanyDb backfill records exist, backfills existing ShipmentDb rows, and enforces required ShipmentDb sender/receiver reference columns. If a database already contains a partial or unexpected schema, the script stops and leaves it unchanged.
 
 RabbitMQ Management uses the local default credentials:
 
@@ -112,7 +113,7 @@ Invoke-RestMethod http://localhost:5102/health
 
 Expected result for each service is `Healthy`.
 
-CompanyService is available for company/address API checks but is not part of this inventory-to-shipment business smoke-test path; its health check verifies CompanyDb connectivity. InventoryService and ShipmentService health checks verify RabbitMQ connectivity. They do not prove that the full SQL schema exists.
+CompanyService is part of shipment creation because ShipmentService validates required sender/receiver company/address references through CompanyService. CompanyService health verifies CompanyDb connectivity. InventoryService and ShipmentService health checks verify RabbitMQ connectivity. They do not prove that the full SQL schema exists.
 
 ## Smoke-Test Values
 
@@ -153,12 +154,67 @@ Expected response:
 }
 ```
 
+## Create Company And Addresses
+
+Shipment creation requires sender and receiver company/address references. This guide uses one smoke-test company with two addresses.
+
+```powershell
+$companyRequest = @{
+    name = "Manual Smoke Test Company $Sku"
+    externalCode = "SMOKE-COMP-$Sku"
+    status = "Active"
+} | ConvertTo-Json
+
+$company = Invoke-RestMethod `
+    -Method Post `
+    -Uri "$Gateway/company/companies" `
+    -ContentType "application/json" `
+    -Headers @{ "X-Correlation-ID" = $CorrelationId } `
+    -Body $companyRequest
+
+$senderAddressRequest = @{
+    addressType = "Warehouse"
+    countryCode = "US"
+    city = "Seattle"
+    postalCode = "98101"
+    line1 = "100 Smoke Sender Way"
+    line2 = $null
+} | ConvertTo-Json
+
+$senderAddress = Invoke-RestMethod `
+    -Method Post `
+    -Uri "$Gateway/company/companies/$($company.id)/addresses" `
+    -ContentType "application/json" `
+    -Headers @{ "X-Correlation-ID" = $CorrelationId } `
+    -Body $senderAddressRequest
+
+$receiverAddressRequest = @{
+    addressType = "Shipping"
+    countryCode = "US"
+    city = "Portland"
+    postalCode = "97201"
+    line1 = "200 Smoke Receiver Ave"
+    line2 = $null
+} | ConvertTo-Json
+
+$receiverAddress = Invoke-RestMethod `
+    -Method Post `
+    -Uri "$Gateway/company/companies/$($company.id)/addresses" `
+    -ContentType "application/json" `
+    -Headers @{ "X-Correlation-ID" = $CorrelationId } `
+    -Body $receiverAddressRequest
+```
+
 ## Create Shipment
 
 The Gateway route `/shipment/{**catch-all}` strips `/shipment` and forwards to ShipmentService.
 
 ```powershell
 $shipmentRequest = @{
+    senderCompanyId = $company.id
+    senderAddressId = $senderAddress.id
+    receiverCompanyId = $company.id
+    receiverAddressId = $receiverAddress.id
     items = @(
         @{
             sku = $Sku
@@ -183,13 +239,15 @@ Expected initial response:
 ```json
 {
   "shipmentId": "...",
-  "status": "ReservationRequested"
+  "status": "ReservationRequested",
+  "senderCompanyId": "...",
+  "senderAddressId": "...",
+  "receiverCompanyId": "...",
+  "receiverAddressId": "..."
 }
 ```
 
 Shipment creation writes a ShipmentService outbox row. It does not mean stock reservation has completed yet.
-
-Optional sender/receiver company and address references are supported but are not required for this smoke-test path. If one of `senderCompanyId`, `senderAddressId`, `receiverCompanyId`, or `receiverAddressId` is sent, all four must be sent. ShipmentService validates each company/address pair with CompanyService before saving the shipment.
 
 ## Poll Shipment Status
 
@@ -323,7 +381,8 @@ Use the same `X-Correlation-ID` on HTTP requests to connect Gateway and service 
 | Service exits on startup | SQL connection string, missing database schema, RabbitMQ connection settings. |
 | `POST /inventory/inventory-items` returns `500 Internal Server Error` with SQL error 4060 | The Docker SQL Server container is missing `InventoryDb`; run `.\bootstrap-docker-sql.ps1` after SQL Server is running. |
 | `POST /inventory/inventory-items` returns `409 Conflict` | The SKU already exists; run again with a fresh SKU. |
-| `POST /shipment/shipments` returns `400 Bad Request` | Request must include at least one item; SKU is required; quantity must be greater than zero; duplicate SKUs are rejected. |
+| `POST /shipment/shipments` returns `400 Bad Request` | Request must include all sender/receiver company/address IDs, at least one item, required SKU values, positive quantities, and no duplicate SKUs. |
+| `POST /shipment/shipments` returns `503 Service Unavailable` | ShipmentService could not validate sender/receiver references through CompanyService; check CompanyService health and logs. |
 | Shipment stays `ReservationRequested` | Check ShipmentService outbox logs, RabbitMQ queues, InventoryService consumer logs, and InventoryService outbox logs. |
 | Shipment becomes `ReservationFailed` | Check `reservationFailureReason`, inventory item existence, stock balance, and available quantity. |
 | RabbitMQ queue declaration fails | Existing local durable queue may have incompatible arguments; inspect RabbitMQ logs and management UI. |

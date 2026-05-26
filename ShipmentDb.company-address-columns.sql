@@ -1,7 +1,13 @@
 -- LogisticsHub manual schema patch
 -- Database: ShipmentDb
--- Purpose: add nullable sender/receiver Company/Address references for future ShipmentService work.
+-- Purpose: add sender/receiver Company/Address reference columns before backfill/enforcement.
 -- Data: no table data is inserted or modified.
+
+SET ANSI_NULLS ON
+GO
+
+SET QUOTED_IDENTIFIER ON
+GO
 
 SET NOCOUNT ON;
 GO

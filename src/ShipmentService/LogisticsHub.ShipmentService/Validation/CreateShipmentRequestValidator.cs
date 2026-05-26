@@ -7,19 +7,32 @@ public static class CreateShipmentRequestValidator
     public static Dictionary<string, string[]> Validate(CreateShipmentRequest request)
     {
         var errors = new Dictionary<string, string[]>();
-        var providedReferenceCount = new[]
+        var missingReferenceFields = new List<string>();
+        if (!request.SenderCompanyId.HasValue)
         {
-            request.SenderCompanyId,
-            request.SenderAddressId,
-            request.ReceiverCompanyId,
-            request.ReceiverAddressId
-        }.Count(value => value.HasValue);
+            missingReferenceFields.Add("senderCompanyId");
+        }
 
-        if (providedReferenceCount is > 0 and < 4)
+        if (!request.SenderAddressId.HasValue)
+        {
+            missingReferenceFields.Add("senderAddressId");
+        }
+
+        if (!request.ReceiverCompanyId.HasValue)
+        {
+            missingReferenceFields.Add("receiverCompanyId");
+        }
+
+        if (!request.ReceiverAddressId.HasValue)
+        {
+            missingReferenceFields.Add("receiverAddressId");
+        }
+
+        if (missingReferenceFields.Count > 0)
         {
             errors["companyAddressReferences"] =
             [
-                "Sender company, sender address, receiver company, and receiver address are all required when any one is provided."
+                $"Sender company, sender address, receiver company, and receiver address are required. Missing: {string.Join(", ", missingReferenceFields)}."
             ];
         }
 

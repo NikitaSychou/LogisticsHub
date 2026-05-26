@@ -7,7 +7,7 @@ namespace LogisticsHub.ShipmentService.Application.Tests.Shipments;
 public sealed class CreateShipmentRequestValidatorTests
 {
     [Fact]
-    public void Validate_WhenCompanyAddressReferencesAreOmitted_ReturnsNoReferenceErrors()
+    public void Validate_WhenCompanyAddressReferencesAreOmitted_ReturnsReferenceError()
     {
         // Arrange
         var request = new CreateShipmentRequest(
@@ -21,7 +21,7 @@ public sealed class CreateShipmentRequestValidatorTests
         var errors = CreateShipmentRequestValidator.Validate(request);
 
         // Assert
-        Assert.DoesNotContain("companyAddressReferences", errors.Keys);
+        Assert.Contains("companyAddressReferences", errors.Keys);
     }
 
     [Fact]

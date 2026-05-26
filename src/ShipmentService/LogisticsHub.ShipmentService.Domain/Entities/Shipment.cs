@@ -14,13 +14,13 @@ public sealed class Shipment
 
     public string? ReservationFailureReason { get; set; }
 
-    public Guid? SenderCompanyId { get; set; }
+    public Guid SenderCompanyId { get; set; }
 
-    public Guid? SenderAddressId { get; set; }
+    public Guid SenderAddressId { get; set; }
 
-    public Guid? ReceiverCompanyId { get; set; }
+    public Guid ReceiverCompanyId { get; set; }
 
-    public Guid? ReceiverAddressId { get; set; }
+    public Guid ReceiverAddressId { get; set; }
 
     public string DestinationName { get; set; } = string.Empty;
 

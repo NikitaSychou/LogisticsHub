@@ -30,13 +30,10 @@ public sealed class CreateShipment : IRequestHandler<CreateShipmentCommand, Resu
     {
         ArgumentNullException.ThrowIfNull(command);
 
-        if (command.HasCompanyAddressReferences)
+        var validationError = await ValidateCompanyAddressReferencesAsync(command, cancellationToken);
+        if (validationError is not null)
         {
-            var validationError = await ValidateCompanyAddressReferencesAsync(command, cancellationToken);
-            if (validationError is not null)
-            {
-                return Result<CreateShipmentResult>.Failure(validationError);
-            }
+            return Result<CreateShipmentResult>.Failure(validationError);
         }
 
         var now = DateTime.UtcNow;
@@ -107,8 +104,8 @@ public sealed class CreateShipment : IRequestHandler<CreateShipmentCommand, Resu
         CancellationToken cancellationToken)
     {
         var senderResult = await _companyAddressReferenceClient.ValidateAddressAsync(
-            command.SenderCompanyId!.Value,
-            command.SenderAddressId!.Value,
+            command.SenderCompanyId,
+            command.SenderAddressId,
             cancellationToken);
 
         if (senderResult.Status == CompanyAddressReferenceValidationStatus.DependencyUnavailable)
@@ -119,13 +116,13 @@ public sealed class CreateShipment : IRequestHandler<CreateShipmentCommand, Resu
         if (senderResult.Status == CompanyAddressReferenceValidationStatus.NotFound)
         {
             return ShipmentErrors.SenderCompanyAddressNotFound(
-                command.SenderCompanyId.Value,
-                command.SenderAddressId.Value);
+                command.SenderCompanyId,
+                command.SenderAddressId);
         }
 
         var receiverResult = await _companyAddressReferenceClient.ValidateAddressAsync(
-            command.ReceiverCompanyId!.Value,
-            command.ReceiverAddressId!.Value,
+            command.ReceiverCompanyId,
+            command.ReceiverAddressId,
             cancellationToken);
 
         if (receiverResult.Status == CompanyAddressReferenceValidationStatus.DependencyUnavailable)
@@ -136,8 +133,8 @@ public sealed class CreateShipment : IRequestHandler<CreateShipmentCommand, Resu
         if (receiverResult.Status == CompanyAddressReferenceValidationStatus.NotFound)
         {
             return ShipmentErrors.ReceiverCompanyAddressNotFound(
-                command.ReceiverCompanyId.Value,
-                command.ReceiverAddressId.Value);
+                command.ReceiverCompanyId,
+                command.ReceiverAddressId);
         }
 
         return null;
