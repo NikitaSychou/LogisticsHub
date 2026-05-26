@@ -227,6 +227,62 @@ public sealed class CompanyHandlerTests
         Assert.Equal("company.address.company_not_found", result.Error.Code);
     }
 
+    [Fact]
+    public async Task GetCompanyAddress_WhenAddressBelongsToCompany_ReturnsAddress()
+    {
+        var dbContext = new FakeCompanyDbContext();
+        var company = CreateCompany("Acme", "ACME");
+        var address = CreateAddress(company.Id, CompanyAddressType.Shipping);
+        dbContext.Companies.Add(company);
+        dbContext.CompanyAddresses.Add(address);
+        var handler = new GetCompanyAddress(dbContext);
+
+        var result = await handler.Handle(
+            new GetCompanyAddressQuery(company.Id, address.Id),
+            CancellationToken.None);
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal(address.Id, result.Value.Id);
+        Assert.Equal(company.Id, result.Value.CompanyId);
+        Assert.Equal(CompanyAddressType.Shipping, result.Value.AddressType);
+    }
+
+    [Fact]
+    public async Task GetCompanyAddress_WhenAddressDoesNotExist_ReturnsCompanyNotFoundError()
+    {
+        var dbContext = new FakeCompanyDbContext();
+        var company = CreateCompany("Acme", "ACME");
+        dbContext.Companies.Add(company);
+        var handler = new GetCompanyAddress(dbContext);
+
+        var result = await handler.Handle(
+            new GetCompanyAddressQuery(company.Id, Guid.NewGuid()),
+            CancellationToken.None);
+
+        Assert.True(result.IsFailure);
+        Assert.Equal("company.address.company_not_found", result.Error.Code);
+    }
+
+    [Fact]
+    public async Task GetCompanyAddress_WhenAddressBelongsToAnotherCompany_ReturnsCompanyNotFoundError()
+    {
+        var dbContext = new FakeCompanyDbContext();
+        var company = CreateCompany("Acme", "ACME");
+        var otherCompany = CreateCompany("Beta", "BETA");
+        var address = CreateAddress(otherCompany.Id, CompanyAddressType.Billing);
+        dbContext.Companies.Add(company);
+        dbContext.Companies.Add(otherCompany);
+        dbContext.CompanyAddresses.Add(address);
+        var handler = new GetCompanyAddress(dbContext);
+
+        var result = await handler.Handle(
+            new GetCompanyAddressQuery(company.Id, address.Id),
+            CancellationToken.None);
+
+        Assert.True(result.IsFailure);
+        Assert.Equal("company.address.company_not_found", result.Error.Code);
+    }
+
     private static Company CreateCompany(string name, string? externalCode)
     {
         return new Company

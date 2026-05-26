@@ -22,6 +22,11 @@ public interface ICompanyDbContext
         Guid companyId,
         CancellationToken cancellationToken = default);
 
+    Task<CompanyAddress?> GetCompanyAddressAsync(
+        Guid companyId,
+        Guid addressId,
+        CancellationToken cancellationToken = default);
+
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 
     Task<CompanySaveChangesResult> SaveChangesAsyncHandlingDuplicateExternalCodeAsync(

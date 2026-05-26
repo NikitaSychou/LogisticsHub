@@ -60,6 +60,17 @@ public sealed class FakeCompanyDbContext : ICompanyDbContext
         return Task.FromResult<IReadOnlyList<CompanyAddress>>(addresses);
     }
 
+    public Task<CompanyAddress?> GetCompanyAddressAsync(
+        Guid companyId,
+        Guid addressId,
+        CancellationToken cancellationToken = default)
+    {
+        var address = CompanyAddresses
+            .SingleOrDefault(address => address.CompanyId == companyId && address.Id == addressId);
+
+        return Task.FromResult(address);
+    }
+
     public Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
     {
         return Task.FromResult(1);

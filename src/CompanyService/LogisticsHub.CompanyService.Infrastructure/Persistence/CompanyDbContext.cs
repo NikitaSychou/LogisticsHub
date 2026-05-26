@@ -76,6 +76,18 @@ public sealed class CompanyDbContext : DbContext, ICompanyDbContext
             .ToListAsync(cancellationToken);
     }
 
+    public async Task<CompanyAddress?> GetCompanyAddressAsync(
+        Guid companyId,
+        Guid addressId,
+        CancellationToken cancellationToken = default)
+    {
+        return await CompanyAddresses
+            .AsNoTracking()
+            .SingleOrDefaultAsync(
+                address => address.CompanyId == companyId && address.Id == addressId,
+                cancellationToken);
+    }
+
     public async Task<CompanySaveChangesResult> SaveChangesAsyncHandlingDuplicateExternalCodeAsync(
         CancellationToken cancellationToken = default)
     {

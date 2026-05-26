@@ -164,4 +164,22 @@ public sealed class CompaniesController : ControllerBase
 
         return Ok(response);
     }
+
+    [HttpGet("{companyId:guid}/addresses/{addressId:guid}")]
+    [ProducesResponseType(typeof(CompanyAddressResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetAddressAsync(
+        Guid companyId,
+        Guid addressId,
+        CancellationToken cancellationToken)
+    {
+        var result = await _mediator.Send(new GetCompanyAddressQuery(companyId, addressId), cancellationToken);
+
+        if (result.IsFailure)
+        {
+            return NotFound();
+        }
+
+        return Ok(CompanyMapper.ToResponse(result.Value));
+    }
 }
