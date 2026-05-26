@@ -36,7 +36,7 @@ When running the full application through Docker Compose, prepare the SQL Server
 powershell -NoProfile -ExecutionPolicy Bypass -File .\bootstrap-docker-sql.ps1
 ```
 
-This creates `InventoryDb`, `ShipmentDb`, and `CompanyDb` in the `logisticshub-sqlserver` container if needed and applies the checked-in schema snapshots. `CompanyDb` is required for CompanyService health, but it is not part of the current business smoke-test path.
+This creates `InventoryDb`, `ShipmentDb`, and `CompanyDb` in the `logisticshub-sqlserver` container if needed and applies the checked-in schema snapshots. For an existing Docker `ShipmentDb`, it also applies the idempotent `ShipmentDb.company-address-columns.sql` patch for nullable future Company/Address references. `CompanyDb` is required for CompanyService health, but it is not part of the current business smoke-test path.
 
 ## Services
 
