@@ -1,7 +1,7 @@
 [CmdletBinding()]
 param(
     [string] $ServerInstance = "localhost\SQLEXPRESS",
-    [string[]] $DatabaseNames = @("InventoryDb", "ShipmentDb"),
+    [string[]] $DatabaseNames = @("InventoryDb", "ShipmentDb", "CompanyDb"),
     [string] $OutputDirectory
 )
 

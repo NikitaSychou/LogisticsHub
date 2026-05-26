@@ -4,11 +4,14 @@ using LogisticsHub.InventoryService.Consumers;
 using LogisticsHub.InventoryService.Infrastructure.DependencyInjection;
 using LogisticsHub.InventoryService.Outbox;
 using LogisticsHub.Messaging.RabbitMQ;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.Localization;
 using System.Globalization;
 using System.Text.Json.Serialization;
 
 const string HealthEndpointPath = "/health";
+const string LivenessHealthEndpointPath = "/health/live";
+const string ReadinessHealthEndpointPath = "/health/ready";
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -59,6 +62,11 @@ if (app.Environment.IsDevelopment())
 }
 
 app.MapHealthChecks(HealthEndpointPath);
+app.MapHealthChecks(LivenessHealthEndpointPath, new HealthCheckOptions
+{
+    Predicate = _ => false
+});
+app.MapHealthChecks(ReadinessHealthEndpointPath);
 app.MapControllers();
 
 app.Run();

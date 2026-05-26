@@ -22,14 +22,14 @@ docker compose logs gateway
 
 ## Health Endpoints
 
-| Service | Health endpoint |
-|---|---|
-| Gateway | `http://localhost:5100/health` |
-| CompanyService | `http://localhost:5103/health` |
-| InventoryService | `http://localhost:5101/health` |
-| ShipmentService | `http://localhost:5102/health` |
+| Service | Liveness endpoint | Readiness endpoint |
+|---|---|---|
+| Gateway | `http://localhost:5100/health/live` | `http://localhost:5100/health/ready` |
+| CompanyService | `http://localhost:5103/health/live` | `http://localhost:5103/health/ready` |
+| InventoryService | `http://localhost:5101/health/live` | `http://localhost:5101/health/ready` |
+| ShipmentService | `http://localhost:5102/health/live` | `http://localhost:5102/health/ready` |
 
-CompanyService health checks verify CompanyDb connectivity. InventoryService and ShipmentService health checks verify RabbitMQ connectivity by opening a connection and channel. They do not validate every exchange, queue, or binding.
+The existing `/health` endpoint remains available and behaves like readiness. Liveness is process-only and does not depend on SQL, RabbitMQ, or Redis. CompanyService readiness verifies CompanyDb connectivity. InventoryService and ShipmentService readiness checks verify RabbitMQ connectivity by opening a connection and channel. They do not validate every exchange, queue, or binding.
 
 Redis is available in Docker Compose. CompanyService uses it as a cache for company address detail lookups, but current application health checks do not depend on Redis. Check it directly with:
 
