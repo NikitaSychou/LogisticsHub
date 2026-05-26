@@ -79,7 +79,7 @@ Swagger UI is available in Development:
 | ShipmentService | `http://localhost:5102/swagger` |
 
 Gateway Swagger documents Gateway endpoints only. Use the direct service Swagger pages for service APIs.
-CompanyService exposes `/health`, Development Swagger, and minimal Company/Address CRUD. Through Gateway, CompanyService routes are available under `/company`.
+CompanyService exposes `/health`, `/health/live`, `/health/ready`, Development Swagger, and minimal Company/Address CRUD. Through Gateway, CompanyService routes are available under `/company`.
 
 For a Gateway-first end-to-end check of inventory creation, shipment creation, RabbitMQ stock reservation, and final shipment status, see [Manual smoke test](manual-smoke-test.md).
 

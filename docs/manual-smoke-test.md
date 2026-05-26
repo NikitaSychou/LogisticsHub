@@ -107,16 +107,24 @@ guest / guest
 
 ```powershell
 Invoke-RestMethod http://localhost:5100/health
+Invoke-RestMethod http://localhost:5100/health/live
+Invoke-RestMethod http://localhost:5100/health/ready
 Invoke-RestMethod http://localhost:5100/company/health
 Invoke-RestMethod http://localhost:5103/health
+Invoke-RestMethod http://localhost:5103/health/live
+Invoke-RestMethod http://localhost:5103/health/ready
 Invoke-RestMethod http://localhost:5100/shipment/health
 Invoke-RestMethod http://localhost:5101/health
+Invoke-RestMethod http://localhost:5101/health/live
+Invoke-RestMethod http://localhost:5101/health/ready
 Invoke-RestMethod http://localhost:5102/health
+Invoke-RestMethod http://localhost:5102/health/live
+Invoke-RestMethod http://localhost:5102/health/ready
 ```
 
 Expected result for each service is `Healthy`.
 
-CompanyService is part of shipment creation because ShipmentService validates required sender/receiver company/address references through CompanyService. CompanyService health verifies CompanyDb connectivity. InventoryService and ShipmentService health checks verify RabbitMQ connectivity. They do not prove that the full SQL schema exists.
+CompanyService is part of shipment creation because ShipmentService validates required sender/receiver company/address references through CompanyService. Liveness endpoints are process-only. The existing `/health` endpoints behave like readiness. CompanyService readiness verifies CompanyDb connectivity. InventoryService and ShipmentService readiness checks verify RabbitMQ connectivity. They do not prove that the full SQL schema exists.
 
 ## Smoke-Test Values
 
@@ -424,7 +432,7 @@ Use the same `X-Correlation-ID` on HTTP requests to connect Gateway and service 
 
 | Symptom | Inspect |
 |---|---|
-| Health endpoint is not `Healthy` | RabbitMQ availability, service logs, container status. |
+| Readiness endpoint is not `Healthy` | RabbitMQ or CompanyDb availability, service logs, container status. |
 | Service exits on startup | SQL connection string, missing database schema, RabbitMQ connection settings. |
 | `POST /inventory/inventory-items` returns `500 Internal Server Error` with SQL error 4060 | The Docker SQL Server container is missing `InventoryDb`; run `.\bootstrap-docker-sql.ps1` after SQL Server is running. |
 | `POST /inventory/inventory-items` returns `409 Conflict` | The SKU already exists; run again with a fresh SKU. |

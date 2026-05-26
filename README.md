@@ -55,7 +55,7 @@ Gateway Swagger documents Gateway endpoints only; use the direct service Swagger
 Docker Compose can start RabbitMQ, Redis, SQL Server, and the four ASP.NET Core services for local review. You can still run the .NET services directly with `dotnet run`.
 CompanyService uses Redis as a cache for `GET /companies/{companyId}/addresses/{addressId}`. CompanyDb remains the source of truth.
 
-CompanyService `/health` checks CompanyDb connectivity. InventoryService and ShipmentService `/health` endpoints check RabbitMQ connectivity. They do not validate every exchange, queue, or binding.
+Each service exposes lightweight liveness at `/health/live` and readiness at `/health/ready`. The existing `/health` endpoint remains a readiness-compatible check. CompanyService readiness checks CompanyDb connectivity. InventoryService and ShipmentService readiness checks verify RabbitMQ connectivity. They do not validate every exchange, queue, or binding.
 
 CompanyService exposes the minimal local company/address API through the Gateway under `/company`, including `POST /company/companies`, `GET /company/companies/{id}`, `GET /company/companies`, `PUT /company/companies/{id}`, `POST /company/companies/{companyId}/addresses`, `GET /company/companies/{companyId}/addresses`, and `GET /company/companies/{companyId}/addresses/{addressId}`. Shipment creation requires sender/receiver company and address IDs; ShipmentService validates those pairs through CompanyService before saving.
 

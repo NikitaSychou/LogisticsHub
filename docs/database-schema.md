@@ -20,7 +20,7 @@ The export helper is schema-only. It does not script table data and does not mod
 
 `CompanyDb.default-shipment-references.sql` is an idempotent manual data patch that ensures stable default sender/receiver Company/Address records exist for legacy shipment backfill. `ShipmentDb.company-address-columns.sql` is an idempotent compatibility patch for existing local Docker `ShipmentDb` databases that do not yet have sender/receiver reference columns. `ShipmentDb.require-company-address-columns.sql` backfills existing shipments and enforces required sender/receiver company and address reference columns without adding cross-database foreign keys.
 
-`InventoryDb.schema.sql` and `ShipmentDb.schema.sql` were exported from local SQL Express. `CompanyDb.schema.sql` is the manual baseline used by CompanyService persistence wiring and health checks.
+`InventoryDb.schema.sql`, `ShipmentDb.schema.sql`, and `CompanyDb.schema.sql` are exported from local SQL Express by the schema export helper. Manual SQL remains the source of truth.
 
 EF Core migrations are intentionally not used in this repository. Database schema changes should be made with manual SQL. Re-export existing local SQL Express schemas with the helper script where applicable, and review any manual snapshots directly.
 
@@ -146,8 +146,9 @@ For the full local flow, the databases must exist before the services run:
 
 - `InventoryDb`
 - `ShipmentDb`
+- `CompanyDb`
 
-`CompanyDb` is required for CompanyService health and for ShipmentService company/address reference validation during shipment creation.
+`CompanyDb` is required for CompanyService readiness and for ShipmentService company/address reference validation during shipment creation.
 
 Inventory seed data does not need to be inserted manually after the schema exists. Use the Inventory API to create an item and starting stock:
 

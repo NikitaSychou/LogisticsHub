@@ -1,7 +1,10 @@
 using LogisticsHub.AspNetCore;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 
 const string ReverseProxySectionName = "ReverseProxy";
 const string HealthEndpointPath = "/health";
+const string LivenessHealthEndpointPath = "/health/live";
+const string ReadinessHealthEndpointPath = "/health/ready";
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -32,6 +35,11 @@ if (app.Environment.IsDevelopment())
 }
 
 app.MapHealthChecks(HealthEndpointPath);
+app.MapHealthChecks(LivenessHealthEndpointPath, new HealthCheckOptions
+{
+    Predicate = _ => false
+});
+app.MapHealthChecks(ReadinessHealthEndpointPath);
 app.MapReverseProxy();
 
 app.Run();
