@@ -30,7 +30,7 @@ ShipmentService validates required sender/receiver company/address references th
 For containers, `docker-compose.yml` overrides connection strings and RabbitMQ settings so services use Docker service names such as `sqlserver` and `rabbitmq`.
 It also points ShipmentService at `http://companyservice:8080` for required company/address reference validation.
 
-Redis is exposed by Docker Compose for local infrastructure integration work, but the current application code does not use Redis yet.
+Redis is exposed by Docker Compose and CompanyService uses it as a cache for company address detail lookups. If Redis is unavailable, CompanyService falls back to CompanyDb.
 
 When running the full application through Docker Compose, prepare the SQL Server container databases from the repository root after SQL Server starts:
 

@@ -235,7 +235,8 @@ public sealed class CompanyHandlerTests
         var address = CreateAddress(company.Id, CompanyAddressType.Shipping);
         dbContext.Companies.Add(company);
         dbContext.CompanyAddresses.Add(address);
-        var handler = new GetCompanyAddress(dbContext);
+        var cache = new FakeCompanyAddressCache();
+        var handler = new GetCompanyAddress(dbContext, cache);
 
         var result = await handler.Handle(
             new GetCompanyAddressQuery(company.Id, address.Id),
@@ -245,6 +246,63 @@ public sealed class CompanyHandlerTests
         Assert.Equal(address.Id, result.Value.Id);
         Assert.Equal(company.Id, result.Value.CompanyId);
         Assert.Equal(CompanyAddressType.Shipping, result.Value.AddressType);
+        Assert.Equal(1, cache.GetCallCount);
+        Assert.Equal(1, cache.SetCallCount);
+    }
+
+    [Fact]
+    public async Task GetCompanyAddress_WhenAddressIsCached_ReturnsCachedAddress()
+    {
+        var companyId = Guid.NewGuid();
+        var address = new CompanyAddressResult(
+            Guid.NewGuid(),
+            companyId,
+            CompanyAddressType.Shipping,
+            "US",
+            "New York",
+            null,
+            "1 Logistics Way",
+            null,
+            DateTime.UtcNow,
+            null);
+        var cache = new FakeCompanyAddressCache();
+        cache.Add(address);
+        var handler = new GetCompanyAddress(new FakeCompanyDbContext(), cache);
+
+        var result = await handler.Handle(
+            new GetCompanyAddressQuery(companyId, address.Id),
+            CancellationToken.None);
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal(address.Id, result.Value.Id);
+        Assert.Equal(companyId, result.Value.CompanyId);
+        Assert.Equal(1, cache.GetCallCount);
+        Assert.Equal(0, cache.SetCallCount);
+    }
+
+    [Fact]
+    public async Task GetCompanyAddress_WhenCacheFails_ReturnsAddressFromDatabase()
+    {
+        var dbContext = new FakeCompanyDbContext();
+        var company = CreateCompany("Acme", "ACME");
+        var address = CreateAddress(company.Id, CompanyAddressType.Shipping);
+        dbContext.Companies.Add(company);
+        dbContext.CompanyAddresses.Add(address);
+        var cache = new FakeCompanyAddressCache
+        {
+            FailOnGet = true,
+            FailOnSet = true
+        };
+        var handler = new GetCompanyAddress(dbContext, cache);
+
+        var result = await handler.Handle(
+            new GetCompanyAddressQuery(company.Id, address.Id),
+            CancellationToken.None);
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal(address.Id, result.Value.Id);
+        Assert.Equal(1, cache.GetCallCount);
+        Assert.Equal(1, cache.SetCallCount);
     }
 
     [Fact]
@@ -253,7 +311,7 @@ public sealed class CompanyHandlerTests
         var dbContext = new FakeCompanyDbContext();
         var company = CreateCompany("Acme", "ACME");
         dbContext.Companies.Add(company);
-        var handler = new GetCompanyAddress(dbContext);
+        var handler = new GetCompanyAddress(dbContext, new FakeCompanyAddressCache());
 
         var result = await handler.Handle(
             new GetCompanyAddressQuery(company.Id, Guid.NewGuid()),
@@ -273,7 +331,7 @@ public sealed class CompanyHandlerTests
         dbContext.Companies.Add(company);
         dbContext.Companies.Add(otherCompany);
         dbContext.CompanyAddresses.Add(address);
-        var handler = new GetCompanyAddress(dbContext);
+        var handler = new GetCompanyAddress(dbContext, new FakeCompanyAddressCache());
 
         var result = await handler.Handle(
             new GetCompanyAddressQuery(company.Id, address.Id),

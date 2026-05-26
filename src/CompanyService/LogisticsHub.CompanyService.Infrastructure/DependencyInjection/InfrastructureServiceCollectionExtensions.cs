@@ -1,4 +1,6 @@
 using LogisticsHub.CompanyService.Application.Persistence;
+using LogisticsHub.CompanyService.Application.Companies;
+using LogisticsHub.CompanyService.Infrastructure.Caching;
 using LogisticsHub.CompanyService.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -24,6 +26,27 @@ public static class InfrastructureServiceCollectionExtensions
             options.UseSqlServer(connectionString));
 
         services.AddScoped<ICompanyDbContext>(serviceProvider => serviceProvider.GetRequiredService<CompanyDbContext>());
+
+        return services;
+    }
+
+    public static IServiceCollection AddRedisCacheInfrastructure(
+        this IServiceCollection services,
+        IConfiguration configuration)
+    {
+        var connectionString = configuration.GetConnectionString("Redis");
+
+        if (string.IsNullOrWhiteSpace(connectionString))
+        {
+            throw new InvalidOperationException("Connection string 'Redis' is not configured.");
+        }
+
+        services.AddStackExchangeRedisCache(options =>
+        {
+            options.Configuration = connectionString;
+        });
+
+        services.AddSingleton<ICompanyAddressCache, RedisCompanyAddressCache>();
 
         return services;
     }
