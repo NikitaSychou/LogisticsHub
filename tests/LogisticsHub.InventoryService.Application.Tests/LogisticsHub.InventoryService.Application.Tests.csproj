@@ -15,6 +15,7 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\src\InventoryService\LogisticsHub.InventoryService.Application\LogisticsHub.InventoryService.Application.csproj" />
+    <ProjectReference Include="..\..\src\InventoryService\LogisticsHub.InventoryService\LogisticsHub.InventoryService.csproj" />
     <ProjectReference Include="..\..\src\InventoryService\LogisticsHub.InventoryService.Domain\LogisticsHub.InventoryService.Domain.csproj" />
     <ProjectReference Include="..\..\src\Shared\LogisticsHub.IntegrationEvents\LogisticsHub.IntegrationEvents.csproj" />
   </ItemGroup>
