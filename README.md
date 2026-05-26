@@ -53,6 +53,7 @@ Swagger UI is available in Development:
 Gateway Swagger documents Gateway endpoints only; use the direct service Swagger pages for service APIs.
 
 Docker Compose can start RabbitMQ, Redis, SQL Server, and the four ASP.NET Core services for local review. You can still run the .NET services directly with `dotnet run`.
+CompanyService uses Redis as a cache for `GET /companies/{companyId}/addresses/{addressId}`. CompanyDb remains the source of truth.
 
 CompanyService `/health` checks CompanyDb connectivity. InventoryService and ShipmentService `/health` endpoints check RabbitMQ connectivity. They do not validate every exchange, queue, or binding.
 

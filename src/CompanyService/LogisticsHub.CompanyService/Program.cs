@@ -10,6 +10,7 @@ const string HealthEndpointPath = "/health";
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddDbInfrastructure(builder.Configuration);
+builder.Services.AddRedisCacheInfrastructure(builder.Configuration);
 builder.Services
     .AddHealthChecks()
     .AddCompanyDbHealthCheck();

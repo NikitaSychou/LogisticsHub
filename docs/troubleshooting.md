@@ -31,7 +31,7 @@ docker compose logs gateway
 
 CompanyService health checks verify CompanyDb connectivity. InventoryService and ShipmentService health checks verify RabbitMQ connectivity by opening a connection and channel. They do not validate every exchange, queue, or binding.
 
-Redis is available in Docker Compose for local infrastructure work, but current application health checks do not depend on Redis. Check it directly with:
+Redis is available in Docker Compose. CompanyService uses it as a cache for company address detail lookups, but current application health checks do not depend on Redis. Check it directly with:
 
 ```powershell
 docker compose exec redis redis-cli ping

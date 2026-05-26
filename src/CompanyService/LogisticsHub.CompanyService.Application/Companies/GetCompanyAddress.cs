@@ -7,16 +7,26 @@ namespace LogisticsHub.CompanyService.Application.Companies;
 public sealed class GetCompanyAddress : IRequestHandler<GetCompanyAddressQuery, Result<CompanyAddressResult>>
 {
     private readonly ICompanyDbContext _dbContext;
+    private readonly ICompanyAddressCache _cache;
 
-    public GetCompanyAddress(ICompanyDbContext dbContext)
+    public GetCompanyAddress(
+        ICompanyDbContext dbContext,
+        ICompanyAddressCache cache)
     {
         _dbContext = dbContext;
+        _cache = cache;
     }
 
     public async Task<Result<CompanyAddressResult>> Handle(
         GetCompanyAddressQuery query,
         CancellationToken cancellationToken)
     {
+        var cachedAddress = await _cache.GetAsync(query.CompanyId, query.AddressId, cancellationToken);
+        if (cachedAddress is not null)
+        {
+            return Result<CompanyAddressResult>.Success(cachedAddress);
+        }
+
         var address = await _dbContext.GetCompanyAddressAsync(
             query.CompanyId,
             query.AddressId,
@@ -27,6 +37,9 @@ public sealed class GetCompanyAddress : IRequestHandler<GetCompanyAddressQuery, 
             return Result<CompanyAddressResult>.Failure(CompanyErrors.AddressCompanyNotFound(query.CompanyId));
         }
 
-        return Result<CompanyAddressResult>.Success(CompanyResultFactory.ToResult(address));
+        var result = CompanyResultFactory.ToResult(address);
+        await _cache.SetAsync(result, cancellationToken);
+
+        return Result<CompanyAddressResult>.Success(result);
     }
 }
