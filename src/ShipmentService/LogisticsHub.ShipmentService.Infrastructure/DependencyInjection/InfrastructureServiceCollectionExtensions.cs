@@ -1,3 +1,4 @@
+using LogisticsHub.Http.Resilience;
 using LogisticsHub.ShipmentService.Application.Persistence;
 using LogisticsHub.ShipmentService.Application.Companies;
 using LogisticsHub.ShipmentService.Infrastructure.Companies;
@@ -33,23 +34,54 @@ public static class InfrastructureServiceCollectionExtensions
         this IServiceCollection services,
         IConfiguration configuration)
     {
-        var baseUrl = configuration["CompanyService:BaseUrl"];
+        var options = GetCompanyServiceClientOptions(configuration);
 
-        if (string.IsNullOrWhiteSpace(baseUrl))
+        if (string.IsNullOrWhiteSpace(options.BaseUrl))
         {
             throw new InvalidOperationException("CompanyService base URL is not configured.");
         }
 
-        if (!Uri.TryCreate(baseUrl, UriKind.Absolute, out var baseUri))
+        if (!Uri.TryCreate(options.BaseUrl, UriKind.Absolute, out var baseUri))
         {
             throw new InvalidOperationException("CompanyService base URL is not a valid absolute URI.");
         }
 
+        options.Resilience.Validate("CompanyService:Resilience");
+        services.AddSingleton(options);
+
         services.AddHttpClient<ICompanyAddressReferenceClient, CompanyServiceClient>(client =>
         {
             client.BaseAddress = baseUri;
-        });
+            client.Timeout = options.Resilience.Timeout;
+        })
+        .AddOutboundHttpResilience(options.Resilience);
 
         return services;
+    }
+
+    private static CompanyServiceClientOptions GetCompanyServiceClientOptions(IConfiguration configuration)
+    {
+        var section = configuration.GetSection(CompanyServiceClientOptions.SectionName);
+        var resilienceSection = section.GetSection("Resilience");
+
+        return new CompanyServiceClientOptions
+        {
+            BaseUrl = section["BaseUrl"],
+            Resilience = new OutboundHttpClientResilienceOptions
+            {
+                TimeoutSeconds = GetInt(resilienceSection, "TimeoutSeconds", 3),
+                RetryCount = GetInt(resilienceSection, "RetryCount", 1),
+                RetryDelayMilliseconds = GetInt(resilienceSection, "RetryDelayMilliseconds", 150),
+                CircuitBreakerFailureThreshold = GetInt(resilienceSection, "CircuitBreakerFailureThreshold", 3),
+                CircuitBreakerDurationSeconds = GetInt(resilienceSection, "CircuitBreakerDurationSeconds", 5)
+            }
+        };
+    }
+
+    private static int GetInt(IConfiguration configuration, string key, int defaultValue)
+    {
+        return int.TryParse(configuration[key], out var value)
+            ? value
+            : defaultValue;
     }
 }

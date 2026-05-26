@@ -17,6 +17,8 @@
     <ProjectReference Include="..\..\src\ShipmentService\LogisticsHub.ShipmentService.Application\LogisticsHub.ShipmentService.Application.csproj" />
     <ProjectReference Include="..\..\src\ShipmentService\LogisticsHub.ShipmentService\LogisticsHub.ShipmentService.csproj" />
     <ProjectReference Include="..\..\src\ShipmentService\LogisticsHub.ShipmentService.Domain\LogisticsHub.ShipmentService.Domain.csproj" />
+    <ProjectReference Include="..\..\src\ShipmentService\LogisticsHub.ShipmentService.Infrastructure\LogisticsHub.ShipmentService.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\src\Shared\LogisticsHub.Http.Resilience\LogisticsHub.Http.Resilience.csproj" />
     <ProjectReference Include="..\..\src\Shared\LogisticsHub.IntegrationEvents\LogisticsHub.IntegrationEvents.csproj" />
   </ItemGroup>
 </Project>
