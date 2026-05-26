@@ -7,7 +7,7 @@ This guide covers the local application workflow for reviewers and contributors.
 - .NET SDK 10
 - SQL Server available locally or through Docker Compose
 - RabbitMQ available locally or through Docker Compose
-- Redis available locally or through Docker Compose for future local infrastructure work
+- Redis available locally or through Docker Compose for CompanyService address detail caching
 
 Docker Compose can start SQL Server, RabbitMQ, Redis, Gateway, CompanyService, InventoryService, and ShipmentService for local development:
 
