@@ -7,7 +7,7 @@ LogisticsHub is a microservices backend project for a shipment and inventory wor
 - **Gateway** - YARP reverse proxy.
 - **CompanyService** - company master data and company addresses backed by CompanyDb.
 - **InventoryService** - inventory items, stock balances, and stock reservations.
-- **ShipmentService** - shipment creation and reservation status tracking.
+- **ShipmentService** - shipment creation, optional sender/receiver company/address references, and reservation status tracking.
 - **SQL Server database per service** - `InventoryDb`, `ShipmentDb`, and the manual `CompanyDb` baseline.
 - **RabbitMQ integration events** - asynchronous service communication.
 - **Outbox/inbox idempotency** - reliable publishing, duplicate message handling, and manual retry visibility.
@@ -56,7 +56,7 @@ Docker Compose can start RabbitMQ, Redis, SQL Server, and the four ASP.NET Core 
 
 CompanyService `/health` checks CompanyDb connectivity. InventoryService and ShipmentService `/health` endpoints check RabbitMQ connectivity. They do not validate every exchange, queue, or binding.
 
-CompanyService exposes the minimal local company/address API through the Gateway under `/company`, including `POST /company/companies`, `GET /company/companies/{id}`, `GET /company/companies`, `PUT /company/companies/{id}`, `POST /company/companies/{companyId}/addresses`, `GET /company/companies/{companyId}/addresses`, and `GET /company/companies/{companyId}/addresses/{addressId}`.
+CompanyService exposes the minimal local company/address API through the Gateway under `/company`, including `POST /company/companies`, `GET /company/companies/{id}`, `GET /company/companies`, `PUT /company/companies/{id}`, `POST /company/companies/{companyId}/addresses`, `GET /company/companies/{companyId}/addresses`, and `GET /company/companies/{companyId}/addresses/{addressId}`. Shipment creation can optionally include sender/receiver company and address IDs; ShipmentService validates those pairs through CompanyService before saving.
 
 Outbox publishers use row claiming for multiple replicas and bounded retry scheduling with a poison-message state for messages that keep failing.
 

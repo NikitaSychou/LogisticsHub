@@ -12,7 +12,11 @@ public static partial class ShipmentMapper
         return new CreateShipmentCommand(
             request.Items
                 .Select(ToCommandItem)
-                .ToArray());
+                .ToArray(),
+            request.SenderCompanyId,
+            request.SenderAddressId,
+            request.ReceiverCompanyId,
+            request.ReceiverAddressId);
     }
 
     public static partial GetShipmentResponse ToResponse(GetShipmentResult result);

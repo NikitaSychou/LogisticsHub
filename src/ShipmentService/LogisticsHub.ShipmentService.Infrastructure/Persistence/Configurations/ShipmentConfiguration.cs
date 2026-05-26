@@ -28,6 +28,18 @@ public sealed class ShipmentConfiguration : IEntityTypeConfiguration<Shipment>
         builder.Property(x => x.ReservationFailureReason)
             .HasColumnName("reservation_failure_reason");
 
+        builder.Property(x => x.SenderCompanyId)
+            .HasColumnName("sender_company_id");
+
+        builder.Property(x => x.SenderAddressId)
+            .HasColumnName("sender_address_id");
+
+        builder.Property(x => x.ReceiverCompanyId)
+            .HasColumnName("receiver_company_id");
+
+        builder.Property(x => x.ReceiverAddressId)
+            .HasColumnName("receiver_address_id");
+
         builder.Property(x => x.DestinationName)
             .HasColumnName("destination_name");
 

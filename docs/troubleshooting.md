@@ -77,3 +77,4 @@ Shipment reservation result handlers also guard shipment state. Stale or conflic
 EF Core migrations are intentionally not used. Database changes should be handled with manual SQL outside EF migrations.
 
 Docker Compose does not create or recreate database schema automatically. Run `.\bootstrap-docker-sql.ps1` to prepare `InventoryDb`, `ShipmentDb`, and `CompanyDb` in the Docker SQL Server container. CompanyService uses `CompanyDb` for health checks and minimal Company/Address CRUD.
+ShipmentService uses CompanyService only when shipment creation includes sender/receiver company/address IDs. If CompanyService is unavailable during that validation, shipment creation fails with a service dependency error.

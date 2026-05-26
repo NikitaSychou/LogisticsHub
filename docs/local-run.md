@@ -25,8 +25,10 @@ The local appsettings used by `dotnet run` still point to local SQL Server datab
 
 The expected local SQL Server instance for the checked-in local appsettings is `localhost\SQLEXPRESS` with Windows Authentication.
 CompanyService connects to `CompanyDb` for health checks and minimal Company/Address CRUD.
+ShipmentService can optionally validate sender/receiver company/address references through CompanyService when those IDs are included in shipment creation requests.
 
 For containers, `docker-compose.yml` overrides connection strings and RabbitMQ settings so services use Docker service names such as `sqlserver` and `rabbitmq`.
+It also points ShipmentService at `http://companyservice:8080` for optional company/address reference validation.
 
 Redis is exposed by Docker Compose for local infrastructure integration work, but the current application code does not use Redis yet.
 

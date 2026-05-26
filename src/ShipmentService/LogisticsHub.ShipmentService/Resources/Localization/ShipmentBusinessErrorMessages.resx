@@ -15,4 +15,13 @@
   <data name="shipment.not_found" xml:space="preserve">
     <value>Shipment was not found.</value>
   </data>
+  <data name="shipment.sender_company_address_not_found" xml:space="preserve">
+    <value>Sender company/address reference was not found.</value>
+  </data>
+  <data name="shipment.receiver_company_address_not_found" xml:space="preserve">
+    <value>Receiver company/address reference was not found.</value>
+  </data>
+  <data name="shipment.company_service_unavailable" xml:space="preserve">
+    <value>CompanyService is unavailable while validating shipment company/address references.</value>
+  </data>
 </root>
