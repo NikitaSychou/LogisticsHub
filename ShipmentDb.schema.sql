@@ -3,7 +3,7 @@
 -- Database: ShipmentDb
 -- Generated: 2026-05-25T14:56:04.2714622Z
 -- Schema only. No table data is included.
--- Manually updated to include nullable sender/receiver Company/Address references.
+-- Manually updated to include required sender/receiver Company/Address references.
 
 SET ANSI_NULLS ON
 GO
@@ -171,10 +171,10 @@ CREATE TABLE [dbo].[shipments](
 	[status] [nvarchar](32) COLLATE SQL_Latin1_General_CP1_CI_AS NOT NULL,
 	[reservation_id] [uniqueidentifier] NULL,
 	[reservation_failure_reason] [nvarchar](500) COLLATE SQL_Latin1_General_CP1_CI_AS NULL,
-	[sender_company_id] [uniqueidentifier] NULL,
-	[sender_address_id] [uniqueidentifier] NULL,
-	[receiver_company_id] [uniqueidentifier] NULL,
-	[receiver_address_id] [uniqueidentifier] NULL,
+	[sender_company_id] [uniqueidentifier] NOT NULL,
+	[sender_address_id] [uniqueidentifier] NOT NULL,
+	[receiver_company_id] [uniqueidentifier] NOT NULL,
+	[receiver_address_id] [uniqueidentifier] NOT NULL,
 	[destination_name] [nvarchar](200) COLLATE SQL_Latin1_General_CP1_CI_AS NOT NULL,
 	[destination_address] [nvarchar](500) COLLATE SQL_Latin1_General_CP1_CI_AS NOT NULL,
 	[comment] [nvarchar](1000) COLLATE SQL_Latin1_General_CP1_CI_AS NULL,

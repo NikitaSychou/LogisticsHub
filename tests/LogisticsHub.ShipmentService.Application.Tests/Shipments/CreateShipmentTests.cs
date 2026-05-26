@@ -11,19 +11,23 @@ namespace LogisticsHub.ShipmentService.Application.Tests.Shipments;
 public sealed class CreateShipmentTests
 {
     [Fact]
-    public async Task Handle_CreatesShipmentAndStockReservationRequestedOutboxMessage()
+    public async Task Handle_WithCompanyAddressReferences_CreatesShipmentAndStockReservationRequestedOutboxMessage()
     {
         // Arrange
         var dbContext = new FakeShipmentDbContext();
+        var senderCompanyId = Guid.NewGuid();
+        var senderAddressId = Guid.NewGuid();
+        var receiverCompanyId = Guid.NewGuid();
+        var receiverAddressId = Guid.NewGuid();
         var command = new CreateShipmentCommand(
             [
                 new CreateShipmentItemCommand("TEST-SKU-001", 5),
                 new CreateShipmentItemCommand("TEST-SKU-002", 3)
             ],
-            SenderCompanyId: null,
-            SenderAddressId: null,
-            ReceiverCompanyId: null,
-            ReceiverAddressId: null);
+            senderCompanyId,
+            senderAddressId,
+            receiverCompanyId,
+            receiverAddressId);
         var companyAddressReferenceClient = new FakeCompanyAddressReferenceClient();
         var handler = new CreateShipment(dbContext, companyAddressReferenceClient);
 
@@ -36,11 +40,13 @@ public sealed class CreateShipmentTests
         Assert.Equal(result.Value.ShipmentId, shipment.Id);
         Assert.Equal(ShipmentStatus.ReservationRequested, shipment.Status);
         Assert.Equal(ShipmentStatus.ReservationRequested, result.Value.Status);
-        Assert.Null(shipment.SenderCompanyId);
-        Assert.Null(shipment.SenderAddressId);
-        Assert.Null(shipment.ReceiverCompanyId);
-        Assert.Null(shipment.ReceiverAddressId);
-        Assert.Empty(companyAddressReferenceClient.Requests);
+        Assert.Equal(senderCompanyId, shipment.SenderCompanyId);
+        Assert.Equal(senderAddressId, shipment.SenderAddressId);
+        Assert.Equal(receiverCompanyId, shipment.ReceiverCompanyId);
+        Assert.Equal(receiverAddressId, shipment.ReceiverAddressId);
+        Assert.Equal(
+            [(senderCompanyId, senderAddressId), (receiverCompanyId, receiverAddressId)],
+            companyAddressReferenceClient.Requests);
 
         Assert.Equal(2, dbContext.ShipmentItems.Count);
         Assert.All(dbContext.ShipmentItems, item => Assert.Equal(shipment.Id, item.ShipmentId));

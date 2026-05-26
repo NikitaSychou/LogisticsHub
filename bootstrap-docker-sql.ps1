@@ -17,6 +17,17 @@ else {
 
 $databases = @(
     @{
+        Name = "CompanyDb"
+        SchemaFile = "CompanyDb.schema.sql"
+        PatchFiles = @(
+            "CompanyDb.default-shipment-references.sql"
+        )
+        ExpectedTables = @(
+            "companies",
+            "company_addresses"
+        )
+    },
+    @{
         Name = "InventoryDb"
         SchemaFile = "InventoryDb.schema.sql"
         ExpectedTables = @(
@@ -32,7 +43,8 @@ $databases = @(
         Name = "ShipmentDb"
         SchemaFile = "ShipmentDb.schema.sql"
         PatchFiles = @(
-            "ShipmentDb.company-address-columns.sql"
+            "ShipmentDb.company-address-columns.sql",
+            "ShipmentDb.require-company-address-columns.sql"
         )
         ExpectedTables = @(
             "shipment_inbox_messages",
@@ -40,14 +52,6 @@ $databases = @(
             "shipment_outbox_messages",
             "shipment_status_history",
             "shipments"
-        )
-    },
-    @{
-        Name = "CompanyDb"
-        SchemaFile = "CompanyDb.schema.sql"
-        ExpectedTables = @(
-            "companies",
-            "company_addresses"
         )
     }
 )
