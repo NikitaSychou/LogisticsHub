@@ -59,6 +59,11 @@ services:
       ASPNETCORE_ENVIRONMENT: Development
       ConnectionStrings__ShipmentDb: "Server=sqlserver,1433;Database=ShipmentDb;User Id=sa;Password=LogisticsHub_DevPassword123!;TrustServerCertificate=True;"
       CompanyService__BaseUrl: http://companyservice:8080
+      CompanyService__Resilience__TimeoutSeconds: 3
+      CompanyService__Resilience__RetryCount: 1
+      CompanyService__Resilience__RetryDelayMilliseconds: 150
+      CompanyService__Resilience__CircuitBreakerFailureThreshold: 3
+      CompanyService__Resilience__CircuitBreakerDurationSeconds: 5
       RabbitMq__HostName: rabbitmq
       RabbitMq__Port: 5672
       RabbitMq__UserName: guest

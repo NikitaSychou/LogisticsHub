@@ -74,6 +74,17 @@ public sealed class ShipmentsControllerTests
     }
 
     [Fact]
+    public async Task CreateAsync_WhenCompanyServiceValidationTimesOut_ReturnsServiceUnavailable()
+    {
+        var controller = CreateController(Result<CreateShipmentResult>.Failure(ShipmentErrors.CompanyServiceUnavailable()));
+
+        var response = await controller.CreateAsync(CreateRequest(), CancellationToken.None);
+
+        var objectResult = Assert.IsAssignableFrom<ObjectResult>(response);
+        Assert.Equal(StatusCodes.Status503ServiceUnavailable, objectResult.StatusCode);
+    }
+
+    [Fact]
     public async Task CreateAsync_WhenShipmentIsCreated_ReturnsCreated()
     {
         var result = CreateResult();

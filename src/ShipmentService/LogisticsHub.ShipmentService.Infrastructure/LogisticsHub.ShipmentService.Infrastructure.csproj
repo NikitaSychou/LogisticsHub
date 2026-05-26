@@ -13,6 +13,7 @@
     <PackageReference Include="Microsoft.Extensions.Http" Version="10.0.0" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\..\Shared\LogisticsHub.Http.Resilience\LogisticsHub.Http.Resilience.csproj" />
     <ProjectReference Include="..\LogisticsHub.ShipmentService.Application\LogisticsHub.ShipmentService.Application.csproj" />
     <ProjectReference Include="..\LogisticsHub.ShipmentService.Domain\LogisticsHub.ShipmentService.Domain.csproj" />
   </ItemGroup>
