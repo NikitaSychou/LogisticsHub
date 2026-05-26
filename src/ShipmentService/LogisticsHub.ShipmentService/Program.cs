@@ -44,6 +44,7 @@ builder.Services.AddMediatR(configuration =>
 
 builder.Services.AddHostedService<StockReservedConsumer>();
 builder.Services.AddHostedService<StockReservationFailedConsumer>();
+builder.Services.AddScoped<ShipmentOutboxProcessor>();
 builder.Services.AddHostedService<ShipmentOutboxPublisherBackgroundService>();
 
 var app = builder.Build();

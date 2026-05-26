@@ -38,6 +38,7 @@ builder.Services.AddMediatR(configuration =>
 });
 
 builder.Services.AddHostedService<StockReservationRequestedConsumer>();
+builder.Services.AddScoped<InventoryOutboxProcessor>();
 builder.Services.AddHostedService<InventoryOutboxPublisherBackgroundService>();
 
 var app = builder.Build();
