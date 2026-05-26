@@ -1,0 +1,169 @@
+using LogisticsHub.InventoryService.Application.InventoryItems;
+using LogisticsHub.InventoryService.Contracts;
+using LogisticsHub.InventoryService.Controllers;
+using LogisticsHub.Results;
+using MediatR;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.DependencyInjection;
+using Xunit;
+
+namespace LogisticsHub.InventoryService.Application.Tests.InventoryItems;
+
+public sealed class InventoryItemsControllerTests
+{
+    [Fact]
+    public async Task CreateAsync_WhenRequestIsInvalid_ReturnsBadRequest()
+    {
+        var controller = CreateController();
+        var request = new CreateInventoryItemRequest("", "", -1);
+
+        var response = await controller.CreateAsync(request, CancellationToken.None);
+
+        AssertValidationProblem(response, StatusCodes.Status400BadRequest);
+        Assert.True(controller.ModelState.ContainsKey("sku"));
+        Assert.True(controller.ModelState.ContainsKey("name"));
+        Assert.True(controller.ModelState.ContainsKey("quantityAvailable"));
+    }
+
+    [Fact]
+    public async Task CreateAsync_WhenInventoryItemAlreadyExists_ReturnsConflict()
+    {
+        var controller = CreateController(new FakeMediator
+        {
+            CreateInventoryItemResult = Result<InventoryItemResult>.Failure(InventoryItemErrors.AlreadyExists("TEST-SKU"))
+        });
+
+        var response = await controller.CreateAsync(CreateRequest(), CancellationToken.None);
+
+        Assert.IsType<ConflictResult>(response);
+    }
+
+    [Fact]
+    public async Task GetAsync_WhenInventoryItemDoesNotExist_ReturnsNotFound()
+    {
+        var controller = CreateController(new FakeMediator
+        {
+            GetInventoryItemResult = Result<InventoryItemResult>.Failure(InventoryItemErrors.NotFound("TEST-SKU"))
+        });
+
+        var response = await controller.GetAsync("TEST-SKU", CancellationToken.None);
+
+        Assert.IsType<NotFoundResult>(response);
+    }
+
+    [Fact]
+    public async Task CreateAsync_WhenInventoryItemIsCreated_ReturnsCreated()
+    {
+        var result = CreateResult();
+        var controller = CreateController(new FakeMediator
+        {
+            CreateInventoryItemResult = Result<InventoryItemResult>.Success(result)
+        });
+
+        var response = await controller.CreateAsync(CreateRequest(), CancellationToken.None);
+
+        var createdResult = Assert.IsType<CreatedResult>(response);
+        Assert.Equal($"/inventory-items/{result.Sku}", createdResult.Location);
+        var value = Assert.IsAssignableFrom<CreateInventoryItemResponse>(createdResult.Value);
+        Assert.Equal(result.Sku, value.Sku);
+    }
+
+    private static InventoryItemsController CreateController()
+    {
+        return CreateController(new FakeMediator());
+    }
+
+    private static InventoryItemsController CreateController(FakeMediator mediator)
+    {
+        var serviceProvider = new ServiceCollection()
+            .AddLogging()
+            .AddControllers()
+            .Services
+            .BuildServiceProvider();
+
+        return new InventoryItemsController(mediator)
+        {
+            ControllerContext = new ControllerContext
+            {
+                HttpContext = new DefaultHttpContext
+                {
+                    RequestServices = serviceProvider
+                }
+            }
+        };
+    }
+
+    private static CreateInventoryItemRequest CreateRequest()
+    {
+        return new CreateInventoryItemRequest("TEST-SKU", "Test item", 5);
+    }
+
+    private static InventoryItemResult CreateResult()
+    {
+        return new InventoryItemResult("TEST-SKU", "Test item", 5);
+    }
+
+    private static void AssertValidationProblem(IActionResult response, int expectedStatusCode)
+    {
+        var objectResult = Assert.IsAssignableFrom<ObjectResult>(response);
+        var problemDetails = Assert.IsAssignableFrom<ProblemDetails>(objectResult.Value);
+
+        Assert.Equal(expectedStatusCode, objectResult.StatusCode ?? problemDetails.Status);
+    }
+
+    private sealed class FakeMediator : IMediator
+    {
+        public Result<InventoryItemResult> CreateInventoryItemResult { get; set; } =
+            Result<InventoryItemResult>.Success(InventoryItemsControllerTests.CreateResult());
+
+        public Result<InventoryItemResult> GetInventoryItemResult { get; set; } =
+            Result<InventoryItemResult>.Success(InventoryItemsControllerTests.CreateResult());
+
+        public Task<TResponse> Send<TResponse>(IRequest<TResponse> request, CancellationToken cancellationToken = default)
+        {
+            object result = request switch
+            {
+                CreateInventoryItemCommand => CreateInventoryItemResult,
+                GetInventoryItemQuery => GetInventoryItemResult,
+                _ => throw new InvalidOperationException($"Unexpected request type '{request.GetType().Name}'.")
+            };
+
+            return Task.FromResult((TResponse)result);
+        }
+
+        public Task Send<TRequest>(TRequest request, CancellationToken cancellationToken = default)
+            where TRequest : IRequest
+        {
+            throw new InvalidOperationException($"Unexpected request type '{typeof(TRequest).Name}'.");
+        }
+
+        public Task<object?> Send(object request, CancellationToken cancellationToken = default)
+        {
+            throw new InvalidOperationException($"Unexpected request type '{request.GetType().Name}'.");
+        }
+
+        public IAsyncEnumerable<TResponse> CreateStream<TResponse>(
+            IStreamRequest<TResponse> request,
+            CancellationToken cancellationToken = default)
+        {
+            throw new InvalidOperationException($"Unexpected stream request type '{request.GetType().Name}'.");
+        }
+
+        public IAsyncEnumerable<object?> CreateStream(object request, CancellationToken cancellationToken = default)
+        {
+            throw new InvalidOperationException($"Unexpected stream request type '{request.GetType().Name}'.");
+        }
+
+        public Task Publish(object notification, CancellationToken cancellationToken = default)
+        {
+            throw new InvalidOperationException($"Unexpected notification type '{notification.GetType().Name}'.");
+        }
+
+        public Task Publish<TNotification>(TNotification notification, CancellationToken cancellationToken = default)
+            where TNotification : INotification
+        {
+            throw new InvalidOperationException($"Unexpected notification type '{typeof(TNotification).Name}'.");
+        }
+    }
+}
