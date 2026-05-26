@@ -18,6 +18,8 @@ The export helper is schema-only. It does not script table data and does not mod
 - `ShipmentDb.schema.sql`
 - `CompanyDb.schema.sql`
 
+`ShipmentDb.company-address-columns.sql` is an idempotent manual patch for existing local Docker `ShipmentDb` databases. It adds nullable sender/receiver company and address reference columns without inserting data or adding cross-database foreign keys.
+
 `InventoryDb.schema.sql` and `ShipmentDb.schema.sql` were exported from local SQL Express. `CompanyDb.schema.sql` is the manual baseline used by CompanyService persistence wiring and health checks.
 
 EF Core migrations are intentionally not used in this repository. Database schema changes should be made with manual SQL. Re-export existing local SQL Express schemas with the helper script where applicable, and review any manual snapshots directly.
@@ -63,6 +65,15 @@ The code expects these mapped tables:
 | `dbo.shipment_outbox_messages` | Retryable integration events published by ShipmentService. |
 
 Current exported schema includes all mapped ShipmentService tables and all columns required by the EF mappings and raw outbox claiming SQL.
+
+`dbo.shipments` also contains nullable future-reference columns:
+
+- `sender_company_id`
+- `sender_address_id`
+- `receiver_company_id`
+- `receiver_address_id`
+
+These columns are manual schema preparation for a later ShipmentService API/domain update. They are intentionally nullable, are not mapped by the current ShipmentService EF model, and do not have foreign keys to `CompanyDb` because service databases remain independent.
 
 Important exported constraints and indexes:
 
@@ -115,6 +126,7 @@ Known differences between exported schema and EF mappings:
 | Additional check constraints | Quantity and status checks exist only in SQL. | Useful database guards, but not visible from EF configuration alone. |
 | Default constraints | ID and timestamp defaults exist only in SQL. | Usually fallback behavior because the application supplies values. |
 | Extra table | `dbo.shipment_status_history` exists in `ShipmentDb` but is not mapped by current code. | No current runtime dependency; keep documented as local schema state. |
+| Future shipment references | `dbo.shipments` contains nullable sender/receiver company and address reference columns that are not mapped by current ShipmentService code. | No current runtime dependency; later ShipmentService work can map and validate these values through CompanyService. |
 | Delete behavior | EF configures cascade delete for `stock_reservation_items` -> `stock_reservations` and `shipment_items` -> `shipments`, but the exported FKs do not include `ON DELETE CASCADE`. | No current application delete workflow depends on this, but it is a schema/model mismatch. |
 | Inventory outbox polling index | ShipmentDb has an unprocessed outbox index; InventoryDb does not. | Not a functional blocker; possible future performance gap. |
 | CompanyDb code mapping | `CompanyDb.schema.sql` has CompanyService domain entities, EF mappings, and minimal CRUD endpoints. | Manual SQL remains the source of truth; no EF migrations are used. |
@@ -155,5 +167,9 @@ Review changes to:
 - `InventoryDb.schema.sql`
 - `ShipmentDb.schema.sql`
 - `CompanyDb.schema.sql`
+
+When updating an already-created Docker `ShipmentDb`, the bootstrap helper also applies:
+
+- `ShipmentDb.company-address-columns.sql`
 
 Do not use EF Core migrations for this project.

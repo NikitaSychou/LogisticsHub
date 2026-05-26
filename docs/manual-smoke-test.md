@@ -93,7 +93,7 @@ The script creates `InventoryDb`, `ShipmentDb`, and `CompanyDb` in the `logistic
 - `ShipmentDb.schema.sql`
 - `CompanyDb.schema.sql`
 
-It does not insert seed or business data. `CompanyDb` is required for CompanyService health and persistence wiring, but it is not part of this business smoke-test path. If a database already contains a partial or unexpected schema, the script stops and leaves it unchanged.
+It does not insert seed or business data. `CompanyDb` is required for CompanyService health and persistence wiring, but it is not part of this business smoke-test path. For an existing Docker `ShipmentDb`, the script also applies the idempotent `ShipmentDb.company-address-columns.sql` patch. Those nullable sender/receiver Company/Address columns are reserved for later ShipmentService work and do not change this smoke-test flow. If a database already contains a partial or unexpected schema, the script stops and leaves it unchanged.
 
 RabbitMQ Management uses the local default credentials:
 

@@ -31,6 +31,9 @@ $databases = @(
     @{
         Name = "ShipmentDb"
         SchemaFile = "ShipmentDb.schema.sql"
+        PatchFiles = @(
+            "ShipmentDb.company-address-columns.sql"
+        )
         ExpectedTables = @(
             "shipment_inbox_messages",
             "shipment_items",
@@ -125,6 +128,44 @@ function Invoke-SqlFile {
         "-i",
         $ContainerPath
     ) | Out-Null
+}
+
+function Invoke-SchemaPatchFiles {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string] $Database,
+
+        [Parameter(Mandatory = $true)]
+        [hashtable] $DatabaseConfig,
+
+        [Parameter(Mandatory = $true)]
+        [string] $ContainerDirectory
+    )
+
+    $patchFileNames = @()
+    if ($DatabaseConfig.ContainsKey("PatchFiles") -and $null -ne $DatabaseConfig["PatchFiles"]) {
+        $patchFileNames = @($DatabaseConfig["PatchFiles"] |
+            Where-Object { -not [string]::IsNullOrWhiteSpace([string] $_) } |
+            ForEach-Object { [string] $_ })
+    }
+
+    if (-not (Test-HasAnyItem -Items $patchFileNames)) {
+        return
+    }
+
+    foreach ($patchFileName in $patchFileNames) {
+        $patchFilePath = Join-Path -Path $scriptRoot -ChildPath $patchFileName
+
+        if (-not (Test-Path -LiteralPath $patchFilePath)) {
+            throw "Patch file '$patchFileName' was not found at '$patchFilePath'. Keep patch files beside this script."
+        }
+
+        $containerPatchPath = "$ContainerDirectory/$Database.$([System.IO.Path]::GetFileName($patchFileName))"
+        Invoke-Docker -Arguments @("cp", $patchFilePath, "${ContainerName}:$containerPatchPath") | Out-Null
+        Invoke-SqlFile -Database $Database -ContainerPath $containerPatchPath
+
+        Write-Host "Applied $patchFileName to $Database."
+    }
 }
 
 function Get-UserTables {
@@ -312,7 +353,8 @@ foreach ($database in $databases) {
     $missingExpectedTables = @($expectedTables | Where-Object { $_ -notin $existingTables })
 
     if ((Test-HasAnyItem -Items $existingTables) -and -not (Test-HasAnyItem -Items $missingExpectedTables)) {
-        Write-Host "$databaseName already contains the expected schema tables. Leaving it unchanged."
+        Write-Host "$databaseName already contains the expected schema tables."
+        Invoke-SchemaPatchFiles -Database $databaseName -DatabaseConfig $database -ContainerDirectory $containerSchemaDirectory
         continue
     }
 
@@ -342,6 +384,7 @@ Leaving the database unchanged. Use a fresh Docker SQL volume or clean the datab
         Invoke-SqlFile -Database $databaseName -ContainerPath $containerForeignKeySchemaPath
 
         Write-Host "Applied $schemaFileName to $databaseName."
+        Invoke-SchemaPatchFiles -Database $databaseName -DatabaseConfig $database -ContainerDirectory $containerSchemaDirectory
     }
     finally {
         if ($null -ne $splitSchema -and $splitSchema.ContainsKey("Directory") -and (Test-Path -LiteralPath ([string] $splitSchema["Directory"]))) {
