@@ -56,7 +56,7 @@ Docker Compose can start RabbitMQ, Redis, SQL Server, and the four ASP.NET Core 
 
 CompanyService `/health` checks CompanyDb connectivity. InventoryService and ShipmentService `/health` endpoints check RabbitMQ connectivity. They do not validate every exchange, queue, or binding.
 
-CompanyService exposes the minimal local company/address API through the Gateway under `/company`, including `POST /company/companies`, `GET /company/companies/{id}`, `GET /company/companies`, `PUT /company/companies/{id}`, `POST /company/companies/{companyId}/addresses`, and `GET /company/companies/{companyId}/addresses`.
+CompanyService exposes the minimal local company/address API through the Gateway under `/company`, including `POST /company/companies`, `GET /company/companies/{id}`, `GET /company/companies`, `PUT /company/companies/{id}`, `POST /company/companies/{companyId}/addresses`, `GET /company/companies/{companyId}/addresses`, and `GET /company/companies/{companyId}/addresses/{addressId}`.
 
 Outbox publishers use row claiming for multiple replicas and bounded retry scheduling with a poison-message state for messages that keep failing.
 
