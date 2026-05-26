@@ -1,10 +1,12 @@
 using LogisticsHub.AspNetCore;
 using LogisticsHub.ShipmentService.Application.Shipments;
 using LogisticsHub.ShipmentService.Contracts;
+using LogisticsHub.ShipmentService.Localization;
 using LogisticsHub.ShipmentService.Mapping;
 using LogisticsHub.ShipmentService.Validation;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Localization;
 
 namespace LogisticsHub.ShipmentService.Controllers;
 
@@ -13,10 +15,14 @@ namespace LogisticsHub.ShipmentService.Controllers;
 public sealed class ShipmentsController : ControllerBase
 {
     private readonly IMediator _mediator;
+    private readonly IStringLocalizer<ShipmentBusinessErrorMessages> _errorLocalizer;
 
-    public ShipmentsController(IMediator mediator)
+    public ShipmentsController(
+        IMediator mediator,
+        IStringLocalizer<ShipmentBusinessErrorMessages> errorLocalizer)
     {
         _mediator = mediator;
+        _errorLocalizer = errorLocalizer;
     }
 
     [HttpGet("{id:guid}")]
@@ -41,6 +47,7 @@ public sealed class ShipmentsController : ControllerBase
     [HttpPost]
     [ProducesResponseType(typeof(CreateShipmentResult), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status503ServiceUnavailable)]
     public async Task<IActionResult> CreateAsync(
         CreateShipmentRequest request,
         CancellationToken cancellationToken)
@@ -57,6 +64,23 @@ public sealed class ShipmentsController : ControllerBase
 
         var result = await _mediator.Send(command, cancellationToken);
 
-        return Created($"/shipments/{result.ShipmentId}", result);
+        if (result.IsFailure)
+        {
+            if (result.Error.Code == "shipment.company_service_unavailable")
+            {
+                return StatusCode(
+                    StatusCodes.Status503ServiceUnavailable,
+                    new { reason = result.Error.ToLocalizedMessage(_errorLocalizer) });
+            }
+
+            var modelStateKey = result.Error.Code == "shipment.sender_company_address_not_found"
+                ? "senderAddressId"
+                : "receiverAddressId";
+
+            ModelState.AddModelError(modelStateKey, result.Error.ToLocalizedMessage(_errorLocalizer));
+            return ValidationProblem(ModelState);
+        }
+
+        return Created($"/shipments/{result.Value.ShipmentId}", result.Value);
     }
 }

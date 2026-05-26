@@ -7,6 +7,21 @@ public static class CreateShipmentRequestValidator
     public static Dictionary<string, string[]> Validate(CreateShipmentRequest request)
     {
         var errors = new Dictionary<string, string[]>();
+        var providedReferenceCount = new[]
+        {
+            request.SenderCompanyId,
+            request.SenderAddressId,
+            request.ReceiverCompanyId,
+            request.ReceiverAddressId
+        }.Count(value => value.HasValue);
+
+        if (providedReferenceCount is > 0 and < 4)
+        {
+            errors["companyAddressReferences"] =
+            [
+                "Sender company, sender address, receiver company, and receiver address are all required when any one is provided."
+            ];
+        }
 
         if (request.Items is null)
         {

@@ -15,4 +15,13 @@
   <data name="shipment.not_found" xml:space="preserve">
     <value>Відправлення не знайдено.</value>
   </data>
+  <data name="shipment.sender_company_address_not_found" xml:space="preserve">
+    <value>Посилання на компанію/адресу відправника не знайдено.</value>
+  </data>
+  <data name="shipment.receiver_company_address_not_found" xml:space="preserve">
+    <value>Посилання на компанію/адресу отримувача не знайдено.</value>
+  </data>
+  <data name="shipment.company_service_unavailable" xml:space="preserve">
+    <value>CompanyService недоступний під час перевірки посилань на компанії/адреси відправлення.</value>
+  </data>
 </root>

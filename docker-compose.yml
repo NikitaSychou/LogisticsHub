@@ -56,12 +56,14 @@ services:
     environment:
       ASPNETCORE_ENVIRONMENT: Development
       ConnectionStrings__ShipmentDb: "Server=sqlserver,1433;Database=ShipmentDb;User Id=sa;Password=LogisticsHub_DevPassword123!;TrustServerCertificate=True;"
+      CompanyService__BaseUrl: http://companyservice:8080
       RabbitMq__HostName: rabbitmq
       RabbitMq__Port: 5672
       RabbitMq__UserName: guest
       RabbitMq__Password: guest
       RabbitMq__ExchangeName: logisticshub.events
     depends_on:
+      - companyservice
       - rabbitmq
       - sqlserver
     ports:

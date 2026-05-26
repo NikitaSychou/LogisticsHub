@@ -30,6 +30,7 @@ builder.Services
 
 // Register infrastructure dependencies.
 builder.Services.AddDbInfrastructure(builder.Configuration);
+builder.Services.AddCompanyServiceClient(builder.Configuration);
 builder.Services.AddRabbitMqMessaging(builder.Configuration);
 
 // Register application services.

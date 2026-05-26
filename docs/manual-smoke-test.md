@@ -189,6 +189,8 @@ Expected initial response:
 
 Shipment creation writes a ShipmentService outbox row. It does not mean stock reservation has completed yet.
 
+Optional sender/receiver company and address references are supported but are not required for this smoke-test path. If one of `senderCompanyId`, `senderAddressId`, `receiverCompanyId`, or `receiverAddressId` is sent, all four must be sent. ShipmentService validates each company/address pair with CompanyService before saving the shipment.
+
 ## Poll Shipment Status
 
 The outbox publishers poll every few seconds, and the result depends on RabbitMQ delivery plus InventoryService processing. Poll until the shipment leaves `ReservationRequested`.
