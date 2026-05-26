@@ -17,6 +17,12 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v5
 
+      - name: Show .NET environment
+        run: dotnet --info
+
+      - name: Validate Docker Compose configuration
+        run: docker compose config
+
       - name: Restore dependencies
         run: dotnet restore ./LogisticsHub.sln
 
