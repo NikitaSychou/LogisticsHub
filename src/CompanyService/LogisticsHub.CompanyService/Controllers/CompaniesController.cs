@@ -53,6 +53,23 @@ public sealed class CompaniesController : ControllerBase
         return Created($"/companies/{response.Id}", response);
     }
 
+    [HttpPost("/system/test-data/companies")]
+    [ProducesResponseType(typeof(GenerateCompanyTestDataResult), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GenerateTestDataAsync(
+        [FromServices] IWebHostEnvironment environment,
+        CancellationToken cancellationToken)
+    {
+        if (!environment.IsDevelopment())
+        {
+            return NotFound();
+        }
+
+        var result = await _mediator.Send(new GenerateCompanyTestDataCommand(), cancellationToken);
+
+        return Ok(result);
+    }
+
     [HttpGet("{id:guid}")]
     [ProducesResponseType(typeof(CompanyResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]

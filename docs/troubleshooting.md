@@ -1,17 +1,17 @@
 # Troubleshooting
 
-This project uses local SQL Server, RabbitMQ, Redis, Gateway, CompanyService, InventoryService, and ShipmentService. Start with the smallest check that proves which part is failing.
+This project uses host SQL Server Express, Docker Compose RabbitMQ and Redis, Gateway, CompanyService, InventoryService, and ShipmentService. Start with the smallest check that proves which part is failing.
 
 ## Startup Checks
 
-1. Confirm SQL Server is running and the configured connection strings are reachable.
+1. Confirm `SQLEXPRESS` is running, TCP/IP is enabled, and port `14330` is listening.
 2. Confirm RabbitMQ is running on the configured host and port.
 3. Start InventoryService and ShipmentService before the Gateway.
 4. Check each service console for configuration, database, or RabbitMQ connection errors.
 
-If using Docker Compose, check container status with `docker compose ps`. RabbitMQ management is available at `http://localhost:15672` with the local development credentials from the container image defaults. SQL Server should show as running before the services try to connect.
+If using Docker Compose, check container status with `docker compose ps`. RabbitMQ management is available at `http://localhost:15672` with the local development credentials from the container image defaults. SQL Server is not a Compose service; application containers connect to the host through `host.docker.internal,14330`.
 
-`depends_on` starts containers in order but does not guarantee that SQL Server or RabbitMQ are fully ready. If an app container exits during startup, check logs with:
+`depends_on` starts containers in order but does not guarantee that RabbitMQ is fully ready. If an app container exits during startup, check logs with:
 
 ```powershell
 docker compose logs inventoryservice
@@ -76,5 +76,26 @@ Shipment reservation result handlers also guard shipment state. Stale or conflic
 
 EF Core migrations are intentionally not used. Database changes should be handled with manual SQL outside EF migrations.
 
-Docker Compose does not create or recreate database schema automatically. Run `.\bootstrap-docker-sql.ps1` to prepare `InventoryDb`, `ShipmentDb`, and `CompanyDb` in the Docker SQL Server container. CompanyService uses `CompanyDb` for health checks and minimal Company/Address CRUD.
+Docker Compose does not start SQL Server and does not create or recreate database schema automatically. Prepare `CompanyDb`, `InventoryDb`, and `ShipmentDb` manually on the host `SQLEXPRESS` instance from the checked-in SQL scripts. `bootstrap-docker-sql.ps1` is a legacy helper for the previous Docker SQL Server setup and is not part of the current Compose flow.
+
+For database connection failures, verify:
+
+- the `SQLEXPRESS` Windows service is running
+- TCP/IP is enabled on fixed port `14330`
+- Docker can reach `host.docker.internal:14330`
+- the required databases exist
+- service SQL logins and database users exist
+- the local root `.env` file contains `COMPANYSERVICE_DB_PASSWORD`, `INVENTORYSERVICE_DB_PASSWORD`, and `SHIPMENTSERVICE_DB_PASSWORD`
+
+Useful checks:
+
+```powershell
+Test-NetConnection localhost -Port 14330
+docker run --rm alpine:3.20 sh -c "nc -vz host.docker.internal 14330"
+docker compose logs companyservice
+docker compose logs inventoryservice
+docker compose logs shipmentservice
+```
+
+CompanyService uses `CompanyDb` for health checks and minimal Company/Address CRUD.
 ShipmentService uses CompanyService when creating shipments because sender/receiver company/address IDs are required. If CompanyService is unavailable during that validation, shipment creation fails with a service dependency error.

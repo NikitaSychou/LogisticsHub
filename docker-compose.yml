@@ -23,11 +23,10 @@ services:
     container_name: logisticshub-companyservice
     environment:
       ASPNETCORE_ENVIRONMENT: Development
-      ConnectionStrings__CompanyDb: "Server=sqlserver,1433;Database=CompanyDb;User Id=sa;Password=LogisticsHub_DevPassword123!;TrustServerCertificate=True;"
+      ConnectionStrings__CompanyDb: "Server=host.docker.internal,14330;Database=CompanyDb;User Id=logisticshub_companyservice;Password=${COMPANYSERVICE_DB_PASSWORD};Encrypt=True;TrustServerCertificate=True;"
       ConnectionStrings__Redis: "redis:6379"
     depends_on:
       - redis
-      - sqlserver
     ports:
       - "5103:8080"
 
@@ -38,7 +37,7 @@ services:
     container_name: logisticshub-inventoryservice
     environment:
       ASPNETCORE_ENVIRONMENT: Development
-      ConnectionStrings__InventoryDb: "Server=sqlserver,1433;Database=InventoryDb;User Id=sa;Password=LogisticsHub_DevPassword123!;TrustServerCertificate=True;"
+      ConnectionStrings__InventoryDb: "Server=host.docker.internal,14330;Database=InventoryDb;User Id=logisticshub_inventoryservice;Password=${INVENTORYSERVICE_DB_PASSWORD};Encrypt=True;TrustServerCertificate=True;"
       RabbitMq__HostName: rabbitmq
       RabbitMq__Port: 5672
       RabbitMq__UserName: guest
@@ -46,7 +45,6 @@ services:
       RabbitMq__ExchangeName: logisticshub.events
     depends_on:
       - rabbitmq
-      - sqlserver
     ports:
       - "5101:8080"
 
@@ -57,7 +55,7 @@ services:
     container_name: logisticshub-shipmentservice
     environment:
       ASPNETCORE_ENVIRONMENT: Development
-      ConnectionStrings__ShipmentDb: "Server=sqlserver,1433;Database=ShipmentDb;User Id=sa;Password=LogisticsHub_DevPassword123!;TrustServerCertificate=True;"
+      ConnectionStrings__ShipmentDb: "Server=host.docker.internal,14330;Database=ShipmentDb;User Id=logisticshub_shipmentservice;Password=${SHIPMENTSERVICE_DB_PASSWORD};Encrypt=True;TrustServerCertificate=True;"
       CompanyService__BaseUrl: http://companyservice:8080
       CompanyService__Resilience__TimeoutSeconds: 3
       CompanyService__Resilience__RetryCount: 1
@@ -72,7 +70,6 @@ services:
     depends_on:
       - companyservice
       - rabbitmq
-      - sqlserver
     ports:
       - "5102:8080"
 
@@ -93,19 +90,6 @@ services:
     volumes:
       - redis-data:/data
 
-  sqlserver:
-    image: mcr.microsoft.com/mssql/server:2022-latest
-    container_name: logisticshub-sqlserver
-    environment:
-      ACCEPT_EULA: "Y"
-      MSSQL_SA_PASSWORD: "LogisticsHub_DevPassword123!"
-      MSSQL_PID: "Developer"
-    ports:
-      - "1433:1433"
-    volumes:
-      - sqlserver-data:/var/opt/mssql
-
 volumes:
   rabbitmq-data:
   redis-data:
-  sqlserver-data:

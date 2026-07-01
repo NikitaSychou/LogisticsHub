@@ -5,17 +5,25 @@ This guide covers the local application workflow for reviewers and contributors.
 ## Prerequisites
 
 - .NET SDK 10
-- SQL Server available locally or through Docker Compose
-- RabbitMQ available locally or through Docker Compose
-- Redis available locally or through Docker Compose for CompanyService address detail caching
+- SQL Server Express available on the Windows host as `localhost\SQLEXPRESS`
+- SQL Server TCP/IP enabled on fixed port `14330`
+- `CompanyDb`, `InventoryDb`, and `ShipmentDb` created and manually prepared from the checked-in SQL scripts
+- SQL logins and database users configured for the three application services
+- RabbitMQ and Redis available through Docker Compose
 
-Docker Compose can start SQL Server, RabbitMQ, Redis, Gateway, CompanyService, InventoryService, and ShipmentService for local development:
+Docker Compose starts RabbitMQ, Redis, Gateway, CompanyService, InventoryService, and ShipmentService for local development:
 
 ```powershell
 docker compose up --build
 ```
 
-The compose file does not create database schema automatically. `InventoryDb`, `ShipmentDb`, and the manual `CompanyDb` baseline are documented in [Database schema](database-schema.md).
+Docker Compose does not start SQL Server and does not create database schema automatically. `InventoryDb`, `ShipmentDb`, and the manual `CompanyDb` baseline are documented in [Database schema](database-schema.md).
+
+Create a local root `.env` file before running Compose. The file is ignored by Git, must not be committed, and supplies the service database password variables:
+
+- `COMPANYSERVICE_DB_PASSWORD`
+- `INVENTORYSERVICE_DB_PASSWORD`
+- `SHIPMENTSERVICE_DB_PASSWORD`
 
 The local appsettings used by `dotnet run` still point to local SQL Server databases:
 
@@ -27,18 +35,10 @@ The expected local SQL Server instance for the checked-in local appsettings is `
 CompanyService connects to `CompanyDb` for health checks and minimal Company/Address CRUD.
 ShipmentService validates required sender/receiver company/address references through CompanyService during shipment creation.
 
-For containers, `docker-compose.yml` overrides connection strings and RabbitMQ settings so services use Docker service names such as `sqlserver` and `rabbitmq`.
+For containers, `docker-compose.yml` overrides connection strings so application services connect to host SQL Server through `host.docker.internal,14330`. RabbitMQ and Redis use Docker service names.
 It also points ShipmentService at `http://companyservice:8080` for required company/address reference validation.
 
 Redis is exposed by Docker Compose and CompanyService uses it as a cache for company address detail lookups. If Redis is unavailable, CompanyService falls back to CompanyDb.
-
-When running the full application through Docker Compose, prepare the SQL Server container databases from the repository root after SQL Server starts:
-
-```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File .\bootstrap-docker-sql.ps1
-```
-
-This creates `InventoryDb`, `ShipmentDb`, and `CompanyDb` in the `logisticshub-sqlserver` container if needed and applies the checked-in schema snapshots. It also applies idempotent patches that ensure default CompanyDb sender/receiver backfill records exist, backfill existing ShipmentDb rows, and enforce required ShipmentDb sender/receiver reference columns. `CompanyDb` is required for CompanyService health and ShipmentService create validation.
 
 ## Services
 
@@ -56,9 +56,9 @@ Configured ports are in each service's `Properties/launchSettings.json`.
 Start local dependencies first:
 
 1. SQL Server
-2. RabbitMQ
+2. RabbitMQ and Redis
 
-You can run everything through Docker Compose, or use locally installed dependencies with `dotnet run`.
+You can run the application services, RabbitMQ, and Redis through Docker Compose, or use locally installed dependencies with `dotnet run`.
 
 To run the backend services directly on the host:
 
@@ -95,9 +95,10 @@ Compose exposes the same local service ports:
 | ShipmentService | `http://localhost:5102` |
 | RabbitMQ Management | `http://localhost:15672` |
 | Redis | `localhost:6379` |
-| SQL Server | `localhost,1433` |
+| SQL Server from containers | `host.docker.internal,14330` |
+| SQL Server from host tools | `localhost\SQLEXPRESS` |
 
-`depends_on` controls container start order only. SQL Server and RabbitMQ may still need time to become ready, so check container logs if a service fails during startup.
+`depends_on` controls container start order only. RabbitMQ may still need time to become ready, so check container logs if a service fails during startup. SQL Server is not managed by Docker Compose.
 
 To check the Redis container directly:
 
