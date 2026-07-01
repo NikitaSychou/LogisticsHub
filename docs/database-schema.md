@@ -18,7 +18,7 @@ The export helper is schema-only. It does not script table data and does not mod
 - `ShipmentDb.schema.sql`
 - `CompanyDb.schema.sql`
 
-`CompanyDb.default-shipment-references.sql` is an idempotent manual data patch that ensures stable default sender/receiver Company/Address records exist for legacy shipment backfill. `ShipmentDb.company-address-columns.sql` is an idempotent compatibility patch for existing local Docker `ShipmentDb` databases that do not yet have sender/receiver reference columns. `ShipmentDb.require-company-address-columns.sql` backfills existing shipments and enforces required sender/receiver company and address reference columns without adding cross-database foreign keys.
+`CompanyDb.default-shipment-references.sql` is an idempotent manual data patch that ensures stable default sender/receiver Company/Address records exist for legacy shipment backfill. `ShipmentDb.company-address-columns.sql` is an idempotent compatibility patch for existing local `ShipmentDb` databases that do not yet have sender/receiver reference columns. `ShipmentDb.require-company-address-columns.sql` backfills existing shipments and enforces required sender/receiver company and address reference columns without adding cross-database foreign keys.
 
 `InventoryDb.schema.sql`, `ShipmentDb.schema.sql`, and `CompanyDb.schema.sql` are exported from local SQL Express by the schema export helper. Manual SQL remains the source of truth.
 
@@ -112,7 +112,7 @@ Important manual constraints and indexes:
 - `UX_Companies_ExternalCode` enforces unique non-null external company codes.
 - `IX_CompanyAddresses_CompanyId` and `IX_CompanyAddresses_AddressType` support address lookup by owner and type.
 
-The Docker bootstrap helper also applies `CompanyDb.default-shipment-references.sql`, which creates stable default records used only for ShipmentDb legacy row backfill:
+Apply `CompanyDb.default-shipment-references.sql` manually when legacy ShipmentDb row backfill needs stable default Company/Address records:
 
 | Record | Id |
 |---|---|
@@ -150,6 +150,8 @@ For the full local flow, the databases must exist before the services run:
 
 `CompanyDb` is required for CompanyService readiness and for ShipmentService company/address reference validation during shipment creation.
 
+In the current Docker Compose flow, the application containers connect to host `SQLEXPRESS` through `host.docker.internal,14330`. Apply schemas manually to `CompanyDb`, `InventoryDb`, and `ShipmentDb` on the host SQL Server instance before starting the services.
+
 Inventory seed data does not need to be inserted manually after the schema exists. Use the Inventory API to create an item and starting stock:
 
 ```http
@@ -178,10 +180,12 @@ Review changes to:
 - `ShipmentDb.schema.sql`
 - `CompanyDb.schema.sql`
 
-When updating an already-created Docker `ShipmentDb`, the bootstrap helper also applies:
+When updating an already-created host `ShipmentDb`, apply any required compatibility patches manually:
 
 - `CompanyDb.default-shipment-references.sql`
 - `ShipmentDb.company-address-columns.sql`
 - `ShipmentDb.require-company-address-columns.sql`
+
+`bootstrap-docker-sql.ps1` is a legacy helper for the previous Docker SQL Server setup and is not used by the current Docker Compose flow.
 
 Do not use EF Core migrations for this project.

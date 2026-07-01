@@ -22,6 +22,7 @@ Use Gateway endpoints for the smoke-test path. Direct service URLs are included 
 - RabbitMQ
 - Redis
 - Gateway, CompanyService, InventoryService, and ShipmentService running in Development
+- For Docker Compose: a local root `.env` file with `COMPANYSERVICE_DB_PASSWORD`, `INVENTORYSERVICE_DB_PASSWORD`, and `SHIPMENTSERVICE_DB_PASSWORD`
 
 The checked-in local `appsettings.json` files point to SQL Server Express:
 
@@ -29,7 +30,7 @@ The checked-in local `appsettings.json` files point to SQL Server Express:
 localhost\SQLEXPRESS
 ```
 
-with Windows Authentication. Docker Compose overrides database and RabbitMQ settings for containers.
+with Windows Authentication. Docker Compose overrides application connection strings so containers connect to the host `SQLEXPRESS` instance through `host.docker.internal,14330`.
 
 Database schema is not created automatically and EF Core migrations are intentionally not used. See [Database schema](database-schema.md) before running the full flow.
 
@@ -64,13 +65,20 @@ RabbitMQ: localhost:5672
 
 ### Option B: Full Docker Compose
 
+Prepare host `SQLEXPRESS` first:
+
+1. Enable SQL Server TCP/IP on fixed port `14330`.
+2. Create `CompanyDb`, `InventoryDb`, and `ShipmentDb`.
+3. Apply the checked-in manual SQL schemas and patches described in [Database schema](database-schema.md).
+4. Create the local root `.env` file with the three service database password variables.
+
 From the repository root:
 
 ```powershell
 docker compose up --build
 ```
 
-Compose app containers do not use `localhost\SQLEXPRESS`; they use the Compose connection strings that point to `sqlserver,1433` with the `sa` login.
+Compose app containers do not use `localhost\SQLEXPRESS`; they use the Compose connection strings that point to `host.docker.internal,14330`.
 
 Compose exposes:
 
@@ -81,21 +89,7 @@ Compose exposes:
 | InventoryService | `http://localhost:5101` |
 | ShipmentService | `http://localhost:5102` |
 | RabbitMQ Management | `http://localhost:15672` |
-| SQL Server container | `localhost,1433` |
-
-After SQL Server is running, bootstrap the container databases from the checked-in schema snapshots:
-
-```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File .\bootstrap-docker-sql.ps1
-```
-
-The script creates `InventoryDb`, `ShipmentDb`, and `CompanyDb` in the `logisticshub-sqlserver` container if they do not exist, then applies:
-
-- `InventoryDb.schema.sql`
-- `ShipmentDb.schema.sql`
-- `CompanyDb.schema.sql`
-
-The script applies schema snapshots and idempotent manual patches. It ensures default CompanyDb backfill records exist, backfills existing ShipmentDb rows, and enforces required ShipmentDb sender/receiver reference columns. If a database already contains a partial or unexpected schema, the script stops and leaves it unchanged.
+| SQL Server from containers | `host.docker.internal,14330` |
 
 RabbitMQ Management uses the local default credentials:
 
@@ -417,7 +411,6 @@ docker compose logs companyservice
 docker compose logs inventoryservice
 docker compose logs shipmentservice
 docker compose logs rabbitmq
-docker compose logs sqlserver
 ```
 
 To follow only the application services:
@@ -434,7 +427,7 @@ Use the same `X-Correlation-ID` on HTTP requests to connect Gateway and service 
 |---|---|
 | Readiness endpoint is not `Healthy` | RabbitMQ or CompanyDb availability, service logs, container status. |
 | Service exits on startup | SQL connection string, missing database schema, RabbitMQ connection settings. |
-| `POST /inventory/inventory-items` returns `500 Internal Server Error` with SQL error 4060 | The Docker SQL Server container is missing `InventoryDb`; run `.\bootstrap-docker-sql.ps1` after SQL Server is running. |
+| `POST /inventory/inventory-items` returns `500 Internal Server Error` with SQL error 4060 | Host `SQLEXPRESS` is missing `InventoryDb` or the service login cannot access it. |
 | `POST /inventory/inventory-items` returns `409 Conflict` | The SKU already exists; run again with a fresh SKU. |
 | `POST /shipment/shipments` returns `400 Bad Request` | Request must include all sender/receiver company/address IDs, at least one item, required SKU values, positive quantities, and no duplicate SKUs. |
 | `POST /shipment/shipments` returns `503 Service Unavailable` | ShipmentService could not validate sender/receiver references through CompanyService; check CompanyService health and logs. |

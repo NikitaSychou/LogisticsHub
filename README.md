@@ -52,7 +52,7 @@ Swagger UI is available in Development:
 
 Gateway Swagger documents Gateway endpoints only; use the direct service Swagger pages for service APIs.
 
-Docker Compose can start RabbitMQ, Redis, SQL Server, and the four ASP.NET Core services for local review. You can still run the .NET services directly with `dotnet run`.
+Docker Compose starts RabbitMQ, Redis, and the four ASP.NET Core services for local review. SQL Server runs on the Windows host as `SQLEXPRESS`; containers connect to it through `host.docker.internal,14330`. You can still run the .NET services directly with `dotnet run`.
 CompanyService uses Redis as a cache for `GET /companies/{companyId}/addresses/{addressId}`. CompanyDb remains the source of truth.
 
 Each service exposes lightweight liveness at `/health/live` and readiness at `/health/ready`. The existing `/health` endpoint remains a readiness-compatible check. CompanyService readiness checks CompanyDb connectivity. InventoryService and ShipmentService readiness checks verify RabbitMQ connectivity. They do not validate every exchange, queue, or binding.
@@ -82,7 +82,13 @@ dotnet test .\LogisticsHub.sln
 docker compose up --build
 ```
 
-Docker Compose does not create database schema automatically. `bootstrap-docker-sql.ps1` prepares `InventoryDb`, `ShipmentDb`, and `CompanyDb` from the checked-in schema snapshots and idempotent manual patches. The current business smoke-test path uses all three databases because ShipmentService validates required sender/receiver references through CompanyService.
+Docker Compose does not start SQL Server and does not create database schema automatically. Prepare `InventoryDb`, `ShipmentDb`, and `CompanyDb` manually on the host `SQLEXPRESS` instance from the checked-in SQL scripts. The root `.env` file supplies the service database password variables used by Compose:
+
+- `COMPANYSERVICE_DB_PASSWORD`
+- `INVENTORYSERVICE_DB_PASSWORD`
+- `SHIPMENTSERVICE_DB_PASSWORD`
+
+The current business smoke-test path uses all three databases because ShipmentService validates required sender/receiver references through CompanyService.
 
 The current local SQL Express schema can be exported with `export-local-db-schema.ps1`; see [Database schema](docs/database-schema.md).
 
