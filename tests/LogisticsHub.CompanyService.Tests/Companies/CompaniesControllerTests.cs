@@ -1,4 +1,5 @@
 using LogisticsHub.CompanyService.Application.Companies;
+using LogisticsHub.CompanyService.Application.Companies.GetCompanyAddress;
 using LogisticsHub.CompanyService.Contracts;
 using LogisticsHub.CompanyService.Controllers;
 using LogisticsHub.CompanyService.Domain.Enums;

@@ -16,5 +16,6 @@
   <ItemGroup>
     <ProjectReference Include="..\LogisticsHub.CompanyService.Application\LogisticsHub.CompanyService.Application.csproj" />
     <ProjectReference Include="..\LogisticsHub.CompanyService.Domain\LogisticsHub.CompanyService.Domain.csproj" />
+    <ProjectReference Include="..\..\Shared\LogisticsHub.Caching\LogisticsHub.Caching.csproj" />
   </ItemGroup>
 </Project>

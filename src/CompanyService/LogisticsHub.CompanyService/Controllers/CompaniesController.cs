@@ -1,5 +1,7 @@
 using LogisticsHub.AspNetCore;
 using LogisticsHub.CompanyService.Application.Companies;
+using LogisticsHub.CompanyService.Application.Companies.GenerateCompanyTestData;
+using LogisticsHub.CompanyService.Application.Companies.GetCompanyAddress;
 using LogisticsHub.CompanyService.Contracts;
 using LogisticsHub.CompanyService.Localization;
 using LogisticsHub.CompanyService.Mapping;

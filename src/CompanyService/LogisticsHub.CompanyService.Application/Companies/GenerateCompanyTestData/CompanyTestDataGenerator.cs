@@ -2,11 +2,11 @@ using Bogus;
 using LogisticsHub.CompanyService.Domain.Entities;
 using LogisticsHub.CompanyService.Domain.Enums;
 
-namespace LogisticsHub.CompanyService.Application.Companies;
+namespace LogisticsHub.CompanyService.Application.Companies.GenerateCompanyTestData;
 
 public static class CompanyTestDataGenerator
 {
-    private const int CompanyCount = 100;
+    private const int CompanyCount = 1000;
     private const int MinAddressCount = 3;
     private const int MaxAddressCount = 5;
 
