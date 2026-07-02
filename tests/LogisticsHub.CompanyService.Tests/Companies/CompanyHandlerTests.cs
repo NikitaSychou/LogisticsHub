@@ -1,4 +1,5 @@
 using LogisticsHub.CompanyService.Application.Companies;
+using LogisticsHub.CompanyService.Application.Companies.GenerateCompanyTestData;
 using LogisticsHub.CompanyService.Application.Companies.GetCompanyAddress;
 using LogisticsHub.CompanyService.Application.Persistence;
 using LogisticsHub.CompanyService.Domain.Entities;
@@ -246,6 +247,61 @@ public sealed class CompanyHandlerTests
                 CancellationToken.None));
 
         Assert.Equal(0, cache.InvalidateCallCount);
+    }
+
+    [Fact]
+    public async Task GenerateCompanyTestData_CreatesOneThousandCompaniesInBatches()
+    {
+        var dbContext = new FakeCompanyDbContext();
+        var handler = new GenerateCompanyTestData(dbContext);
+
+        var result = await handler.Handle(new GenerateCompanyTestDataCommand(), CancellationToken.None);
+
+        Assert.Equal(1000, CompanyTestDataGenerator.CompanyCount);
+        Assert.Equal(1000, result.CompaniesCreated);
+        Assert.Equal(1000, dbContext.Companies.Count);
+        Assert.Equal(dbContext.SavedAddressBatchCounts.Sum(), result.AddressesCreated);
+        Assert.Equal(10, dbContext.SaveChangesCallCount);
+        Assert.Equal(10, dbContext.ClearChangeTrackerCallCount);
+        Assert.All(dbContext.CompanyBatchCountsAtSave, count => Assert.InRange(count, 1, 100));
+        Assert.All(dbContext.CompanyBatchCountsAtSave, count => Assert.Equal(100, count));
+        Assert.All(dbContext.TrackedEntityCountsAtSave, count => Assert.InRange(count, 400, 600));
+        Assert.Equal(0, dbContext.CurrentTrackedCompanyCount);
+        Assert.Equal(0, dbContext.CurrentTrackedAddressCount);
+    }
+
+    [Fact]
+    public async Task GenerateCompanyTestData_ForwardsCancellationTokenToEverySave()
+    {
+        var dbContext = new FakeCompanyDbContext();
+        using var cancellationTokenSource = new CancellationTokenSource();
+        var handler = new GenerateCompanyTestData(dbContext);
+
+        var result = await handler.Handle(
+            new GenerateCompanyTestDataCommand(),
+            cancellationTokenSource.Token);
+
+        Assert.Equal(1000, result.CompaniesCreated);
+        Assert.Equal(cancellationTokenSource.Token, dbContext.LastSaveChangesCancellationToken);
+    }
+
+    [Fact]
+    public async Task GenerateCompanyTestData_WhenBatchSaveFails_StopsWithoutClearingFailedBatch()
+    {
+        var dbContext = new FakeCompanyDbContext
+        {
+            FailOnSaveChangesCall = 3
+        };
+        var handler = new GenerateCompanyTestData(dbContext);
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            handler.Handle(new GenerateCompanyTestDataCommand(), CancellationToken.None));
+
+        Assert.Equal(3, dbContext.SaveChangesCallCount);
+        Assert.Equal(2, dbContext.ClearChangeTrackerCallCount);
+        Assert.Equal(300, dbContext.Companies.Count);
+        Assert.Equal(100, dbContext.CurrentTrackedCompanyCount);
+        Assert.All(dbContext.CompanyBatchCountsAtSave, count => Assert.Equal(100, count));
     }
 
     [Fact]

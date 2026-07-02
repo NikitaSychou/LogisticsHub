@@ -102,6 +102,11 @@ public sealed class CompanyDbContext : DbContext, ICompanyDbContext
         }
     }
 
+    public void ClearChangeTracker()
+    {
+        ChangeTracker.Clear();
+    }
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(CompanyDbContext).Assembly);

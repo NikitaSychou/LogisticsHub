@@ -6,7 +6,8 @@ namespace LogisticsHub.CompanyService.Application.Companies.GenerateCompanyTestD
 
 public static class CompanyTestDataGenerator
 {
-    private const int CompanyCount = 1000;
+    public const int CompanyCount = 1000;
+
     private const int MinAddressCount = 3;
     private const int MaxAddressCount = 5;
 
@@ -27,10 +28,15 @@ public static class CompanyTestDataGenerator
 
     public static IReadOnlyList<Company> GenerateCompanies()
     {
-        var faker = new Faker();
-        var companies = new List<Company>(CompanyCount);
+        return GenerateCompanies(CompanyCount);
+    }
 
-        for (var index = 0; index < CompanyCount; index++)
+    public static IReadOnlyList<Company> GenerateCompanies(int count)
+    {
+        var faker = new Faker();
+        var companies = new List<Company>(count);
+
+        for (var index = 0; index < count; index++)
         {
             var company = new Company
             {

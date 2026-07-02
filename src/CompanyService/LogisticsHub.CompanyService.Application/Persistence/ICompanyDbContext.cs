@@ -31,4 +31,6 @@ public interface ICompanyDbContext
 
     Task<CompanySaveChangesResult> SaveChangesAsyncHandlingDuplicateExternalCodeAsync(
         CancellationToken cancellationToken = default);
+
+    void ClearChangeTracker();
 }
