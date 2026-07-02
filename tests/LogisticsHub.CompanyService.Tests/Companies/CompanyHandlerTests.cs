@@ -67,24 +67,70 @@ public sealed class CompanyHandlerTests
         var dbContext = new FakeCompanyDbContext();
         var company = CreateCompany("Acme", "ACME");
         dbContext.Companies.Add(company);
-        var handler = new GetCompany(dbContext);
+        var cache = new FakeCompanyCache();
+        var handler = new GetCompany(dbContext, cache);
 
         var result = await handler.Handle(new GetCompanyQuery(company.Id), CancellationToken.None);
 
         Assert.True(result.IsSuccess);
         Assert.Equal(company.Id, result.Value.Id);
         Assert.Equal(company.Name, result.Value.Name);
+        Assert.Equal(1, cache.GetOrCreateCallCount);
+        Assert.Equal(1, dbContext.GetCompanyByIdCallCount);
+    }
+
+    [Fact]
+    public async Task GetCompany_WhenCompanyIsCached_ReturnsCachedCompanyWithoutReadingDatabase()
+    {
+        var company = new CompanyResult(
+            Guid.NewGuid(),
+            "Cached",
+            "CACHED",
+            CompanyStatus.Active,
+            DateTime.UtcNow,
+            null);
+        var dbContext = new FakeCompanyDbContext();
+        var cache = new FakeCompanyCache();
+        cache.Add(company);
+        var handler = new GetCompany(dbContext, cache);
+
+        var result = await handler.Handle(new GetCompanyQuery(company.Id), CancellationToken.None);
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal(company.Id, result.Value.Id);
+        Assert.Equal("Cached", result.Value.Name);
+        Assert.Equal(1, cache.GetOrCreateCallCount);
+        Assert.Equal(0, dbContext.GetCompanyByIdCallCount);
     }
 
     [Fact]
     public async Task GetCompany_WhenCompanyDoesNotExist_ReturnsNotFoundError()
     {
-        var handler = new GetCompany(new FakeCompanyDbContext());
+        var dbContext = new FakeCompanyDbContext();
+        var handler = new GetCompany(dbContext, new FakeCompanyCache());
 
         var result = await handler.Handle(new GetCompanyQuery(Guid.NewGuid()), CancellationToken.None);
 
         Assert.True(result.IsFailure);
         Assert.Equal("company.not_found", result.Error.Code);
+        Assert.Equal(1, dbContext.GetCompanyByIdCallCount);
+    }
+
+    [Fact]
+    public async Task GetCompany_ForwardsCancellationTokenToDatabaseSource()
+    {
+        var dbContext = new FakeCompanyDbContext();
+        var company = CreateCompany("Acme", "ACME");
+        dbContext.Companies.Add(company);
+        using var cancellationTokenSource = new CancellationTokenSource();
+        var handler = new GetCompany(dbContext, new FakeCompanyCache());
+
+        var result = await handler.Handle(
+            new GetCompanyQuery(company.Id),
+            cancellationTokenSource.Token);
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal(cancellationTokenSource.Token, dbContext.LastGetCompanyByIdCancellationToken);
     }
 
     [Fact]
@@ -108,7 +154,8 @@ public sealed class CompanyHandlerTests
         var dbContext = new FakeCompanyDbContext();
         var company = CreateCompany("Acme", "ACME");
         dbContext.Companies.Add(company);
-        var handler = new UpdateCompany(dbContext);
+        var cache = new FakeCompanyCache();
+        var handler = new UpdateCompany(dbContext, cache);
 
         var result = await handler.Handle(
             new UpdateCompanyCommand(company.Id, "Updated", "UPDATED", CompanyStatus.Inactive),
@@ -120,12 +167,16 @@ public sealed class CompanyHandlerTests
         Assert.Equal(CompanyStatus.Inactive, company.Status);
         Assert.NotNull(company.UpdatedAtUtc);
         Assert.Equal("Updated", result.Value.Name);
+        Assert.Equal(1, cache.InvalidateCallCount);
+        Assert.Equal(company.Id, cache.LastInvalidatedCompanyId);
+        Assert.Equal(CancellationToken.None, cache.LastInvalidateCancellationToken);
     }
 
     [Fact]
     public async Task UpdateCompany_WhenCompanyDoesNotExist_ReturnsNotFoundError()
     {
-        var handler = new UpdateCompany(new FakeCompanyDbContext());
+        var cache = new FakeCompanyCache();
+        var handler = new UpdateCompany(new FakeCompanyDbContext(), cache);
 
         var result = await handler.Handle(
             new UpdateCompanyCommand(Guid.NewGuid(), "Updated", "UPDATED", CompanyStatus.Active),
@@ -133,6 +184,7 @@ public sealed class CompanyHandlerTests
 
         Assert.True(result.IsFailure);
         Assert.Equal("company.not_found", result.Error.Code);
+        Assert.Equal(0, cache.InvalidateCallCount);
     }
 
     [Fact]
@@ -143,7 +195,8 @@ public sealed class CompanyHandlerTests
         var otherCompany = CreateCompany("Beta", "BETA");
         dbContext.Companies.Add(company);
         dbContext.Companies.Add(otherCompany);
-        var handler = new UpdateCompany(dbContext);
+        var cache = new FakeCompanyCache();
+        var handler = new UpdateCompany(dbContext, cache);
 
         var result = await handler.Handle(
             new UpdateCompanyCommand(company.Id, "Acme", "BETA", CompanyStatus.Active),
@@ -151,6 +204,48 @@ public sealed class CompanyHandlerTests
 
         Assert.True(result.IsFailure);
         Assert.Equal("company.external_code_already_exists", result.Error.Code);
+        Assert.Equal(0, cache.InvalidateCallCount);
+    }
+
+    [Fact]
+    public async Task UpdateCompany_WhenSaveDetectsDuplicateExternalCode_DoesNotInvalidateCompanyCache()
+    {
+        var dbContext = new FakeCompanyDbContext
+        {
+            SaveChangesResult = CompanySaveChangesResult.DuplicateExternalCode
+        };
+        var company = CreateCompany("Acme", "ACME");
+        dbContext.Companies.Add(company);
+        var cache = new FakeCompanyCache();
+        var handler = new UpdateCompany(dbContext, cache);
+
+        var result = await handler.Handle(
+            new UpdateCompanyCommand(company.Id, "Acme", "BETA", CompanyStatus.Active),
+            CancellationToken.None);
+
+        Assert.True(result.IsFailure);
+        Assert.Equal("company.external_code_already_exists", result.Error.Code);
+        Assert.Equal(0, cache.InvalidateCallCount);
+    }
+
+    [Fact]
+    public async Task UpdateCompany_WhenSaveFails_DoesNotInvalidateCompanyCache()
+    {
+        var dbContext = new FakeCompanyDbContext
+        {
+            ThrowOnSaveChanges = true
+        };
+        var company = CreateCompany("Acme", "ACME");
+        dbContext.Companies.Add(company);
+        var cache = new FakeCompanyCache();
+        var handler = new UpdateCompany(dbContext, cache);
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            handler.Handle(
+                new UpdateCompanyCommand(company.Id, "Updated", "UPDATED", CompanyStatus.Active),
+                CancellationToken.None));
+
+        Assert.Equal(0, cache.InvalidateCallCount);
     }
 
     [Fact]

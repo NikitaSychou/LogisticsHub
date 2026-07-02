@@ -47,6 +47,7 @@ public static class InfrastructureServiceCollectionExtensions
         });
 
         services.AddLogisticsHubCaching();
+        services.AddSingleton<ICompanyCache, RedisCompanyCache>();
         services.AddSingleton<ICompanyAddressCache, RedisCompanyAddressCache>();
 
         return services;
