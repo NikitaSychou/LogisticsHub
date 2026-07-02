@@ -10,8 +10,17 @@ public sealed class FakeCompanyDbContext : ICompanyDbContext
 
     public CompanySaveChangesResult SaveChangesResult { get; set; } = CompanySaveChangesResult.Saved;
 
+    public bool ThrowOnSaveChanges { get; set; }
+
+    public int GetCompanyByIdCallCount { get; private set; }
+
+    public CancellationToken LastGetCompanyByIdCancellationToken { get; private set; }
+
     public Task<Company?> GetCompanyByIdAsync(Guid id, CancellationToken cancellationToken = default)
     {
+        GetCompanyByIdCallCount++;
+        LastGetCompanyByIdCancellationToken = cancellationToken;
+
         return Task.FromResult(Companies.SingleOrDefault(company => company.Id == id));
     }
 
@@ -79,6 +88,11 @@ public sealed class FakeCompanyDbContext : ICompanyDbContext
     public Task<CompanySaveChangesResult> SaveChangesAsyncHandlingDuplicateExternalCodeAsync(
         CancellationToken cancellationToken = default)
     {
+        if (ThrowOnSaveChanges)
+        {
+            throw new InvalidOperationException("save failed");
+        }
+
         return Task.FromResult(SaveChangesResult);
     }
 }

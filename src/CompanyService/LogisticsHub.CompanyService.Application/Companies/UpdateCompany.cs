@@ -1,3 +1,4 @@
+using LogisticsHub.CompanyService.Application.Caching;
 using LogisticsHub.CompanyService.Application.Persistence;
 using LogisticsHub.Results;
 using MediatR;
@@ -7,10 +8,14 @@ namespace LogisticsHub.CompanyService.Application.Companies;
 public sealed class UpdateCompany : IRequestHandler<UpdateCompanyCommand, Result<CompanyResult>>
 {
     private readonly ICompanyDbContext _dbContext;
+    private readonly ICompanyCache _companyCache;
 
-    public UpdateCompany(ICompanyDbContext dbContext)
+    public UpdateCompany(
+        ICompanyDbContext dbContext,
+        ICompanyCache companyCache)
     {
         _dbContext = dbContext;
+        _companyCache = companyCache;
     }
 
     public async Task<Result<CompanyResult>> Handle(
@@ -45,6 +50,8 @@ public sealed class UpdateCompany : IRequestHandler<UpdateCompanyCommand, Result
         {
             return Result<CompanyResult>.Failure(CompanyErrors.ExternalCodeAlreadyExists(command.ExternalCode));
         }
+
+        await _companyCache.InvalidateAsync(command.Id, CancellationToken.None);
 
         return Result<CompanyResult>.Success(CompanyResultFactory.ToResult(company));
     }
