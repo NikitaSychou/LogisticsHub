@@ -1,4 +1,5 @@
 using LogisticsHub.CompanyService.Application.Companies;
+using LogisticsHub.CompanyService.Application.Companies.GetCompanyAddress;
 using LogisticsHub.CompanyService.Application.Persistence;
 using LogisticsHub.CompanyService.Domain.Entities;
 using LogisticsHub.CompanyService.Domain.Enums;
@@ -246,8 +247,7 @@ public sealed class CompanyHandlerTests
         Assert.Equal(address.Id, result.Value.Id);
         Assert.Equal(company.Id, result.Value.CompanyId);
         Assert.Equal(CompanyAddressType.Shipping, result.Value.AddressType);
-        Assert.Equal(1, cache.GetCallCount);
-        Assert.Equal(1, cache.SetCallCount);
+        Assert.Equal(1, cache.GetOrCreateCallCount);
     }
 
     [Fact]
@@ -276,8 +276,7 @@ public sealed class CompanyHandlerTests
         Assert.True(result.IsSuccess);
         Assert.Equal(address.Id, result.Value.Id);
         Assert.Equal(companyId, result.Value.CompanyId);
-        Assert.Equal(1, cache.GetCallCount);
-        Assert.Equal(0, cache.SetCallCount);
+        Assert.Equal(1, cache.GetOrCreateCallCount);
     }
 
     [Fact]
@@ -290,8 +289,7 @@ public sealed class CompanyHandlerTests
         dbContext.CompanyAddresses.Add(address);
         var cache = new FakeCompanyAddressCache
         {
-            FailOnGet = true,
-            FailOnSet = true
+            FailOnGetOrCreate = true
         };
         var handler = new GetCompanyAddress(dbContext, cache);
 
@@ -301,8 +299,7 @@ public sealed class CompanyHandlerTests
 
         Assert.True(result.IsSuccess);
         Assert.Equal(address.Id, result.Value.Id);
-        Assert.Equal(1, cache.GetCallCount);
-        Assert.Equal(1, cache.SetCallCount);
+        Assert.Equal(1, cache.GetOrCreateCallCount);
     }
 
     [Fact]

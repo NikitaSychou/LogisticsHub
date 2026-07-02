@@ -1,8 +1,9 @@
+using LogisticsHub.CompanyService.Application.Caching;
 using LogisticsHub.CompanyService.Application.Persistence;
 using LogisticsHub.Results;
 using MediatR;
 
-namespace LogisticsHub.CompanyService.Application.Companies;
+namespace LogisticsHub.CompanyService.Application.Companies.GetCompanyAddress;
 
 public sealed class GetCompanyAddress : IRequestHandler<GetCompanyAddressQuery, Result<CompanyAddressResult>>
 {
@@ -21,25 +22,31 @@ public sealed class GetCompanyAddress : IRequestHandler<GetCompanyAddressQuery, 
         GetCompanyAddressQuery query,
         CancellationToken cancellationToken)
     {
-        var cachedAddress = await _cache.GetAsync(query.CompanyId, query.AddressId, cancellationToken);
-        if (cachedAddress is not null)
+        var result = await _cache.GetOrCreateAsync(
+            query.CompanyId,
+            query.AddressId,
+            token => LoadAddressFromDatabaseAsync(query, token),
+            cancellationToken);
+
+        if (result is null)
         {
-            return Result<CompanyAddressResult>.Success(cachedAddress);
+            return Result<CompanyAddressResult>.Failure(CompanyErrors.AddressCompanyNotFound(query.CompanyId));
         }
 
+        return Result<CompanyAddressResult>.Success(result);
+    }
+
+    private async Task<CompanyAddressResult?> LoadAddressFromDatabaseAsync(
+        GetCompanyAddressQuery query,
+        CancellationToken cancellationToken)
+    {
         var address = await _dbContext.GetCompanyAddressAsync(
             query.CompanyId,
             query.AddressId,
             cancellationToken);
 
-        if (address is null)
-        {
-            return Result<CompanyAddressResult>.Failure(CompanyErrors.AddressCompanyNotFound(query.CompanyId));
-        }
-
-        var result = CompanyResultFactory.ToResult(address);
-        await _cache.SetAsync(result, cancellationToken);
-
-        return Result<CompanyAddressResult>.Success(result);
+        return address is null
+            ? null
+            : CompanyResultFactory.ToResult(address);
     }
 }

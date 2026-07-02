@@ -1,11 +1,11 @@
+using LogisticsHub.Caching;
+using LogisticsHub.CompanyService.Application.Caching;
 using LogisticsHub.CompanyService.Application.Persistence;
-using LogisticsHub.CompanyService.Application.Companies;
 using LogisticsHub.CompanyService.Infrastructure.Caching;
 using LogisticsHub.CompanyService.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Diagnostics.HealthChecks;
 
 namespace LogisticsHub.CompanyService.Infrastructure.DependencyInjection;
 
@@ -46,6 +46,7 @@ public static class InfrastructureServiceCollectionExtensions
             options.Configuration = connectionString;
         });
 
+        services.AddLogisticsHubCaching();
         services.AddSingleton<ICompanyAddressCache, RedisCompanyAddressCache>();
 
         return services;
