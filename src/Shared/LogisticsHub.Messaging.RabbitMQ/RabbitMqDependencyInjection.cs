@@ -1,6 +1,5 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Options;
 
 namespace LogisticsHub.Messaging.RabbitMQ;
@@ -36,6 +35,9 @@ public static class RabbitMqDependencyInjection
             .Validate(
                 options => !string.IsNullOrWhiteSpace(options.ExchangeName),
                 "RabbitMQ configuration value 'RabbitMq:ExchangeName' is required.")
+            .Validate(
+                options => options.ConsumerPrefetchCount > 0,
+                "RabbitMQ configuration value 'RabbitMq:ConsumerPrefetchCount' must be greater than zero.")
             .ValidateOnStart();
 
         services.AddSingleton(serviceProvider =>

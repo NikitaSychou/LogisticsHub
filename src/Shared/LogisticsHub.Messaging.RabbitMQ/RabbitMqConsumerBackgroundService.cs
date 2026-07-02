@@ -133,6 +133,12 @@ public abstract class RabbitMqConsumerBackgroundService<TMessage> : BackgroundSe
             }
         };
 
+        await channel.BasicQosAsync(
+            prefetchSize: 0,
+            prefetchCount: _options.ConsumerPrefetchCount,
+            global: false,
+            cancellationToken: stoppingToken);
+
         await channel.BasicConsumeAsync(
             queue: _queueName,
             autoAck: false,
