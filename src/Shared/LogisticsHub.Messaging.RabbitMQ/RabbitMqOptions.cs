@@ -11,4 +11,6 @@ public sealed class RabbitMqOptions
     public string Password { get; set; } = string.Empty;
 
     public string ExchangeName { get; set; } = string.Empty;
+
+    public ushort ConsumerPrefetchCount { get; set; } = 1;
 }
