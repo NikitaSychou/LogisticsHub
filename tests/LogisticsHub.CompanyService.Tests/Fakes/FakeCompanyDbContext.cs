@@ -7,14 +7,29 @@ public sealed class FakeCompanyDbContext : ICompanyDbContext
 {
     public List<Company> Companies { get; } = [];
     public List<CompanyAddress> CompanyAddresses { get; } = [];
+    public List<int> CompanyBatchCountsAtSave { get; } = [];
+    public List<int> SavedAddressBatchCounts { get; } = [];
+    public List<int> TrackedEntityCountsAtSave { get; } = [];
 
     public CompanySaveChangesResult SaveChangesResult { get; set; } = CompanySaveChangesResult.Saved;
 
     public bool ThrowOnSaveChanges { get; set; }
 
+    public int? FailOnSaveChangesCall { get; set; }
+
     public int GetCompanyByIdCallCount { get; private set; }
 
+    public int SaveChangesCallCount { get; private set; }
+
+    public int ClearChangeTrackerCallCount { get; private set; }
+
+    public int CurrentTrackedCompanyCount { get; private set; }
+
+    public int CurrentTrackedAddressCount { get; private set; }
+
     public CancellationToken LastGetCompanyByIdCancellationToken { get; private set; }
+
+    public CancellationToken LastSaveChangesCancellationToken { get; private set; }
 
     public Task<Company?> GetCompanyByIdAsync(Guid id, CancellationToken cancellationToken = default)
     {
@@ -49,12 +64,15 @@ public sealed class FakeCompanyDbContext : ICompanyDbContext
     public Task AddCompanyAsync(Company company, CancellationToken cancellationToken = default)
     {
         Companies.Add(company);
+        CurrentTrackedCompanyCount++;
+        CurrentTrackedAddressCount += company.Addresses.Count;
         return Task.CompletedTask;
     }
 
     public Task AddCompanyAddressAsync(CompanyAddress address, CancellationToken cancellationToken = default)
     {
         CompanyAddresses.Add(address);
+        CurrentTrackedAddressCount++;
         return Task.CompletedTask;
     }
 
@@ -82,6 +100,19 @@ public sealed class FakeCompanyDbContext : ICompanyDbContext
 
     public Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
     {
+        cancellationToken.ThrowIfCancellationRequested();
+
+        SaveChangesCallCount++;
+        LastSaveChangesCancellationToken = cancellationToken;
+        CompanyBatchCountsAtSave.Add(CurrentTrackedCompanyCount);
+        SavedAddressBatchCounts.Add(CurrentTrackedAddressCount);
+        TrackedEntityCountsAtSave.Add(CurrentTrackedCompanyCount + CurrentTrackedAddressCount);
+
+        if (FailOnSaveChangesCall == SaveChangesCallCount)
+        {
+            throw new InvalidOperationException("save failed");
+        }
+
         return Task.FromResult(1);
     }
 
@@ -94,5 +125,12 @@ public sealed class FakeCompanyDbContext : ICompanyDbContext
         }
 
         return Task.FromResult(SaveChangesResult);
+    }
+
+    public void ClearChangeTracker()
+    {
+        ClearChangeTrackerCallCount++;
+        CurrentTrackedCompanyCount = 0;
+        CurrentTrackedAddressCount = 0;
     }
 }

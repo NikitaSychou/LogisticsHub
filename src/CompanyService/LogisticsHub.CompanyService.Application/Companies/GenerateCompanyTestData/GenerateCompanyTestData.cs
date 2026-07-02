@@ -12,6 +12,8 @@ public sealed record GenerateCompanyTestDataResult(
 public sealed class GenerateCompanyTestData
     : IRequestHandler<GenerateCompanyTestDataCommand, GenerateCompanyTestDataResult>
 {
+    private const int CompanyBatchSize = 100;
+
     private readonly ICompanyDbContext _dbContext;
 
     public GenerateCompanyTestData(ICompanyDbContext dbContext)
@@ -25,16 +27,30 @@ public sealed class GenerateCompanyTestData
     {
         ArgumentNullException.ThrowIfNull(command);
 
-        var companies = CompanyTestDataGenerator.GenerateCompanies();
-        var addressCount = companies.Sum(company => company.Addresses.Count);
+        var companiesCreated = 0;
+        var addressesCreated = 0;
 
-        foreach (var company in companies)
+        while (companiesCreated < CompanyTestDataGenerator.CompanyCount)
         {
-            await _dbContext.AddCompanyAsync(company, cancellationToken);
+            var batchSize = Math.Min(
+                CompanyBatchSize,
+                CompanyTestDataGenerator.CompanyCount - companiesCreated);
+            var companies = CompanyTestDataGenerator.GenerateCompanies(batchSize);
+            var addressCount = companies.Sum(company => company.Addresses.Count);
+
+            foreach (var company in companies)
+            {
+                await _dbContext.AddCompanyAsync(company, cancellationToken);
+            }
+
+            await _dbContext.SaveChangesAsync(cancellationToken);
+
+            companiesCreated += companies.Count;
+            addressesCreated += addressCount;
+
+            _dbContext.ClearChangeTracker();
         }
 
-        await _dbContext.SaveChangesAsync(cancellationToken);
-
-        return new GenerateCompanyTestDataResult(companies.Count, addressCount);
+        return new GenerateCompanyTestDataResult(companiesCreated, addressesCreated);
     }
 }
