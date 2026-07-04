@@ -61,6 +61,23 @@ public sealed class DistributedCacheService : ICacheService
         }
     }
 
+    public async Task<bool> SetAsync<T>(
+        string key,
+        T? value,
+        TimeSpan? ttl = null,
+        CancellationToken cancellationToken = default)
+        where T : class
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(key);
+
+        if (value is null)
+        {
+            return false;
+        }
+
+        return await TrySetAsync(key, value, ttl, cancellationToken);
+    }
+
     private Lazy<Task<object?>> CreateInFlightLoad<T>(
         string key,
         Func<CancellationToken, Task<T?>> sourceFactory,
@@ -156,7 +173,7 @@ public sealed class DistributedCacheService : ICacheService
         }
     }
 
-    private async Task TrySetAsync<T>(
+    private async Task<bool> TrySetAsync<T>(
         string key,
         T value,
         TimeSpan? ttl,
@@ -168,15 +185,32 @@ public sealed class DistributedCacheService : ICacheService
             var json = JsonSerializer.Serialize(value, _options.JsonSerializerOptions);
             var cacheOptions = new DistributedCacheEntryOptions
             {
-                AbsoluteExpirationRelativeToNow = ttl ?? _options.DefaultTtl
+                AbsoluteExpirationRelativeToNow = GetEffectiveTtl(ttl)
             };
 
             await _cache.SetStringAsync(key, json, cacheOptions, cancellationToken);
+            return true;
         }
         catch (Exception exception) when (exception is not OperationCanceledException)
         {
             _logger.LogWarning(exception, "Cache write failed for key {CacheKey}.", key);
+            return false;
         }
+    }
+
+    private TimeSpan GetEffectiveTtl(TimeSpan? ttl)
+    {
+        var baseTtl = ttl ?? _options.DefaultTtl;
+        if (_options.TtlJitterPercentage == 0)
+        {
+            return baseTtl;
+        }
+
+        var maximumOffsetTicks = baseTtl.Ticks * (_options.TtlJitterPercentage / 100);
+        var offsetTicks = (long)Math.Round((Random.Shared.NextDouble() * 2 - 1) * maximumOffsetTicks);
+        var effectiveTicks = Math.Max(1, baseTtl.Ticks + offsetTicks);
+
+        return TimeSpan.FromTicks(effectiveTicks);
     }
 
     private readonly record struct CacheReadResult<T>(bool Found, T? Value)

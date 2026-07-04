@@ -3,6 +3,7 @@ using System.Text;
 using System.Text.Json;
 using LogisticsHub.Caching;
 using Microsoft.Extensions.Caching.Distributed;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
 using Xunit;
 
@@ -326,6 +327,70 @@ public sealed class DistributedCacheServiceTests
     }
 
     [Fact]
+    public async Task SetAsync_WhenValueIsProvided_StoresSerializedValue()
+    {
+        var distributedCache = new FakeDistributedCache();
+        var cache = CreateCache(distributedCache);
+
+        var result = await cache.SetAsync("item:1", new CacheItem("source"));
+
+        Assert.True(result);
+        Assert.Equal(1, distributedCache.SetCallCount);
+        Assert.NotNull(await distributedCache.GetStringAsync("item:1"));
+    }
+
+    [Fact]
+    public async Task SetAsync_WhenValueIsNull_DoesNotCacheResult()
+    {
+        var distributedCache = new FakeDistributedCache();
+        var cache = CreateCache(distributedCache);
+
+        var result = await cache.SetAsync<CacheItem>("item:1", null);
+
+        Assert.False(result);
+        Assert.Equal(0, distributedCache.SetCallCount);
+        Assert.Null(await distributedCache.GetStringAsync("item:1"));
+    }
+
+    [Fact]
+    public async Task SetAsync_WhenCacheWriteFails_ReturnsFalse()
+    {
+        var distributedCache = new FakeDistributedCache { FailOnSet = true };
+        var cache = CreateCache(distributedCache);
+
+        var result = await cache.SetAsync("item:1", new CacheItem("source"));
+
+        Assert.False(result);
+        Assert.Equal(1, distributedCache.SetCallCount);
+    }
+
+    [Fact]
+    public async Task SetAsync_WhenCallerCancellationOccursDuringWrite_PropagatesCancellation()
+    {
+        var setStarted = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var releaseSet = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var distributedCache = new FakeDistributedCache
+        {
+            SetStarted = setStarted,
+            ReleaseSet = releaseSet
+        };
+        var cache = CreateCache(distributedCache);
+        var cancellation = new CancellationTokenSource();
+
+        var write = cache.SetAsync(
+            "item:1",
+            new CacheItem("source"),
+            cancellationToken: cancellation.Token);
+
+        await setStarted.Task;
+        await cancellation.CancelAsync();
+
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => write);
+        Assert.Equal(1, distributedCache.SetCallCount);
+        Assert.Null(await distributedCache.GetStringAsync("item:1"));
+    }
+
+    [Fact]
     public async Task GetOrCreateAsync_WhenSourceReturnsNull_DoesNotCacheResult()
     {
         var distributedCache = new FakeDistributedCache();
@@ -481,11 +546,85 @@ public sealed class DistributedCacheServiceTests
         Assert.Equal(TimeSpan.FromMinutes(15), distributedCache.LastOptions?.AbsoluteExpirationRelativeToNow);
     }
 
-    private static DistributedCacheService CreateCache(
-        FakeDistributedCache distributedCache,
-        TimeSpan? defaultTtl = null)
+    [Fact]
+    public async Task SetAsync_WhenTtlOverrideIsProvided_UsesOverride()
+    {
+        var distributedCache = new FakeDistributedCache();
+        var cache = CreateCache(distributedCache);
+
+        await cache.SetAsync(
+            "item:1",
+            new CacheItem("source"),
+            TimeSpan.FromMinutes(10));
+
+        Assert.Equal(TimeSpan.FromMinutes(10), distributedCache.LastOptions?.AbsoluteExpirationRelativeToNow);
+    }
+
+    [Fact]
+    public async Task SetAsync_WhenTtlOverrideAndJitterAreConfigured_AppliesJitterToOverride()
+    {
+        var distributedCache = new FakeDistributedCache();
+        var cache = CreateCache(
+            distributedCache,
+            ttlJitterPercentage: 10);
+
+        await cache.SetAsync(
+            "item:1",
+            new CacheItem("source"),
+            TimeSpan.FromMinutes(10));
+
+        var ttl = distributedCache.LastOptions?.AbsoluteExpirationRelativeToNow;
+        Assert.NotNull(ttl);
+        Assert.InRange(ttl.Value, TimeSpan.FromMinutes(9), TimeSpan.FromMinutes(11));
+    }
+
+    [Fact]
+    public async Task SetAsync_WhenJitterIsConfigured_AppliesTtlWithinConfiguredRange()
+    {
+        var distributedCache = new FakeDistributedCache();
+        var cache = CreateCache(
+            distributedCache,
+            TimeSpan.FromHours(24),
+            ttlJitterPercentage: 5);
+
+        await cache.SetAsync("item:1", new CacheItem("source"));
+
+        var ttl = distributedCache.LastOptions?.AbsoluteExpirationRelativeToNow;
+        Assert.NotNull(ttl);
+        Assert.InRange(ttl.Value, TimeSpan.FromHours(22.8), TimeSpan.FromHours(25.2));
+    }
+
+    [Fact]
+    public void CacheOptions_WhenCreated_UsesFivePercentDefaultJitter()
     {
         var options = new CacheOptions();
+
+        Assert.Equal(5, options.TtlJitterPercentage);
+        Assert.Equal(TimeSpan.FromHours(24), options.DefaultTtl);
+    }
+
+    [Theory]
+    [InlineData(-1)]
+    [InlineData(51)]
+    [InlineData(double.NaN)]
+    [InlineData(double.PositiveInfinity)]
+    public void AddLogisticsHubCaching_WhenJitterIsInvalid_Throws(double jitterPercentage)
+    {
+        var services = new ServiceCollection();
+
+        var exception = Assert.Throws<InvalidOperationException>(() =>
+            services.AddLogisticsHubCaching(options => options.TtlJitterPercentage = jitterPercentage));
+
+        Assert.Contains("Cache TTL jitter percentage", exception.Message);
+    }
+
+    private static DistributedCacheService CreateCache(
+        FakeDistributedCache distributedCache,
+        TimeSpan? defaultTtl = null,
+        double ttlJitterPercentage = 0)
+    {
+        var options = new CacheOptions();
+        options.TtlJitterPercentage = ttlJitterPercentage;
         if (defaultTtl is not null)
         {
             options.DefaultTtl = defaultTtl.Value;
@@ -583,13 +722,14 @@ public sealed class DistributedCacheServiceTests
             DistributedCacheEntryOptions options,
             CancellationToken token = default)
         {
+            token.ThrowIfCancellationRequested();
             SetCallCount++;
             LastOptions = options;
             SetStarted?.SetResult();
 
             if (ReleaseSet is not null)
             {
-                await ReleaseSet.Task;
+                await ReleaseSet.Task.WaitAsync(token);
             }
 
             if (FailOnSet)
