@@ -110,6 +110,32 @@ Run only company address detail cache warm-up:
 dotnet run --project .\src\LogisticsHub.Workers.CacheWorker\LogisticsHub.Workers.CacheWorker.csproj -- --CacheWorker:RunOnce=true --CacheWorker:EnabledModules:0=company-addresses
 ```
 
+CacheWorker has no HTTP endpoint.
+
+Build the CacheWorker image:
+
+```powershell
+docker build -f .\src\LogisticsHub.Workers.CacheWorker\Dockerfile -t logisticshub-cacheworker .
+```
+
+Run all warm-up modules once through Docker Compose:
+
+```powershell
+docker compose --profile cacheworker run --rm cacheworker
+```
+
+Run only company detail cache warm-up through Docker Compose:
+
+```powershell
+docker compose --profile cacheworker run --rm -e CacheWorker__EnabledModules__0=companies cacheworker
+```
+
+Run only company address detail cache warm-up through Docker Compose:
+
+```powershell
+docker compose --profile cacheworker run --rm -e CacheWorker__EnabledModules__0=company-addresses cacheworker
+```
+
 ## Docker Compose Notes
 
 Compose exposes the same local service ports:
