@@ -83,6 +83,33 @@ CompanyService exposes `/health`, `/health/live`, `/health/ready`, Development S
 
 For a Gateway-first end-to-end check of inventory creation, shipment creation, RabbitMQ stock reservation, and final shipment status, see [Manual smoke test](manual-smoke-test.md).
 
+## CacheWorker RunOnce
+
+The CacheWorker can be run directly from the host to warm CompanyService cache entries from `CompanyDb` into Redis. It uses `CompanyDb` as the source of truth and writes only rebuildable cached copies. Deleted rows are not refreshed; old keys expire by TTL unless normal API invalidation removes them earlier.
+
+Required local dependencies:
+
+- SQL Server Express with `CompanyDb` prepared from the checked-in SQL scripts
+- Redis on `localhost:6379`
+
+Run all warm-up modules once:
+
+```powershell
+dotnet run --project .\src\LogisticsHub.Workers.CacheWorker\LogisticsHub.Workers.CacheWorker.csproj -- --CacheWorker:RunOnce=true
+```
+
+Run only company detail cache warm-up:
+
+```powershell
+dotnet run --project .\src\LogisticsHub.Workers.CacheWorker\LogisticsHub.Workers.CacheWorker.csproj -- --CacheWorker:RunOnce=true --CacheWorker:EnabledModules:0=companies
+```
+
+Run only company address detail cache warm-up:
+
+```powershell
+dotnet run --project .\src\LogisticsHub.Workers.CacheWorker\LogisticsHub.Workers.CacheWorker.csproj -- --CacheWorker:RunOnce=true --CacheWorker:EnabledModules:0=company-addresses
+```
+
 ## Docker Compose Notes
 
 Compose exposes the same local service ports:
