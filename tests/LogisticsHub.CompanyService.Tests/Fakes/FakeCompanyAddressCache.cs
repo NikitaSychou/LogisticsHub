@@ -9,6 +9,14 @@ public sealed class FakeCompanyAddressCache : ICompanyAddressCache
 
     public int GetOrCreateCallCount { get; private set; }
 
+    public int InvalidateCallCount { get; private set; }
+
+    public Guid? LastInvalidatedCompanyId { get; private set; }
+
+    public Guid? LastInvalidatedAddressId { get; private set; }
+
+    public CancellationToken LastInvalidateCancellationToken { get; private set; }
+
     public bool FailOnGetOrCreate { get; set; }
 
     public void Add(CompanyAddressResult address)
@@ -41,5 +49,19 @@ public sealed class FakeCompanyAddressCache : ICompanyAddressCache
         }
 
         return loadedAddress;
+    }
+
+    public Task InvalidateAsync(
+        Guid companyId,
+        Guid addressId,
+        CancellationToken cancellationToken = default)
+    {
+        InvalidateCallCount++;
+        LastInvalidatedCompanyId = companyId;
+        LastInvalidatedAddressId = addressId;
+        LastInvalidateCancellationToken = cancellationToken;
+        _addresses.Remove((companyId, addressId));
+
+        return Task.CompletedTask;
     }
 }

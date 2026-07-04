@@ -1,3 +1,4 @@
+using LogisticsHub.CompanyService.Application.Caching;
 using LogisticsHub.CompanyService.Application.Persistence;
 using LogisticsHub.CompanyService.Domain.Entities;
 using LogisticsHub.Results;
@@ -8,10 +9,14 @@ namespace LogisticsHub.CompanyService.Application.Companies;
 public sealed class CreateCompanyAddress : IRequestHandler<CreateCompanyAddressCommand, Result<CompanyAddressResult>>
 {
     private readonly ICompanyDbContext _dbContext;
+    private readonly ICompanyAddressCache _addressCache;
 
-    public CreateCompanyAddress(ICompanyDbContext dbContext)
+    public CreateCompanyAddress(
+        ICompanyDbContext dbContext,
+        ICompanyAddressCache addressCache)
     {
         _dbContext = dbContext;
+        _addressCache = addressCache;
     }
 
     public async Task<Result<CompanyAddressResult>> Handle(
@@ -41,6 +46,7 @@ public sealed class CreateCompanyAddress : IRequestHandler<CreateCompanyAddressC
 
         await _dbContext.AddCompanyAddressAsync(address, cancellationToken);
         await _dbContext.SaveChangesAsync(cancellationToken);
+        await _addressCache.InvalidateAsync(command.CompanyId, address.Id, CancellationToken.None);
 
         return Result<CompanyAddressResult>.Success(CompanyResultFactory.ToResult(address));
     }

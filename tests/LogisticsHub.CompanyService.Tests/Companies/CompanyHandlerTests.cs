@@ -310,7 +310,8 @@ public sealed class CompanyHandlerTests
         var dbContext = new FakeCompanyDbContext();
         var company = CreateCompany("Acme", "ACME");
         dbContext.Companies.Add(company);
-        var handler = new CreateCompanyAddress(dbContext);
+        var cache = new FakeCompanyAddressCache();
+        var handler = new CreateCompanyAddress(dbContext, cache);
 
         var result = await handler.Handle(
             new CreateCompanyAddressCommand(
@@ -328,12 +329,17 @@ public sealed class CompanyHandlerTests
         Assert.Equal(company.Id, address.CompanyId);
         Assert.Equal(CompanyAddressType.Shipping, address.AddressType);
         Assert.Equal("US", result.Value.CountryCode);
+        Assert.Equal(1, cache.InvalidateCallCount);
+        Assert.Equal(company.Id, cache.LastInvalidatedCompanyId);
+        Assert.Equal(address.Id, cache.LastInvalidatedAddressId);
+        Assert.Equal(CancellationToken.None, cache.LastInvalidateCancellationToken);
     }
 
     [Fact]
     public async Task CreateCompanyAddress_WhenCompanyDoesNotExist_ReturnsCompanyNotFoundError()
     {
-        var handler = new CreateCompanyAddress(new FakeCompanyDbContext());
+        var cache = new FakeCompanyAddressCache();
+        var handler = new CreateCompanyAddress(new FakeCompanyDbContext(), cache);
         var companyId = Guid.NewGuid();
 
         var result = await handler.Handle(
@@ -349,6 +355,7 @@ public sealed class CompanyHandlerTests
 
         Assert.True(result.IsFailure);
         Assert.Equal("company.address.company_not_found", result.Error.Code);
+        Assert.Equal(0, cache.InvalidateCallCount);
     }
 
     [Fact]
