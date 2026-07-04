@@ -11,9 +11,8 @@ public sealed class CompanyServiceClientTests
     [Fact]
     public async Task ValidateAddressAsync_WhenHttpClientTimesOut_ReturnsDependencyUnavailable()
     {
-        var handler = new DelayedHandler(TimeSpan.FromMilliseconds(200));
+        var handler = new TimeoutHandler();
         using var httpClient = CreateHttpClient(handler);
-        httpClient.Timeout = TimeSpan.FromMilliseconds(50);
         var client = new CompanyServiceClient(httpClient);
 
         var result = await client.ValidateAddressAsync(Guid.NewGuid(), Guid.NewGuid(), CancellationToken.None);
@@ -178,21 +177,14 @@ public sealed class CompanyServiceClientTests
         }
     }
 
-    private sealed class DelayedHandler : HttpMessageHandler
+    private sealed class TimeoutHandler : HttpMessageHandler
     {
-        private readonly TimeSpan _delay;
-
-        public DelayedHandler(TimeSpan delay)
-        {
-            _delay = delay;
-        }
-
-        protected override async Task<HttpResponseMessage> SendAsync(
+        protected override Task<HttpResponseMessage> SendAsync(
             HttpRequestMessage request,
             CancellationToken cancellationToken)
         {
-            await Task.Delay(_delay, cancellationToken);
-            return new HttpResponseMessage(HttpStatusCode.OK);
+            return Task.FromException<HttpResponseMessage>(
+                new TaskCanceledException("The request timed out."));
         }
     }
 
