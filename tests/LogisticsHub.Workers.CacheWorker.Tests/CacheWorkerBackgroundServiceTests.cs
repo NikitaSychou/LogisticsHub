@@ -6,6 +6,7 @@ using LogisticsHub.CompanyService.Infrastructure.Caching;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using Xunit;
@@ -211,9 +212,9 @@ public sealed class CacheWorkerBackgroundServiceTests
     {
         var companies = new[]
         {
-            CreateCompany("first"),
-            CreateCompany("second"),
-            CreateCompany("third")
+            CreateCompany(Guid.Parse("00000000-0000-0000-0000-000000000001"), "first"),
+            CreateCompany(Guid.Parse("00000000-0000-0000-0000-000000000002"), "second"),
+            CreateCompany(Guid.Parse("00000000-0000-0000-0000-000000000003"), "third")
         };
         var reader = new FakeCompanyCacheWarmupReader(companies: companies);
         var cache = new FakeCacheService();
@@ -233,9 +234,9 @@ public sealed class CacheWorkerBackgroundServiceTests
     {
         var addresses = new[]
         {
-            CreateAddress(),
-            CreateAddress(),
-            CreateAddress()
+            CreateAddress(Guid.Parse("00000000-0000-0000-0000-000000000001")),
+            CreateAddress(Guid.Parse("00000000-0000-0000-0000-000000000002")),
+            CreateAddress(Guid.Parse("00000000-0000-0000-0000-000000000003"))
         };
         var reader = new FakeCompanyCacheWarmupReader(addresses: addresses);
         var cache = new FakeCacheService();
@@ -280,6 +281,7 @@ public sealed class CacheWorkerBackgroundServiceTests
             CreateCompany("third")
         };
         var reader = new FakeCompanyCacheWarmupReader(companies: companies);
+        var logger = new TestLogger<CompanyCacheWarmupModule>();
         var cache = new FakeCacheService
         {
             FailedKeys =
@@ -289,12 +291,14 @@ public sealed class CacheWorkerBackgroundServiceTests
                 RedisCompanyCache.BuildKey(companies[2].Id)
             ]
         };
-        var module = CreateCompanyModule(reader, cache, batchSize: 3, failureThreshold: 2);
+        var module = CreateCompanyModule(reader, cache, batchSize: 3, failureThreshold: 2, logger);
 
         await module.WarmUpAsync(CancellationToken.None);
 
         Assert.Equal([0], reader.CompanySkips);
         Assert.Equal(2, cache.SetCalls.Count);
+        Assert.Contains(logger.Messages, message => message.Contains("stopped after reaching", StringComparison.Ordinal));
+        Assert.DoesNotContain(logger.Messages, message => message.Contains("completed successfully", StringComparison.Ordinal));
     }
 
     [Fact]
@@ -329,11 +333,11 @@ public sealed class CacheWorkerBackgroundServiceTests
     {
         var companies = new[]
         {
-            CreateCompany("first"),
-            CreateCompany("second"),
-            CreateCompany("third"),
-            CreateCompany("fourth"),
-            CreateCompany("fifth")
+            CreateCompany(Guid.Parse("00000000-0000-0000-0000-000000000001"), "first"),
+            CreateCompany(Guid.Parse("00000000-0000-0000-0000-000000000002"), "second"),
+            CreateCompany(Guid.Parse("00000000-0000-0000-0000-000000000003"), "third"),
+            CreateCompany(Guid.Parse("00000000-0000-0000-0000-000000000004"), "fourth"),
+            CreateCompany(Guid.Parse("00000000-0000-0000-0000-000000000005"), "fifth")
         };
         var reader = new FakeCompanyCacheWarmupReader(companies: companies);
         var cache = new FakeCacheService
@@ -358,10 +362,10 @@ public sealed class CacheWorkerBackgroundServiceTests
     {
         var companies = new[]
         {
-            CreateCompany("first"),
-            CreateCompany("second"),
-            CreateCompany("third"),
-            CreateCompany("fourth")
+            CreateCompany(Guid.Parse("00000000-0000-0000-0000-000000000001"), "first"),
+            CreateCompany(Guid.Parse("00000000-0000-0000-0000-000000000002"), "second"),
+            CreateCompany(Guid.Parse("00000000-0000-0000-0000-000000000003"), "third"),
+            CreateCompany(Guid.Parse("00000000-0000-0000-0000-000000000004"), "fourth")
         };
         var reader = new FakeCompanyCacheWarmupReader(companies: companies);
         var cache = new FakeCacheService
@@ -380,18 +384,35 @@ public sealed class CacheWorkerBackgroundServiceTests
     }
 
     [Fact]
+    public async Task CompanyCacheWarmupModule_WhenCompletedSuccessfully_LogsSuccessfulCompletion()
+    {
+        var reader = new FakeCompanyCacheWarmupReader(companies: [CreateCompany("first")]);
+        var logger = new TestLogger<CompanyCacheWarmupModule>();
+        var module = CreateCompanyModule(reader, new FakeCacheService(), batchSize: 2, logger: logger);
+
+        await module.WarmUpAsync(CancellationToken.None);
+
+        Assert.Contains(logger.Messages, message => message.Contains("completed successfully", StringComparison.Ordinal));
+        Assert.DoesNotContain(logger.Messages, message => message.Contains("stopped after reaching", StringComparison.Ordinal));
+    }
+
+    [Fact]
     public async Task CompanyAddressCacheWarmupModule_WhenCancellationIsRequested_PropagatesCancellation()
     {
+        var logger = new TestLogger<CompanyAddressCacheWarmupModule>();
         var reader = new FakeCompanyCacheWarmupReader(addresses: [CreateAddress()])
         {
             ThrowWhenCancellationRequested = true
         };
-        var module = CreateCompanyAddressModule(reader, new FakeCacheService(), batchSize: 2);
+        var module = CreateCompanyAddressModule(reader, new FakeCacheService(), batchSize: 2, logger: logger);
         using var cancellation = new CancellationTokenSource();
         await cancellation.CancelAsync();
 
         await Assert.ThrowsAnyAsync<OperationCanceledException>(() =>
             module.WarmUpAsync(cancellation.Token));
+
+        Assert.Contains(logger.Messages, message => message.Contains("cancelled", StringComparison.Ordinal));
+        Assert.DoesNotContain(logger.Messages, message => message.Contains("completed successfully", StringComparison.Ordinal));
     }
 
     [Fact]
@@ -404,6 +425,23 @@ public sealed class CacheWorkerBackgroundServiceTests
 
         await Assert.ThrowsAnyAsync<OperationCanceledException>(() =>
             module.WarmUpAsync(cancellation.Token));
+    }
+
+    [Fact]
+    public async Task CompanyCacheWarmupModule_WhenReaderFails_LogsFailureAndPropagatesException()
+    {
+        var logger = new TestLogger<CompanyCacheWarmupModule>();
+        var reader = new FakeCompanyCacheWarmupReader
+        {
+            Exception = new InvalidOperationException("read failed")
+        };
+        var module = CreateCompanyModule(reader, new FakeCacheService(), batchSize: 2, logger: logger);
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            module.WarmUpAsync(CancellationToken.None));
+
+        Assert.Contains(logger.Messages, message => message.Contains("failed", StringComparison.Ordinal));
+        Assert.DoesNotContain(logger.Messages, message => message.Contains("completed successfully", StringComparison.Ordinal));
     }
 
     [Theory]
@@ -451,7 +489,8 @@ public sealed class CacheWorkerBackgroundServiceTests
         ICompanyCacheWarmupReader reader,
         ICacheService cache,
         int batchSize,
-        int failureThreshold = 10)
+        int failureThreshold = 10,
+        ILogger<CompanyCacheWarmupModule>? logger = null)
     {
         return new CompanyCacheWarmupModule(
             reader,
@@ -461,14 +500,15 @@ public sealed class CacheWorkerBackgroundServiceTests
                 BatchSize = batchSize,
                 ConsecutiveCacheWriteFailureThreshold = failureThreshold
             }),
-            NullLogger<CompanyCacheWarmupModule>.Instance);
+            logger ?? NullLogger<CompanyCacheWarmupModule>.Instance);
     }
 
     private static CompanyAddressCacheWarmupModule CreateCompanyAddressModule(
         ICompanyCacheWarmupReader reader,
         ICacheService cache,
         int batchSize,
-        int failureThreshold = 10)
+        int failureThreshold = 10,
+        ILogger<CompanyAddressCacheWarmupModule>? logger = null)
     {
         return new CompanyAddressCacheWarmupModule(
             reader,
@@ -478,7 +518,7 @@ public sealed class CacheWorkerBackgroundServiceTests
                 BatchSize = batchSize,
                 ConsecutiveCacheWriteFailureThreshold = failureThreshold
             }),
-            NullLogger<CompanyAddressCacheWarmupModule>.Instance);
+            logger ?? NullLogger<CompanyAddressCacheWarmupModule>.Instance);
     }
 
     private static IConfiguration CreateCacheWorkerConfiguration(
@@ -505,9 +545,12 @@ public sealed class CacheWorkerBackgroundServiceTests
     }
 
     private static CompanyResult CreateCompany(string name)
+        => CreateCompany(Guid.NewGuid(), name);
+
+    private static CompanyResult CreateCompany(Guid id, string name)
     {
         return new CompanyResult(
-            Guid.NewGuid(),
+            id,
             name,
             name.ToUpperInvariant(),
             CompanyStatus.Active,
@@ -516,9 +559,12 @@ public sealed class CacheWorkerBackgroundServiceTests
     }
 
     private static CompanyAddressResult CreateAddress()
+        => CreateAddress(Guid.NewGuid());
+
+    private static CompanyAddressResult CreateAddress(Guid addressId)
     {
         return new CompanyAddressResult(
-            Guid.NewGuid(),
+            addressId,
             Guid.NewGuid(),
             CompanyAddressType.Shipping,
             "US",
@@ -595,11 +641,18 @@ public sealed class CacheWorkerBackgroundServiceTests
 
         public bool ThrowWhenCancellationRequested { get; init; }
 
+        public Exception? Exception { get; init; }
+
         public Task<IReadOnlyList<CompanyResult>> ReadCompaniesAsync(
             int skip,
             int take,
             CancellationToken cancellationToken)
         {
+            if (Exception is not null)
+            {
+                throw Exception;
+            }
+
             if (ThrowWhenCancellationRequested)
             {
                 cancellationToken.ThrowIfCancellationRequested();
@@ -615,6 +668,11 @@ public sealed class CacheWorkerBackgroundServiceTests
             int take,
             CancellationToken cancellationToken)
         {
+            if (Exception is not null)
+            {
+                throw Exception;
+            }
+
             if (ThrowWhenCancellationRequested)
             {
                 cancellationToken.ThrowIfCancellationRequested();
@@ -664,6 +722,41 @@ public sealed class CacheWorkerBackgroundServiceTests
     }
 
     private sealed record SetCall(string Key, Type ValueType);
+
+    private sealed class TestLogger<T> : ILogger<T>
+    {
+        public List<string> Messages { get; } = [];
+
+        public IDisposable BeginScope<TState>(TState state)
+            where TState : notnull
+        {
+            return NullScope.Instance;
+        }
+
+        public bool IsEnabled(LogLevel logLevel)
+        {
+            return true;
+        }
+
+        public void Log<TState>(
+            LogLevel logLevel,
+            EventId eventId,
+            TState state,
+            Exception? exception,
+            Func<TState, Exception?, string> formatter)
+        {
+            Messages.Add(formatter(state, exception));
+        }
+
+        private sealed class NullScope : IDisposable
+        {
+            public static NullScope Instance { get; } = new();
+
+            public void Dispose()
+            {
+            }
+        }
+    }
 
     private sealed class TrackingWarmupModule : ICacheWarmupModule
     {

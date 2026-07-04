@@ -38,42 +38,64 @@ public sealed class CompanyCacheWarmupModule : ICacheWarmupModule
 
         _logger.LogInformation("Company cache warm-up started.");
 
-        while (true)
+        try
         {
-            var companies = await _reader.ReadCompaniesAsync(skip, _options.BatchSize, cancellationToken);
-            if (companies.Count == 0)
+            while (true)
             {
-                break;
-            }
+                var companies = await _reader.ReadCompaniesAsync(skip, _options.BatchSize, cancellationToken);
+                if (companies.Count == 0)
+                {
+                    break;
+                }
 
-            totalRead += companies.Count;
-            var result = await CacheBatchAsync(companies, consecutiveFailures, cancellationToken);
-            totalCached += result.Cached;
-            failedWrites += result.Failed;
-            consecutiveFailures = result.ConsecutiveFailures;
-            skip += companies.Count;
+                totalRead += companies.Count;
+                var result = await CacheBatchAsync(companies, consecutiveFailures, cancellationToken);
+                totalCached += result.Cached;
+                failedWrites += result.Failed;
+                consecutiveFailures = result.ConsecutiveFailures;
+                skip += companies.Count;
+
+                _logger.LogInformation(
+                    "Company cache warm-up processed {TotalRead} company record(s).",
+                    totalRead);
+
+                if (result.ShouldStop)
+                {
+                    LogFailureThresholdReached(totalRead, totalCached, failedWrites);
+                    return;
+                }
+
+                if (companies.Count < _options.BatchSize)
+                {
+                    break;
+                }
+            }
 
             _logger.LogInformation(
-                "Company cache warm-up processed {TotalRead} company record(s).",
-                totalRead);
-
-            if (result.ShouldStop)
-            {
-                LogFailureThresholdReached(totalRead, totalCached, failedWrites);
-                break;
-            }
-
-            if (companies.Count < _options.BatchSize)
-            {
-                break;
-            }
+                "Company cache warm-up completed successfully. Read: {TotalRead}. Cached: {TotalCached}. Failed writes: {FailedWrites}.",
+                totalRead,
+                totalCached,
+                failedWrites);
         }
-
-        _logger.LogInformation(
-            "Company cache warm-up completed. Read: {TotalRead}. Cached: {TotalCached}. Failed writes: {FailedWrites}.",
-            totalRead,
-            totalCached,
-            failedWrites);
+        catch (OperationCanceledException)
+        {
+            _logger.LogInformation(
+                "Company cache warm-up cancelled. Read: {TotalRead}. Cached: {TotalCached}. Failed writes: {FailedWrites}.",
+                totalRead,
+                totalCached,
+                failedWrites);
+            throw;
+        }
+        catch (Exception exception)
+        {
+            _logger.LogError(
+                exception,
+                "Company cache warm-up failed. Read: {TotalRead}. Cached: {TotalCached}. Failed writes: {FailedWrites}.",
+                totalRead,
+                totalCached,
+                failedWrites);
+            throw;
+        }
     }
 
     private async Task<BatchCacheResult> CacheBatchAsync(
