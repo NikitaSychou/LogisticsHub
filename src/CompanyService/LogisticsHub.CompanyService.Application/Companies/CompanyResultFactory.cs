@@ -2,7 +2,7 @@ using LogisticsHub.CompanyService.Domain.Entities;
 
 namespace LogisticsHub.CompanyService.Application.Companies;
 
-internal static class CompanyResultFactory
+public static class CompanyResultFactory
 {
     public static CompanyResult ToResult(Company company)
     {
