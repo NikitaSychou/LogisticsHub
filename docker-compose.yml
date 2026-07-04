@@ -73,6 +73,21 @@ services:
     ports:
       - "5102:8080"
 
+  cacheworker:
+    profiles:
+      - cacheworker
+    build:
+      context: .
+      dockerfile: src/LogisticsHub.Workers.CacheWorker/Dockerfile
+    container_name: logisticshub-cacheworker
+    environment:
+      DOTNET_ENVIRONMENT: Development
+      ConnectionStrings__CompanyDb: "Server=host.docker.internal,14330;Database=CompanyDb;User Id=logisticshub_companyservice;Password=${COMPANYSERVICE_DB_PASSWORD};Encrypt=True;TrustServerCertificate=True;"
+      ConnectionStrings__Redis: "redis:6379"
+      CacheWorker__RunOnce: true
+    depends_on:
+      - redis
+
   rabbitmq:
     image: rabbitmq:3-management
     container_name: logisticshub-rabbitmq
