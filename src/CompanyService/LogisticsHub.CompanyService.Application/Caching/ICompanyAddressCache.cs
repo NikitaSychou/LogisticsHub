@@ -9,4 +9,9 @@ public interface ICompanyAddressCache
         Guid addressId,
         Func<CancellationToken, Task<CompanyAddressResult?>> sourceFactory,
         CancellationToken cancellationToken = default);
+
+    Task InvalidateAsync(
+        Guid companyId,
+        Guid addressId,
+        CancellationToken cancellationToken = default);
 }

@@ -20,6 +20,12 @@ public sealed class RedisCompanyAddressCache : ICompanyAddressCache
         CancellationToken cancellationToken = default)
         => _cache.GetOrCreateAsync(BuildKey(companyId, addressId), sourceFactory, cancellationToken: cancellationToken);
 
+    public Task InvalidateAsync(
+        Guid companyId,
+        Guid addressId,
+        CancellationToken cancellationToken = default)
+        => _cache.RemoveAsync(BuildKey(companyId, addressId), cancellationToken);
+
     public static string BuildKey(Guid companyId, Guid addressId)
         => $"company-address:{companyId:D}:{addressId:D}";
 }
