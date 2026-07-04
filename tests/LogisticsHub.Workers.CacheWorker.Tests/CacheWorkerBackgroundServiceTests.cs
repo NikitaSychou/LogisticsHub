@@ -3,6 +3,8 @@ using LogisticsHub.Caching;
 using LogisticsHub.CompanyService.Application.Companies;
 using LogisticsHub.CompanyService.Domain.Enums;
 using LogisticsHub.CompanyService.Infrastructure.Caching;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
@@ -269,6 +271,115 @@ public sealed class CacheWorkerBackgroundServiceTests
     }
 
     [Fact]
+    public async Task CompanyCacheWarmupModule_WhenConsecutiveCacheWriteFailureThresholdIsReached_StopsCurrentModule()
+    {
+        var companies = new[]
+        {
+            CreateCompany("first"),
+            CreateCompany("second"),
+            CreateCompany("third")
+        };
+        var reader = new FakeCompanyCacheWarmupReader(companies: companies);
+        var cache = new FakeCacheService
+        {
+            FailedKeys =
+            [
+                RedisCompanyCache.BuildKey(companies[0].Id),
+                RedisCompanyCache.BuildKey(companies[1].Id),
+                RedisCompanyCache.BuildKey(companies[2].Id)
+            ]
+        };
+        var module = CreateCompanyModule(reader, cache, batchSize: 3, failureThreshold: 2);
+
+        await module.WarmUpAsync(CancellationToken.None);
+
+        Assert.Equal([0], reader.CompanySkips);
+        Assert.Equal(2, cache.SetCalls.Count);
+    }
+
+    [Fact]
+    public async Task CompanyAddressCacheWarmupModule_WhenConsecutiveCacheWriteFailureThresholdIsReached_StopsCurrentModule()
+    {
+        var addresses = new[]
+        {
+            CreateAddress(),
+            CreateAddress(),
+            CreateAddress()
+        };
+        var reader = new FakeCompanyCacheWarmupReader(addresses: addresses);
+        var cache = new FakeCacheService
+        {
+            FailedKeys =
+            [
+                RedisCompanyAddressCache.BuildKey(addresses[0].CompanyId, addresses[0].Id),
+                RedisCompanyAddressCache.BuildKey(addresses[1].CompanyId, addresses[1].Id),
+                RedisCompanyAddressCache.BuildKey(addresses[2].CompanyId, addresses[2].Id)
+            ]
+        };
+        var module = CreateCompanyAddressModule(reader, cache, batchSize: 3, failureThreshold: 2);
+
+        await module.WarmUpAsync(CancellationToken.None);
+
+        Assert.Equal([0], reader.AddressSkips);
+        Assert.Equal(2, cache.SetCalls.Count);
+    }
+
+    [Fact]
+    public async Task CompanyCacheWarmupModule_WhenWriteSucceeds_ResetsConsecutiveFailureCount()
+    {
+        var companies = new[]
+        {
+            CreateCompany("first"),
+            CreateCompany("second"),
+            CreateCompany("third"),
+            CreateCompany("fourth"),
+            CreateCompany("fifth")
+        };
+        var reader = new FakeCompanyCacheWarmupReader(companies: companies);
+        var cache = new FakeCacheService
+        {
+            FailedKeys =
+            [
+                RedisCompanyCache.BuildKey(companies[0].Id),
+                RedisCompanyCache.BuildKey(companies[2].Id),
+                RedisCompanyCache.BuildKey(companies[3].Id),
+                RedisCompanyCache.BuildKey(companies[4].Id)
+            ]
+        };
+        var module = CreateCompanyModule(reader, cache, batchSize: 5, failureThreshold: 2);
+
+        await module.WarmUpAsync(CancellationToken.None);
+
+        Assert.Equal(4, cache.SetCalls.Count);
+    }
+
+    [Fact]
+    public async Task CompanyCacheWarmupModule_WhenFailuresAreNotConsecutive_DoesNotStopEarly()
+    {
+        var companies = new[]
+        {
+            CreateCompany("first"),
+            CreateCompany("second"),
+            CreateCompany("third"),
+            CreateCompany("fourth")
+        };
+        var reader = new FakeCompanyCacheWarmupReader(companies: companies);
+        var cache = new FakeCacheService
+        {
+            FailedKeys =
+            [
+                RedisCompanyCache.BuildKey(companies[0].Id),
+                RedisCompanyCache.BuildKey(companies[2].Id)
+            ]
+        };
+        var module = CreateCompanyModule(reader, cache, batchSize: 4, failureThreshold: 2);
+
+        await module.WarmUpAsync(CancellationToken.None);
+
+        Assert.Equal(4, cache.SetCalls.Count);
+    }
+
+    [Fact]
     public async Task CompanyAddressCacheWarmupModule_WhenCancellationIsRequested_PropagatesCancellation()
     {
         var reader = new FakeCompanyCacheWarmupReader(addresses: [CreateAddress()])
@@ -281,6 +392,36 @@ public sealed class CacheWorkerBackgroundServiceTests
 
         await Assert.ThrowsAnyAsync<OperationCanceledException>(() =>
             module.WarmUpAsync(cancellation.Token));
+    }
+
+    [Fact]
+    public async Task CompanyCacheWarmupModule_WhenCacheWriteIsCanceled_PropagatesCancellation()
+    {
+        var reader = new FakeCompanyCacheWarmupReader(companies: [CreateCompany("first")]);
+        var module = CreateCompanyModule(reader, new FakeCacheService(), batchSize: 1);
+        using var cancellation = new CancellationTokenSource();
+        await cancellation.CancelAsync();
+
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() =>
+            module.WarmUpAsync(cancellation.Token));
+    }
+
+    [Theory]
+    [InlineData("CompanyCacheWarmup:ConsecutiveCacheWriteFailureThreshold")]
+    [InlineData("CompanyAddressCacheWarmup:ConsecutiveCacheWriteFailureThreshold")]
+    public void AddCacheWorker_WhenConsecutiveCacheWriteFailureThresholdIsInvalid_RejectsOptions(
+        string optionName)
+    {
+        var configuration = CreateCacheWorkerConfiguration(new Dictionary<string, string?>
+        {
+            [optionName] = "0"
+        });
+        var services = new ServiceCollection();
+
+        services.AddCacheWorker(configuration);
+
+        using var serviceProvider = services.BuildServiceProvider();
+        Assert.Throws<OptionsValidationException>(() => GetInvalidWarmupOptions(serviceProvider, optionName));
     }
 
     public static IEnumerable<object[]> InvalidOptions()
@@ -309,25 +450,58 @@ public sealed class CacheWorkerBackgroundServiceTests
     private static CompanyCacheWarmupModule CreateCompanyModule(
         ICompanyCacheWarmupReader reader,
         ICacheService cache,
-        int batchSize)
+        int batchSize,
+        int failureThreshold = 10)
     {
         return new CompanyCacheWarmupModule(
             reader,
             cache,
-            Options.Create(new CompanyCacheWarmupOptions { BatchSize = batchSize }),
+            Options.Create(new CompanyCacheWarmupOptions
+            {
+                BatchSize = batchSize,
+                ConsecutiveCacheWriteFailureThreshold = failureThreshold
+            }),
             NullLogger<CompanyCacheWarmupModule>.Instance);
     }
 
     private static CompanyAddressCacheWarmupModule CreateCompanyAddressModule(
         ICompanyCacheWarmupReader reader,
         ICacheService cache,
-        int batchSize)
+        int batchSize,
+        int failureThreshold = 10)
     {
         return new CompanyAddressCacheWarmupModule(
             reader,
             cache,
-            Options.Create(new CompanyAddressCacheWarmupOptions { BatchSize = batchSize }),
+            Options.Create(new CompanyAddressCacheWarmupOptions
+            {
+                BatchSize = batchSize,
+                ConsecutiveCacheWriteFailureThreshold = failureThreshold
+            }),
             NullLogger<CompanyAddressCacheWarmupModule>.Instance);
+    }
+
+    private static IConfiguration CreateCacheWorkerConfiguration(
+        IDictionary<string, string?> overrides)
+    {
+        var values = new Dictionary<string, string?>(overrides)
+        {
+            ["ConnectionStrings:CompanyDb"] = "Server=localhost;Database=CompanyDb;Trusted_Connection=True;",
+            ["ConnectionStrings:Redis"] = "localhost:6379"
+        };
+
+        return new ConfigurationBuilder()
+            .AddInMemoryCollection(values)
+            .Build();
+    }
+
+    private static object GetInvalidWarmupOptions(
+        IServiceProvider serviceProvider,
+        string optionName)
+    {
+        return optionName.StartsWith("CompanyAddressCacheWarmup:", StringComparison.Ordinal)
+            ? serviceProvider.GetRequiredService<IOptions<CompanyAddressCacheWarmupOptions>>().Value
+            : serviceProvider.GetRequiredService<IOptions<CompanyCacheWarmupOptions>>().Value;
     }
 
     private static CompanyResult CreateCompany(string name)

@@ -21,11 +21,17 @@ public static class CacheWorkerServiceCollectionExtensions
             .AddOptions<CompanyCacheWarmupOptions>()
             .Bind(configuration.GetSection("CompanyCacheWarmup"))
             .Validate(options => options.BatchSize > 0, "CompanyCacheWarmup:BatchSize must be greater than zero.")
+            .Validate(
+                options => options.ConsecutiveCacheWriteFailureThreshold > 0,
+                "CompanyCacheWarmup:ConsecutiveCacheWriteFailureThreshold must be greater than zero.")
             .ValidateOnStart();
         services
             .AddOptions<CompanyAddressCacheWarmupOptions>()
             .Bind(configuration.GetSection("CompanyAddressCacheWarmup"))
             .Validate(options => options.BatchSize > 0, "CompanyAddressCacheWarmup:BatchSize must be greater than zero.")
+            .Validate(
+                options => options.ConsecutiveCacheWriteFailureThreshold > 0,
+                "CompanyAddressCacheWarmup:ConsecutiveCacheWriteFailureThreshold must be greater than zero.")
             .ValidateOnStart();
 
         var companyDbConnectionString = configuration.GetConnectionString("CompanyDb");

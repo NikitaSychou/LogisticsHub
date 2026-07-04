@@ -33,6 +33,7 @@ public sealed class CompanyCacheWarmupModule : ICacheWarmupModule
         var totalRead = 0;
         var totalCached = 0;
         var failedWrites = 0;
+        var consecutiveFailures = 0;
         var skip = 0;
 
         _logger.LogInformation("Company cache warm-up started.");
@@ -45,15 +46,22 @@ public sealed class CompanyCacheWarmupModule : ICacheWarmupModule
                 break;
             }
 
-            var result = await CacheBatchAsync(companies, cancellationToken);
             totalRead += companies.Count;
+            var result = await CacheBatchAsync(companies, consecutiveFailures, cancellationToken);
             totalCached += result.Cached;
             failedWrites += result.Failed;
+            consecutiveFailures = result.ConsecutiveFailures;
             skip += companies.Count;
 
             _logger.LogInformation(
                 "Company cache warm-up processed {TotalRead} company record(s).",
                 totalRead);
+
+            if (result.ShouldStop)
+            {
+                LogFailureThresholdReached(totalRead, totalCached, failedWrites);
+                break;
+            }
 
             if (companies.Count < _options.BatchSize)
             {
@@ -70,6 +78,7 @@ public sealed class CompanyCacheWarmupModule : ICacheWarmupModule
 
     private async Task<BatchCacheResult> CacheBatchAsync(
         IReadOnlyList<CompanyResult> companies,
+        int consecutiveFailures,
         CancellationToken cancellationToken)
     {
         var cached = 0;
@@ -82,16 +91,41 @@ public sealed class CompanyCacheWarmupModule : ICacheWarmupModule
             if (written)
             {
                 cached++;
+                consecutiveFailures = 0;
             }
             else
             {
                 failed++;
+                consecutiveFailures++;
                 _logger.LogWarning("Company cache write failed for company {CompanyId}.", company.Id);
+
+                if (consecutiveFailures >= _options.ConsecutiveCacheWriteFailureThreshold)
+                {
+                    return new BatchCacheResult(cached, failed, consecutiveFailures, ShouldStop: true);
+                }
             }
         }
 
-        return new BatchCacheResult(cached, failed);
+        return new BatchCacheResult(cached, failed, consecutiveFailures, ShouldStop: false);
     }
 
-    private readonly record struct BatchCacheResult(int Cached, int Failed);
+    private void LogFailureThresholdReached(
+        int totalRead,
+        int totalCached,
+        int failedWrites)
+    {
+        _logger.LogError(
+            "Cache warm-up module {ModuleName} stopped after reaching {Threshold} consecutive cache write failure(s). Read: {TotalRead}. Cached: {TotalCached}. Failed writes: {FailedWrites}.",
+            ModuleName,
+            _options.ConsecutiveCacheWriteFailureThreshold,
+            totalRead,
+            totalCached,
+            failedWrites);
+    }
+
+    private readonly record struct BatchCacheResult(
+        int Cached,
+        int Failed,
+        int ConsecutiveFailures,
+        bool ShouldStop);
 }
