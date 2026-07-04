@@ -10,4 +10,10 @@
     <PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.8" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\CompanyService\LogisticsHub.CompanyService.Application\LogisticsHub.CompanyService.Application.csproj" />
+    <ProjectReference Include="..\CompanyService\LogisticsHub.CompanyService.Infrastructure\LogisticsHub.CompanyService.Infrastructure.csproj" />
+    <ProjectReference Include="..\Shared\LogisticsHub.Caching\LogisticsHub.Caching.csproj" />
+  </ItemGroup>
+
 </Project>

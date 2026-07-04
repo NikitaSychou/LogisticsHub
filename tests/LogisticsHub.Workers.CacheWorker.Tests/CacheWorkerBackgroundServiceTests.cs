@@ -1,4 +1,8 @@
 using LogisticsHub.Workers.CacheWorker;
+using LogisticsHub.Caching;
+using LogisticsHub.CompanyService.Application.Companies;
+using LogisticsHub.CompanyService.Domain.Enums;
+using LogisticsHub.CompanyService.Infrastructure.Caching;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
@@ -200,6 +204,85 @@ public sealed class CacheWorkerBackgroundServiceTests
         Assert.True(result.Failed);
     }
 
+    [Fact]
+    public async Task CompanyCacheWarmupModule_ReadsCompaniesInBatchesAndCachesExpectedKeys()
+    {
+        var companies = new[]
+        {
+            CreateCompany("first"),
+            CreateCompany("second"),
+            CreateCompany("third")
+        };
+        var reader = new FakeCompanyCacheWarmupReader(companies: companies);
+        var cache = new FakeCacheService();
+        var module = CreateCompanyModule(reader, cache, batchSize: 2);
+
+        await module.WarmUpAsync(CancellationToken.None);
+
+        Assert.Equal([0, 2], reader.CompanySkips);
+        Assert.Equal(3, cache.SetCalls.Count);
+        Assert.Equal(
+            companies.Select(company => RedisCompanyCache.BuildKey(company.Id)),
+            cache.SetCalls.Select(call => call.Key));
+    }
+
+    [Fact]
+    public async Task CompanyAddressCacheWarmupModule_ReadsAddressesInBatchesAndCachesExpectedKeys()
+    {
+        var addresses = new[]
+        {
+            CreateAddress(),
+            CreateAddress(),
+            CreateAddress()
+        };
+        var reader = new FakeCompanyCacheWarmupReader(addresses: addresses);
+        var cache = new FakeCacheService();
+        var module = CreateCompanyAddressModule(reader, cache, batchSize: 2);
+
+        await module.WarmUpAsync(CancellationToken.None);
+
+        Assert.Equal([0, 2], reader.AddressSkips);
+        Assert.Equal(3, cache.SetCalls.Count);
+        Assert.Equal(
+            addresses.Select(address => RedisCompanyAddressCache.BuildKey(address.CompanyId, address.Id)),
+            cache.SetCalls.Select(call => call.Key));
+    }
+
+    [Fact]
+    public async Task CompanyCacheWarmupModule_WhenCacheWriteFails_ContinuesCachingRemainingCompanies()
+    {
+        var companies = new[]
+        {
+            CreateCompany("first"),
+            CreateCompany("second")
+        };
+        var reader = new FakeCompanyCacheWarmupReader(companies: companies);
+        var cache = new FakeCacheService
+        {
+            FailedKeys = [RedisCompanyCache.BuildKey(companies[0].Id)]
+        };
+        var module = CreateCompanyModule(reader, cache, batchSize: 2);
+
+        await module.WarmUpAsync(CancellationToken.None);
+
+        Assert.Equal(2, cache.SetCalls.Count);
+    }
+
+    [Fact]
+    public async Task CompanyAddressCacheWarmupModule_WhenCancellationIsRequested_PropagatesCancellation()
+    {
+        var reader = new FakeCompanyCacheWarmupReader(addresses: [CreateAddress()])
+        {
+            ThrowWhenCancellationRequested = true
+        };
+        var module = CreateCompanyAddressModule(reader, new FakeCacheService(), batchSize: 2);
+        using var cancellation = new CancellationTokenSource();
+        await cancellation.CancelAsync();
+
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() =>
+            module.WarmUpAsync(cancellation.Token));
+    }
+
     public static IEnumerable<object[]> InvalidOptions()
     {
         yield return [new CacheWorkerOptions { RefreshInterval = TimeSpan.Zero }];
@@ -221,6 +304,56 @@ public sealed class CacheWorkerBackgroundServiceTests
             Options.Create(options ?? new CacheWorkerOptions()),
             applicationLifetime ?? new FakeHostApplicationLifetime(),
             NullLogger<CacheWorkerBackgroundService>.Instance);
+    }
+
+    private static CompanyCacheWarmupModule CreateCompanyModule(
+        ICompanyCacheWarmupReader reader,
+        ICacheService cache,
+        int batchSize)
+    {
+        return new CompanyCacheWarmupModule(
+            reader,
+            cache,
+            Options.Create(new CompanyCacheWarmupOptions { BatchSize = batchSize }),
+            NullLogger<CompanyCacheWarmupModule>.Instance);
+    }
+
+    private static CompanyAddressCacheWarmupModule CreateCompanyAddressModule(
+        ICompanyCacheWarmupReader reader,
+        ICacheService cache,
+        int batchSize)
+    {
+        return new CompanyAddressCacheWarmupModule(
+            reader,
+            cache,
+            Options.Create(new CompanyAddressCacheWarmupOptions { BatchSize = batchSize }),
+            NullLogger<CompanyAddressCacheWarmupModule>.Instance);
+    }
+
+    private static CompanyResult CreateCompany(string name)
+    {
+        return new CompanyResult(
+            Guid.NewGuid(),
+            name,
+            name.ToUpperInvariant(),
+            CompanyStatus.Active,
+            DateTime.UtcNow,
+            null);
+    }
+
+    private static CompanyAddressResult CreateAddress()
+    {
+        return new CompanyAddressResult(
+            Guid.NewGuid(),
+            Guid.NewGuid(),
+            CompanyAddressType.Shipping,
+            "US",
+            "New York",
+            "10001",
+            "1 Logistics Way",
+            null,
+            DateTime.UtcNow,
+            null);
     }
 
     private sealed class FakeWarmupModule : ICacheWarmupModule
@@ -268,6 +401,95 @@ public sealed class CacheWorkerBackgroundServiceTests
             }
         }
     }
+
+    private sealed class FakeCompanyCacheWarmupReader : ICompanyCacheWarmupReader
+    {
+        private readonly IReadOnlyList<CompanyResult> _companies;
+        private readonly IReadOnlyList<CompanyAddressResult> _addresses;
+
+        public FakeCompanyCacheWarmupReader(
+            IReadOnlyList<CompanyResult>? companies = null,
+            IReadOnlyList<CompanyAddressResult>? addresses = null)
+        {
+            _companies = companies ?? [];
+            _addresses = addresses ?? [];
+        }
+
+        public List<int> CompanySkips { get; } = [];
+
+        public List<int> AddressSkips { get; } = [];
+
+        public bool ThrowWhenCancellationRequested { get; init; }
+
+        public Task<IReadOnlyList<CompanyResult>> ReadCompaniesAsync(
+            int skip,
+            int take,
+            CancellationToken cancellationToken)
+        {
+            if (ThrowWhenCancellationRequested)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+            }
+
+            CompanySkips.Add(skip);
+            return Task.FromResult<IReadOnlyList<CompanyResult>>(
+                _companies.Skip(skip).Take(take).ToArray());
+        }
+
+        public Task<IReadOnlyList<CompanyAddressResult>> ReadCompanyAddressesAsync(
+            int skip,
+            int take,
+            CancellationToken cancellationToken)
+        {
+            if (ThrowWhenCancellationRequested)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+            }
+
+            AddressSkips.Add(skip);
+            return Task.FromResult<IReadOnlyList<CompanyAddressResult>>(
+                _addresses.Skip(skip).Take(take).ToArray());
+        }
+    }
+
+    private sealed class FakeCacheService : ICacheService
+    {
+        public List<SetCall> SetCalls { get; } = [];
+
+        public HashSet<string> FailedKeys { get; init; } = [];
+
+        public Task<T?> GetOrCreateAsync<T>(
+            string key,
+            Func<CancellationToken, Task<T?>> sourceFactory,
+            TimeSpan? ttl = null,
+            CancellationToken cancellationToken = default)
+            where T : class
+        {
+            return sourceFactory(cancellationToken);
+        }
+
+        public Task<bool> SetAsync<T>(
+            string key,
+            T? value,
+            TimeSpan? ttl = null,
+            CancellationToken cancellationToken = default)
+            where T : class
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            SetCalls.Add(new SetCall(key, typeof(T)));
+
+            return Task.FromResult(!FailedKeys.Contains(key));
+        }
+
+        public Task RemoveAsync(
+            string key,
+            CancellationToken cancellationToken = default)
+        {
+            return Task.CompletedTask;
+        }
+    }
+
+    private sealed record SetCall(string Key, Type ValueType);
 
     private sealed class TrackingWarmupModule : ICacheWarmupModule
     {
