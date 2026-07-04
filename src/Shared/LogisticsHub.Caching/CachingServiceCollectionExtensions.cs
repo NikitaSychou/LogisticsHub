@@ -10,6 +10,7 @@ public static class CachingServiceCollectionExtensions
     {
         var options = new CacheOptions();
         configure?.Invoke(options);
+        options.Validate();
 
         services.AddSingleton(options);
         services.AddSingleton<ICacheService, DistributedCacheService>();
