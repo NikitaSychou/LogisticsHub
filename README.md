@@ -96,7 +96,7 @@ For the smallest full local workflow through the Gateway, see [Manual smoke test
 
 ## Tests
 
-Test projects live under `tests/`. The current test suite uses Application-level tests for reservation reliability behavior and does not require RabbitMQ or SQL Server.
+Test projects live under `tests/`. Most tests are in-memory application-level tests and do not require manually started RabbitMQ or SQL Server. The RabbitMQ integration tests use Testcontainers, so running the full solution test suite requires Docker to be available.
 
 ## Database Rule
 
