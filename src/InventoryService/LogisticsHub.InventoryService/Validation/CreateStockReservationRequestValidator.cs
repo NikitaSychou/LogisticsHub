@@ -1,32 +1,32 @@
+using FluentValidation;
 using LogisticsHub.InventoryService.Contracts;
 
 namespace LogisticsHub.InventoryService.Validation;
 
-public static class CreateStockReservationRequestValidator
+public sealed class CreateStockReservationRequestValidator : AbstractValidator<CreateStockReservationRequest>
 {
-    public static Dictionary<string, string[]> Validate(CreateStockReservationRequest request)
+    public CreateStockReservationRequestValidator()
     {
-        var errors = new Dictionary<string, string[]>();
-
-        if (request.ShipmentId == Guid.Empty)
+        RuleFor(request => request).Custom((request, context) =>
         {
-            errors[nameof(request.ShipmentId)] = ["Shipment ID is required."];
-        }
+            if (request.ShipmentId == Guid.Empty)
+            {
+                context.AddFailure(nameof(request.ShipmentId), "Shipment ID is required.");
+            }
 
-        if (request.Items is null || request.Items.Count == 0)
-        {
-            errors[nameof(request.Items)] = ["At least one item is required."];
-            return errors;
-        }
+            if (request.Items is null || request.Items.Count == 0)
+            {
+                context.AddFailure(nameof(request.Items), "At least one item is required.");
+                return;
+            }
 
-        ValidateItems(request.Items, errors);
-
-        return errors;
+            ValidateItems(request.Items, context);
+        });
     }
 
     private static void ValidateItems(
         IReadOnlyCollection<CreateStockReservationItemRequest> items,
-        Dictionary<string, string[]> errors)
+        ValidationContext<CreateStockReservationRequest> context)
     {
         var skus = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         var skuErrors = new List<string>();
@@ -53,12 +53,18 @@ public static class CreateStockReservationRequestValidator
 
         if (skuErrors.Count > 0)
         {
-            errors[nameof(CreateStockReservationItemRequest.Sku)] = skuErrors.ToArray();
+            foreach (var error in skuErrors)
+            {
+                context.AddFailure(nameof(CreateStockReservationItemRequest.Sku), error);
+            }
         }
 
         if (quantityErrors.Count > 0)
         {
-            errors[nameof(CreateStockReservationItemRequest.Quantity)] = quantityErrors.ToArray();
+            foreach (var error in quantityErrors)
+            {
+                context.AddFailure(nameof(CreateStockReservationItemRequest.Quantity), error);
+            }
         }
     }
 }

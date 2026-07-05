@@ -3,6 +3,7 @@ using LogisticsHub.InventoryService.Contracts;
 using LogisticsHub.InventoryService.Controllers;
 using LogisticsHub.InventoryService.Domain.Enums;
 using LogisticsHub.InventoryService.Localization;
+using LogisticsHub.InventoryService.Validation;
 using MediatR;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -90,7 +91,10 @@ public sealed class StockReservationsControllerTests
             .Services
             .BuildServiceProvider();
 
-        return new StockReservationsController(mediator, new FakeInventoryBusinessErrorLocalizer())
+        return new StockReservationsController(
+            mediator,
+            new FakeInventoryBusinessErrorLocalizer(),
+            new CreateStockReservationRequestValidator())
         {
             ControllerContext = new ControllerContext
             {

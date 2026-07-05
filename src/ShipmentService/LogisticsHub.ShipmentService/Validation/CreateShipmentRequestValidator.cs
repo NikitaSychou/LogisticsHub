@@ -1,12 +1,19 @@
+using FluentValidation;
 using LogisticsHub.ShipmentService.Contracts;
 
 namespace LogisticsHub.ShipmentService.Validation;
 
-public static class CreateShipmentRequestValidator
+public sealed class CreateShipmentRequestValidator : AbstractValidator<CreateShipmentRequest>
 {
-    public static Dictionary<string, string[]> Validate(CreateShipmentRequest request)
+    public CreateShipmentRequestValidator()
     {
-        var errors = new Dictionary<string, string[]>();
+        RuleFor(request => request).Custom(ValidateRequest);
+    }
+
+    private static void ValidateRequest(
+        CreateShipmentRequest request,
+        ValidationContext<CreateShipmentRequest> context)
+    {
         var missingReferenceFields = new List<string>();
         if (!request.SenderCompanyId.HasValue)
         {
@@ -30,22 +37,22 @@ public static class CreateShipmentRequestValidator
 
         if (missingReferenceFields.Count > 0)
         {
-            errors["companyAddressReferences"] =
-            [
+            context.AddFailure(
+                "companyAddressReferences",
                 $"Sender company, sender address, receiver company, and receiver address are required. Missing: {string.Join(", ", missingReferenceFields)}."
-            ];
+            );
         }
 
         if (request.Items is null)
         {
-            errors["items"] = ["Items are required."];
-            return errors;
+            context.AddFailure("items", "Items are required.");
+            return;
         }
 
         if (request.Items.Count == 0)
         {
-            errors["items"] = ["At least one shipment item is required."];
-            return errors;
+            context.AddFailure("items", "At least one shipment item is required.");
+            return;
         }
 
         var seenSkus = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
@@ -56,7 +63,7 @@ public static class CreateShipmentRequestValidator
         {
             if (item is null)
             {
-                errors[$"items[{index}]"] = ["Shipment item is required."];
+                context.AddFailure($"items[{index}]", "Shipment item is required.");
                 index++;
                 continue;
             }
@@ -65,7 +72,7 @@ public static class CreateShipmentRequestValidator
 
             if (string.IsNullOrWhiteSpace(sku))
             {
-                errors[$"items[{index}].sku"] = ["SKU is required."];
+                context.AddFailure($"items[{index}].sku", "SKU is required.");
             }
             else if (!seenSkus.Add(sku))
             {
@@ -74,7 +81,7 @@ public static class CreateShipmentRequestValidator
 
             if (item.Quantity <= 0)
             {
-                errors[$"items[{index}].quantity"] = ["Quantity must be greater than zero."];
+                context.AddFailure($"items[{index}].quantity", "Quantity must be greater than zero.");
             }
 
             index++;
@@ -82,9 +89,7 @@ public static class CreateShipmentRequestValidator
 
         if (duplicateSkus.Count > 0)
         {
-            errors["items"] = [$"Duplicate SKU values are not allowed: {string.Join(", ", duplicateSkus)}."];
+            context.AddFailure("items", $"Duplicate SKU values are not allowed: {string.Join(", ", duplicateSkus)}.");
         }
-
-        return errors;
     }
 }

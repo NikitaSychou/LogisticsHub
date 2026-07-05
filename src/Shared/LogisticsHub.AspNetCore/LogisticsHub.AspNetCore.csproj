@@ -10,4 +10,7 @@
   <ItemGroup>
     <ProjectReference Include="..\LogisticsHub.Results\LogisticsHub.Results.csproj" />
   </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="FluentValidation" Version="12.1.1" />
+  </ItemGroup>
 </Project>

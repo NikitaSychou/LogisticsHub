@@ -6,44 +6,46 @@ namespace LogisticsHub.CompanyService.Tests.Validation;
 
 public sealed class CompanyRequestValidatorTests
 {
+    private readonly CreateCompanyRequestValidator _validator = new();
+
     [Fact]
     public void Validate_WhenNameIsMissing_ReturnsNameError()
     {
-        var errors = CompanyRequestValidator.Validate(CreateRequest(name: " "));
+        var errors = _validator.Validate(CreateRequest(name: " "));
 
-        Assert.Contains("name", errors.Keys);
+        Assert.Contains(errors.Errors, error => error.PropertyName == "name");
     }
 
     [Fact]
     public void Validate_WhenNameIsTooLong_ReturnsNameError()
     {
-        var errors = CompanyRequestValidator.Validate(CreateRequest(name: new string('A', 201)));
+        var errors = _validator.Validate(CreateRequest(name: new string('A', 201)));
 
-        Assert.Contains("name", errors.Keys);
+        Assert.Contains(errors.Errors, error => error.PropertyName == "name");
     }
 
     [Fact]
     public void Validate_WhenExternalCodeIsTooLong_ReturnsExternalCodeError()
     {
-        var errors = CompanyRequestValidator.Validate(CreateRequest(externalCode: new string('A', 65)));
+        var errors = _validator.Validate(CreateRequest(externalCode: new string('A', 65)));
 
-        Assert.Contains("externalCode", errors.Keys);
+        Assert.Contains(errors.Errors, error => error.PropertyName == "externalCode");
     }
 
     [Fact]
     public void Validate_WhenStatusIsInvalid_ReturnsStatusError()
     {
-        var errors = CompanyRequestValidator.Validate(CreateRequest(status: "Archived"));
+        var errors = _validator.Validate(CreateRequest(status: "Archived"));
 
-        Assert.Contains("status", errors.Keys);
+        Assert.Contains(errors.Errors, error => error.PropertyName == "status");
     }
 
     [Fact]
     public void Validate_WhenStatusIsMissing_ReturnsStatusError()
     {
-        var errors = CompanyRequestValidator.Validate(CreateRequest(status: " "));
+        var errors = _validator.Validate(CreateRequest(status: " "));
 
-        Assert.Contains("status", errors.Keys);
+        Assert.Contains(errors.Errors, error => error.PropertyName == "status");
     }
 
     private static CreateCompanyRequest CreateRequest(

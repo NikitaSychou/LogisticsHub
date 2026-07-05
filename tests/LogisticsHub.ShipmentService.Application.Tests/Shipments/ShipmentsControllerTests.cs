@@ -4,6 +4,7 @@ using LogisticsHub.ShipmentService.Contracts;
 using LogisticsHub.ShipmentService.Controllers;
 using LogisticsHub.ShipmentService.Domain.Enums;
 using LogisticsHub.ShipmentService.Localization;
+using LogisticsHub.ShipmentService.Validation;
 using MediatR;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -142,7 +143,10 @@ public sealed class ShipmentsControllerTests
             .Services
             .BuildServiceProvider();
 
-        return new ShipmentsController(mediator, new FakeShipmentBusinessErrorLocalizer())
+        return new ShipmentsController(
+            mediator,
+            new FakeShipmentBusinessErrorLocalizer(),
+            new CreateShipmentRequestValidator())
         {
             ControllerContext = new ControllerContext
             {

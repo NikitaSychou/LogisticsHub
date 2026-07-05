@@ -1,9 +1,12 @@
+using FluentValidation;
 using LogisticsHub.AspNetCore;
+using LogisticsHub.ShipmentService.Contracts;
 using LogisticsHub.ShipmentService.Application.Shipments;
 using LogisticsHub.ShipmentService.Consumers;
 using LogisticsHub.ShipmentService.Infrastructure.DependencyInjection;
 using LogisticsHub.Messaging.RabbitMQ;
 using LogisticsHub.ShipmentService.Outbox;
+using LogisticsHub.ShipmentService.Validation;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.Localization;
 using System.Globalization;
@@ -42,6 +45,7 @@ builder.Services.AddMediatR(configuration =>
 {
     configuration.RegisterServicesFromAssembly(typeof(CreateShipment).Assembly);
 });
+builder.Services.AddScoped<IValidator<CreateShipmentRequest>, CreateShipmentRequestValidator>();
 
 builder.Services.AddHostedService<StockReservedConsumer>();
 builder.Services.AddHostedService<StockReservationFailedConsumer>();

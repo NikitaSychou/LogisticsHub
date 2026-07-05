@@ -1,60 +1,55 @@
+using FluentValidation;
 using LogisticsHub.CompanyService.Contracts;
 using LogisticsHub.CompanyService.Domain.Enums;
 
 namespace LogisticsHub.CompanyService.Validation;
 
-public static class CompanyAddressRequestValidator
+public sealed class CompanyAddressRequestValidator : AbstractValidator<CreateCompanyAddressRequest>
 {
-    public static Dictionary<string, string[]> Validate(CreateCompanyAddressRequest request)
+    public CompanyAddressRequestValidator()
     {
-        var errors = new Dictionary<string, string[]>();
+        RuleFor(request => request.AddressType)
+            .Cascade(CascadeMode.Stop)
+            .Must(value => !string.IsNullOrWhiteSpace(value))
+            .WithMessage("Address type is required.")
+            .Must(value => Enum.TryParse<CompanyAddressType>(value!.Trim(), ignoreCase: true, out _))
+            .WithMessage("Address type must be Legal, Billing, Shipping, or Warehouse.")
+            .OverridePropertyName("addressType");
 
-        if (string.IsNullOrWhiteSpace(request.AddressType))
-        {
-            errors["addressType"] = ["Address type is required."];
-        }
-        else if (!Enum.TryParse<CompanyAddressType>(request.AddressType.Trim(), ignoreCase: true, out _))
-        {
-            errors["addressType"] = ["Address type must be Legal, Billing, Shipping, or Warehouse."];
-        }
+        RuleFor(request => request.CountryCode)
+            .Cascade(CascadeMode.Stop)
+            .Must(value => !string.IsNullOrWhiteSpace(value))
+            .WithMessage("Country code is required.")
+            .Must(value => value!.Trim().Length == 2)
+            .WithMessage("Country code must be exactly 2 characters.")
+            .OverridePropertyName("countryCode");
 
-        if (string.IsNullOrWhiteSpace(request.CountryCode))
-        {
-            errors["countryCode"] = ["Country code is required."];
-        }
-        else if (request.CountryCode.Trim().Length != 2)
-        {
-            errors["countryCode"] = ["Country code must be exactly 2 characters."];
-        }
+        RuleFor(request => request.City)
+            .Cascade(CascadeMode.Stop)
+            .Must(value => !string.IsNullOrWhiteSpace(value))
+            .WithMessage("City is required.")
+            .Must(value => value!.Trim().Length <= 100)
+            .WithMessage("City must be 100 characters or fewer.")
+            .OverridePropertyName("city");
 
-        if (string.IsNullOrWhiteSpace(request.City))
-        {
-            errors["city"] = ["City is required."];
-        }
-        else if (request.City.Trim().Length > 100)
-        {
-            errors["city"] = ["City must be 100 characters or fewer."];
-        }
+        RuleFor(request => request.PostalCode)
+            .Must(value => value!.Trim().Length <= 32)
+            .When(request => !string.IsNullOrWhiteSpace(request.PostalCode))
+            .WithMessage("Postal code must be 32 characters or fewer.")
+            .OverridePropertyName("postalCode");
 
-        if (!string.IsNullOrWhiteSpace(request.PostalCode) && request.PostalCode.Trim().Length > 32)
-        {
-            errors["postalCode"] = ["Postal code must be 32 characters or fewer."];
-        }
+        RuleFor(request => request.Line1)
+            .Cascade(CascadeMode.Stop)
+            .Must(value => !string.IsNullOrWhiteSpace(value))
+            .WithMessage("Line1 is required.")
+            .Must(value => value!.Trim().Length <= 200)
+            .WithMessage("Line1 must be 200 characters or fewer.")
+            .OverridePropertyName("line1");
 
-        if (string.IsNullOrWhiteSpace(request.Line1))
-        {
-            errors["line1"] = ["Line1 is required."];
-        }
-        else if (request.Line1.Trim().Length > 200)
-        {
-            errors["line1"] = ["Line1 must be 200 characters or fewer."];
-        }
-
-        if (!string.IsNullOrWhiteSpace(request.Line2) && request.Line2.Trim().Length > 200)
-        {
-            errors["line2"] = ["Line2 must be 200 characters or fewer."];
-        }
-
-        return errors;
+        RuleFor(request => request.Line2)
+            .Must(value => value!.Trim().Length <= 200)
+            .When(request => !string.IsNullOrWhiteSpace(request.Line2))
+            .WithMessage("Line2 must be 200 characters or fewer.")
+            .OverridePropertyName("line2");
     }
 }

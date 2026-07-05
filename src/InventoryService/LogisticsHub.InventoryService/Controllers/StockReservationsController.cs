@@ -1,3 +1,4 @@
+using FluentValidation;
 using LogisticsHub.AspNetCore;
 using LogisticsHub.InventoryService.Application.StockReservations;
 using LogisticsHub.InventoryService.Contracts;
@@ -16,13 +17,16 @@ public sealed class StockReservationsController : ControllerBase
 {
     private readonly IMediator _mediator;
     private readonly IStringLocalizer<InventoryBusinessErrorMessages> _errorLocalizer;
+    private readonly IValidator<CreateStockReservationRequest> _validator;
 
     public StockReservationsController(
         IMediator mediator,
-        IStringLocalizer<InventoryBusinessErrorMessages> errorLocalizer)
+        IStringLocalizer<InventoryBusinessErrorMessages> errorLocalizer,
+        IValidator<CreateStockReservationRequest> validator)
     {
         _mediator = mediator;
         _errorLocalizer = errorLocalizer;
+        _validator = validator;
     }
 
     [HttpGet("{reservationId:guid}")]
@@ -50,7 +54,7 @@ public sealed class StockReservationsController : ControllerBase
         CreateStockReservationRequest request,
         CancellationToken cancellationToken)
     {
-        var validationProblem = ValidateRequest(CreateStockReservationRequestValidator.Validate(request));
+        var validationProblem = ValidateRequest(_validator.Validate(request));
         if (validationProblem is not null)
         {
             return validationProblem;
@@ -70,9 +74,9 @@ public sealed class StockReservationsController : ControllerBase
         return Created($"/stock-reservations/{result.Reservation.ReservationId}", response);
     }
 
-    private IActionResult? ValidateRequest(Dictionary<string, string[]> validationErrors)
+    private IActionResult? ValidateRequest(FluentValidation.Results.ValidationResult validationResult)
     {
-        ModelState.AddValidationErrors(validationErrors);
+        ModelState.AddValidationErrors(validationResult);
 
         return ModelState.IsValid
             ? null
