@@ -1,6 +1,7 @@
 using System.Text.Json;
 using LogisticsHub.IntegrationEvents.StockReservations;
 using LogisticsHub.Messaging.RabbitMQ;
+using LogisticsHub.Messaging.RabbitMQ.Outbox;
 using LogisticsHub.ShipmentService.Application.Persistence;
 using LogisticsHub.ShipmentService.Domain.Entities;
 
@@ -9,8 +10,6 @@ namespace LogisticsHub.ShipmentService.Outbox;
 public sealed class ShipmentOutboxProcessor
 {
     private static readonly JsonSerializerOptions JsonSerializerOptions = new(JsonSerializerDefaults.Web);
-    private static readonly TimeSpan MaxRetryDelay = TimeSpan.FromMinutes(15);
-    private const int MaxRetryCount = 5;
 
     private readonly IShipmentDbContext _dbContext;
     private readonly IRabbitMqPublisher _publisher;
@@ -77,15 +76,20 @@ public sealed class ShipmentOutboxProcessor
             {
                 hadFailure = true;
                 var failedAtUtc = DateTime.UtcNow;
-                message.RetryCount++;
+                var retryDecision = OutboxRetryPolicy.RecordFailure(
+                    message.RetryCount,
+                    failedAtUtc,
+                    exception.Message);
+
+                message.RetryCount = retryDecision.RetryCount;
                 message.LockedBy = null;
                 message.LockedAtUtc = null;
-                message.Error = exception.Message;
+                message.Error = retryDecision.Error;
 
-                if (message.RetryCount >= MaxRetryCount)
+                if (retryDecision.ReachedMaxRetryCount)
                 {
-                    message.FailedAtUtc = failedAtUtc;
-                    message.NextAttemptAtUtc = null;
+                    message.FailedAtUtc = retryDecision.FailedAtUtc;
+                    message.NextAttemptAtUtc = retryDecision.NextAttemptAtUtc;
 
                     _logger.LogError(
                         exception,
@@ -95,8 +99,7 @@ public sealed class ShipmentOutboxProcessor
                 }
                 else
                 {
-                    var retryDelay = GetRetryDelay(message.RetryCount);
-                    message.NextAttemptAtUtc = failedAtUtc.Add(retryDelay);
+                    message.NextAttemptAtUtc = retryDecision.NextAttemptAtUtc;
 
                     _logger.LogWarning(
                         exception,
@@ -135,20 +138,6 @@ public sealed class ShipmentOutboxProcessor
 
         throw new InvalidOperationException(
             $"Unsupported shipment outbox message type '{message.Type}'.");
-    }
-
-    private static TimeSpan GetRetryDelay(int retryCount)
-    {
-        var seconds = retryCount switch
-        {
-            1 => 30,
-            2 => 60,
-            3 => 120,
-            4 => 300,
-            _ => (int)MaxRetryDelay.TotalSeconds
-        };
-
-        return TimeSpan.FromSeconds(seconds);
     }
 }
 
