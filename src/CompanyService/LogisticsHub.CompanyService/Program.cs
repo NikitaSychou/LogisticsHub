@@ -1,6 +1,9 @@
+using FluentValidation;
 using LogisticsHub.AspNetCore;
 using LogisticsHub.CompanyService.Application.Companies;
 using LogisticsHub.CompanyService.Infrastructure.DependencyInjection;
+using LogisticsHub.CompanyService.Contracts;
+using LogisticsHub.CompanyService.Validation;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.Localization;
 using System.Globalization;
@@ -33,6 +36,9 @@ builder.Services.AddMediatR(configuration =>
 {
     configuration.RegisterServicesFromAssembly(typeof(CreateCompany).Assembly);
 });
+builder.Services.AddScoped<IValidator<CreateCompanyRequest>, CreateCompanyRequestValidator>();
+builder.Services.AddScoped<IValidator<UpdateCompanyRequest>, UpdateCompanyRequestValidator>();
+builder.Services.AddScoped<IValidator<CreateCompanyAddressRequest>, CompanyAddressRequestValidator>();
 
 var app = builder.Build();
 

@@ -1,28 +1,25 @@
+using FluentValidation;
 using LogisticsHub.InventoryService.Contracts;
 
 namespace LogisticsHub.InventoryService.Validation;
 
-public static class CreateInventoryItemRequestValidator
+public sealed class CreateInventoryItemRequestValidator : AbstractValidator<CreateInventoryItemRequest>
 {
-    public static Dictionary<string, string[]> Validate(CreateInventoryItemRequest request)
+    public CreateInventoryItemRequestValidator()
     {
-        var errors = new Dictionary<string, string[]>();
+        RuleFor(request => request.Sku)
+            .Must(value => !string.IsNullOrWhiteSpace(value))
+            .WithMessage("SKU is required.")
+            .OverridePropertyName(nameof(CreateInventoryItemRequest.Sku));
 
-        if (string.IsNullOrWhiteSpace(request.Sku))
-        {
-            errors[nameof(request.Sku)] = ["SKU is required."];
-        }
+        RuleFor(request => request.Name)
+            .Must(value => !string.IsNullOrWhiteSpace(value))
+            .WithMessage("Name is required.")
+            .OverridePropertyName(nameof(CreateInventoryItemRequest.Name));
 
-        if (string.IsNullOrWhiteSpace(request.Name))
-        {
-            errors[nameof(request.Name)] = ["Name is required."];
-        }
-
-        if (request.QuantityAvailable < 0)
-        {
-            errors[nameof(request.QuantityAvailable)] = ["Quantity available must be zero or greater."];
-        }
-
-        return errors;
+        RuleFor(request => request.QuantityAvailable)
+            .GreaterThanOrEqualTo(0)
+            .WithMessage("Quantity available must be zero or greater.")
+            .OverridePropertyName(nameof(CreateInventoryItemRequest.QuantityAvailable));
     }
 }

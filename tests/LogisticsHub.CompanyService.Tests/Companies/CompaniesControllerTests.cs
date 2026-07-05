@@ -4,6 +4,7 @@ using LogisticsHub.CompanyService.Contracts;
 using LogisticsHub.CompanyService.Controllers;
 using LogisticsHub.CompanyService.Domain.Enums;
 using LogisticsHub.CompanyService.Localization;
+using LogisticsHub.CompanyService.Validation;
 using LogisticsHub.Results;
 using MediatR;
 using Microsoft.AspNetCore.Http;
@@ -166,7 +167,12 @@ public sealed class CompaniesControllerTests
             .Services
             .BuildServiceProvider();
 
-        return new CompaniesController(mediator, new FakeCompanyBusinessErrorLocalizer())
+        return new CompaniesController(
+            mediator,
+            new FakeCompanyBusinessErrorLocalizer(),
+            new CreateCompanyRequestValidator(),
+            new UpdateCompanyRequestValidator(),
+            new CompanyAddressRequestValidator())
         {
             ControllerContext = new ControllerContext
             {

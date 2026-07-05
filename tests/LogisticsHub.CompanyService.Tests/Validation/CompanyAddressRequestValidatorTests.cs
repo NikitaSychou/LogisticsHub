@@ -6,28 +6,30 @@ namespace LogisticsHub.CompanyService.Tests.Validation;
 
 public sealed class CompanyAddressRequestValidatorTests
 {
+    private readonly CompanyAddressRequestValidator _validator = new();
+
     [Fact]
     public void Validate_WhenAddressTypeIsMissing_ReturnsAddressTypeError()
     {
-        var errors = CompanyAddressRequestValidator.Validate(CreateRequest(addressType: " "));
+        var errors = _validator.Validate(CreateRequest(addressType: " "));
 
-        Assert.Contains("addressType", errors.Keys);
+        Assert.Contains(errors.Errors, error => error.PropertyName == "addressType");
     }
 
     [Fact]
     public void Validate_WhenAddressTypeIsInvalid_ReturnsAddressTypeError()
     {
-        var errors = CompanyAddressRequestValidator.Validate(CreateRequest(addressType: "Home"));
+        var errors = _validator.Validate(CreateRequest(addressType: "Home"));
 
-        Assert.Contains("addressType", errors.Keys);
+        Assert.Contains(errors.Errors, error => error.PropertyName == "addressType");
     }
 
     [Fact]
     public void Validate_WhenCountryCodeIsMissing_ReturnsCountryCodeError()
     {
-        var errors = CompanyAddressRequestValidator.Validate(CreateRequest(countryCode: " "));
+        var errors = _validator.Validate(CreateRequest(countryCode: " "));
 
-        Assert.Contains("countryCode", errors.Keys);
+        Assert.Contains(errors.Errors, error => error.PropertyName == "countryCode");
     }
 
     [Theory]
@@ -35,57 +37,57 @@ public sealed class CompanyAddressRequestValidatorTests
     [InlineData("USA")]
     public void Validate_WhenCountryCodeLengthIsNotTwo_ReturnsCountryCodeError(string countryCode)
     {
-        var errors = CompanyAddressRequestValidator.Validate(CreateRequest(countryCode: countryCode));
+        var errors = _validator.Validate(CreateRequest(countryCode: countryCode));
 
-        Assert.Contains("countryCode", errors.Keys);
+        Assert.Contains(errors.Errors, error => error.PropertyName == "countryCode");
     }
 
     [Fact]
     public void Validate_WhenCityIsMissing_ReturnsCityError()
     {
-        var errors = CompanyAddressRequestValidator.Validate(CreateRequest(city: " "));
+        var errors = _validator.Validate(CreateRequest(city: " "));
 
-        Assert.Contains("city", errors.Keys);
+        Assert.Contains(errors.Errors, error => error.PropertyName == "city");
     }
 
     [Fact]
     public void Validate_WhenCityIsTooLong_ReturnsCityError()
     {
-        var errors = CompanyAddressRequestValidator.Validate(CreateRequest(city: new string('A', 101)));
+        var errors = _validator.Validate(CreateRequest(city: new string('A', 101)));
 
-        Assert.Contains("city", errors.Keys);
+        Assert.Contains(errors.Errors, error => error.PropertyName == "city");
     }
 
     [Fact]
     public void Validate_WhenLine1IsMissing_ReturnsLine1Error()
     {
-        var errors = CompanyAddressRequestValidator.Validate(CreateRequest(line1: " "));
+        var errors = _validator.Validate(CreateRequest(line1: " "));
 
-        Assert.Contains("line1", errors.Keys);
+        Assert.Contains(errors.Errors, error => error.PropertyName == "line1");
     }
 
     [Fact]
     public void Validate_WhenLine1IsTooLong_ReturnsLine1Error()
     {
-        var errors = CompanyAddressRequestValidator.Validate(CreateRequest(line1: new string('A', 201)));
+        var errors = _validator.Validate(CreateRequest(line1: new string('A', 201)));
 
-        Assert.Contains("line1", errors.Keys);
+        Assert.Contains(errors.Errors, error => error.PropertyName == "line1");
     }
 
     [Fact]
     public void Validate_WhenPostalCodeIsTooLong_ReturnsPostalCodeError()
     {
-        var errors = CompanyAddressRequestValidator.Validate(CreateRequest(postalCode: new string('A', 33)));
+        var errors = _validator.Validate(CreateRequest(postalCode: new string('A', 33)));
 
-        Assert.Contains("postalCode", errors.Keys);
+        Assert.Contains(errors.Errors, error => error.PropertyName == "postalCode");
     }
 
     [Fact]
     public void Validate_WhenLine2IsTooLong_ReturnsLine2Error()
     {
-        var errors = CompanyAddressRequestValidator.Validate(CreateRequest(line2: new string('A', 201)));
+        var errors = _validator.Validate(CreateRequest(line2: new string('A', 201)));
 
-        Assert.Contains("line2", errors.Keys);
+        Assert.Contains(errors.Errors, error => error.PropertyName == "line2");
     }
 
     private static CreateCompanyAddressRequest CreateRequest(

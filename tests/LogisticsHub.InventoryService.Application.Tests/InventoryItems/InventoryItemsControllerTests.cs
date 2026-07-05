@@ -2,6 +2,7 @@ using LogisticsHub.InventoryService.Application.InventoryItems;
 using LogisticsHub.InventoryService.Contracts;
 using LogisticsHub.InventoryService.Controllers;
 using LogisticsHub.Results;
+using LogisticsHub.InventoryService.Validation;
 using MediatR;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -82,7 +83,7 @@ public sealed class InventoryItemsControllerTests
             .Services
             .BuildServiceProvider();
 
-        return new InventoryItemsController(mediator)
+        return new InventoryItemsController(mediator, new CreateInventoryItemRequestValidator())
         {
             ControllerContext = new ControllerContext
             {

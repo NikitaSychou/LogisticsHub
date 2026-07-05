@@ -6,6 +6,8 @@ namespace LogisticsHub.ShipmentService.Application.Tests.Shipments;
 
 public sealed class CreateShipmentRequestValidatorTests
 {
+    private readonly CreateShipmentRequestValidator _validator = new();
+
     [Fact]
     public void Validate_WhenCompanyAddressReferencesAreOmitted_ReturnsReferenceError()
     {
@@ -18,10 +20,10 @@ public sealed class CreateShipmentRequestValidatorTests
             ReceiverAddressId: null);
 
         // Act
-        var errors = CreateShipmentRequestValidator.Validate(request);
+        var result = _validator.Validate(request);
 
         // Assert
-        Assert.Contains("companyAddressReferences", errors.Keys);
+        Assert.Contains(result.Errors, error => error.PropertyName == "companyAddressReferences");
     }
 
     [Fact]
@@ -36,10 +38,10 @@ public sealed class CreateShipmentRequestValidatorTests
             ReceiverAddressId: null);
 
         // Act
-        var errors = CreateShipmentRequestValidator.Validate(request);
+        var result = _validator.Validate(request);
 
         // Assert
-        Assert.Contains("companyAddressReferences", errors.Keys);
+        Assert.Contains(result.Errors, error => error.PropertyName == "companyAddressReferences");
     }
 
     [Fact]
@@ -54,9 +56,9 @@ public sealed class CreateShipmentRequestValidatorTests
             Guid.NewGuid());
 
         // Act
-        var errors = CreateShipmentRequestValidator.Validate(request);
+        var result = _validator.Validate(request);
 
         // Assert
-        Assert.DoesNotContain("companyAddressReferences", errors.Keys);
+        Assert.DoesNotContain(result.Errors, error => error.PropertyName == "companyAddressReferences");
     }
 }

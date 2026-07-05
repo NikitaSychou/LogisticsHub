@@ -1,3 +1,4 @@
+using FluentValidation;
 using LogisticsHub.AspNetCore;
 using LogisticsHub.CompanyService.Application.Companies;
 using LogisticsHub.CompanyService.Application.Companies.GetCompanyAddress;
@@ -18,13 +19,22 @@ public sealed class CompaniesController : ControllerBase
 {
     private readonly IMediator _mediator;
     private readonly IStringLocalizer<CompanyBusinessErrorMessages> _errorLocalizer;
+    private readonly IValidator<CreateCompanyRequest> _createCompanyValidator;
+    private readonly IValidator<UpdateCompanyRequest> _updateCompanyValidator;
+    private readonly IValidator<CreateCompanyAddressRequest> _createCompanyAddressValidator;
 
     public CompaniesController(
         IMediator mediator,
-        IStringLocalizer<CompanyBusinessErrorMessages> errorLocalizer)
+        IStringLocalizer<CompanyBusinessErrorMessages> errorLocalizer,
+        IValidator<CreateCompanyRequest> createCompanyValidator,
+        IValidator<UpdateCompanyRequest> updateCompanyValidator,
+        IValidator<CreateCompanyAddressRequest> createCompanyAddressValidator)
     {
         _mediator = mediator;
         _errorLocalizer = errorLocalizer;
+        _createCompanyValidator = createCompanyValidator;
+        _updateCompanyValidator = updateCompanyValidator;
+        _createCompanyAddressValidator = createCompanyAddressValidator;
     }
 
     [HttpPost]
@@ -35,7 +45,7 @@ public sealed class CompaniesController : ControllerBase
         CreateCompanyRequest request,
         CancellationToken cancellationToken)
     {
-        var validationProblem = ValidateRequest(CompanyRequestValidator.Validate(request));
+        var validationProblem = ValidateRequest(_createCompanyValidator.Validate(request));
         if (validationProblem is not null)
         {
             return validationProblem;
@@ -92,7 +102,7 @@ public sealed class CompaniesController : ControllerBase
         UpdateCompanyRequest request,
         CancellationToken cancellationToken)
     {
-        var validationProblem = ValidateRequest(CompanyRequestValidator.Validate(request));
+        var validationProblem = ValidateRequest(_updateCompanyValidator.Validate(request));
         if (validationProblem is not null)
         {
             return validationProblem;
@@ -118,7 +128,7 @@ public sealed class CompaniesController : ControllerBase
         CreateCompanyAddressRequest request,
         CancellationToken cancellationToken)
     {
-        var validationProblem = ValidateRequest(CompanyAddressRequestValidator.Validate(request));
+        var validationProblem = ValidateRequest(_createCompanyAddressValidator.Validate(request));
         if (validationProblem is not null)
         {
             return validationProblem;
@@ -175,9 +185,9 @@ public sealed class CompaniesController : ControllerBase
         return Ok(CompanyMapper.ToResponse(result.Value));
     }
 
-    private IActionResult? ValidateRequest(Dictionary<string, string[]> validationErrors)
+    private IActionResult? ValidateRequest(FluentValidation.Results.ValidationResult validationResult)
     {
-        ModelState.AddValidationErrors(validationErrors);
+        ModelState.AddValidationErrors(validationResult);
 
         return ModelState.IsValid
             ? null

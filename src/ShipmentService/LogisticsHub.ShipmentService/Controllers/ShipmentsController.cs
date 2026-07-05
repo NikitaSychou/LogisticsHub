@@ -1,3 +1,4 @@
+using FluentValidation;
 using LogisticsHub.AspNetCore;
 using LogisticsHub.ShipmentService.Application.Shipments;
 using LogisticsHub.ShipmentService.Contracts;
@@ -17,13 +18,16 @@ public sealed class ShipmentsController : ControllerBase
 {
     private readonly IMediator _mediator;
     private readonly IStringLocalizer<ShipmentBusinessErrorMessages> _errorLocalizer;
+    private readonly IValidator<CreateShipmentRequest> _validator;
 
     public ShipmentsController(
         IMediator mediator,
-        IStringLocalizer<ShipmentBusinessErrorMessages> errorLocalizer)
+        IStringLocalizer<ShipmentBusinessErrorMessages> errorLocalizer,
+        IValidator<CreateShipmentRequest> validator)
     {
         _mediator = mediator;
         _errorLocalizer = errorLocalizer;
+        _validator = validator;
     }
 
     [HttpGet("{id:guid}")]
@@ -53,7 +57,7 @@ public sealed class ShipmentsController : ControllerBase
         CreateShipmentRequest request,
         CancellationToken cancellationToken)
     {
-        var validationProblem = ValidateRequest(CreateShipmentRequestValidator.Validate(request));
+        var validationProblem = ValidateRequest(_validator.Validate(request));
         if (validationProblem is not null)
         {
             return validationProblem;
@@ -73,9 +77,9 @@ public sealed class ShipmentsController : ControllerBase
         return Created($"/shipments/{response.ShipmentId}", response);
     }
 
-    private IActionResult? ValidateRequest(Dictionary<string, string[]> validationErrors)
+    private IActionResult? ValidateRequest(FluentValidation.Results.ValidationResult validationResult)
     {
-        ModelState.AddValidationErrors(validationErrors);
+        ModelState.AddValidationErrors(validationResult);
 
         return ModelState.IsValid
             ? null

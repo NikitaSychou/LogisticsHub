@@ -1,8 +1,11 @@
+using FluentValidation;
 using LogisticsHub.AspNetCore;
 using LogisticsHub.InventoryService.Application.InventoryItems;
+using LogisticsHub.InventoryService.Contracts;
 using LogisticsHub.InventoryService.Consumers;
 using LogisticsHub.InventoryService.Infrastructure.DependencyInjection;
 using LogisticsHub.InventoryService.Outbox;
+using LogisticsHub.InventoryService.Validation;
 using LogisticsHub.Messaging.RabbitMQ;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.Localization;
@@ -37,6 +40,8 @@ builder.Services.AddMediatR(configuration =>
 {
     configuration.RegisterServicesFromAssembly(typeof(CreateInventoryItem).Assembly);
 });
+builder.Services.AddScoped<IValidator<CreateInventoryItemRequest>, CreateInventoryItemRequestValidator>();
+builder.Services.AddScoped<IValidator<CreateStockReservationRequest>, CreateStockReservationRequestValidator>();
 
 builder.Services.AddHostedService<StockReservationRequestedConsumer>();
 builder.Services.AddScoped<InventoryOutboxProcessor>();

@@ -1,3 +1,4 @@
+using FluentValidation;
 using LogisticsHub.AspNetCore;
 using LogisticsHub.InventoryService.Application.InventoryItems;
 using LogisticsHub.InventoryService.Contracts;
@@ -13,10 +14,14 @@ namespace LogisticsHub.InventoryService.Controllers;
 public sealed class InventoryItemsController : ControllerBase
 {
     private readonly IMediator _mediator;
+    private readonly IValidator<CreateInventoryItemRequest> _validator;
 
-    public InventoryItemsController(IMediator mediator)
+    public InventoryItemsController(
+        IMediator mediator,
+        IValidator<CreateInventoryItemRequest> validator)
     {
         _mediator = mediator;
+        _validator = validator;
     }
 
     [HttpGet("{sku}")]
@@ -44,7 +49,7 @@ public sealed class InventoryItemsController : ControllerBase
         CreateInventoryItemRequest request,
         CancellationToken cancellationToken)
     {
-        var validationProblem = ValidateRequest(CreateInventoryItemRequestValidator.Validate(request));
+        var validationProblem = ValidateRequest(_validator.Validate(request));
         if (validationProblem is not null)
         {
             return validationProblem;
@@ -64,9 +69,9 @@ public sealed class InventoryItemsController : ControllerBase
         return Created($"/inventory-items/{result.Value.Sku}", response);
     }
 
-    private IActionResult? ValidateRequest(Dictionary<string, string[]> validationErrors)
+    private IActionResult? ValidateRequest(FluentValidation.Results.ValidationResult validationResult)
     {
-        ModelState.AddValidationErrors(validationErrors);
+        ModelState.AddValidationErrors(validationResult);
 
         return ModelState.IsValid
             ? null
