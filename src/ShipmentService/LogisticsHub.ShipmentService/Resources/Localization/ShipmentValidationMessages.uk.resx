@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="shipment.company_address_references.required" xml:space="preserve">
+    <value>Компанія відправника, адреса відправника, компанія отримувача та адреса отримувача обов'язкові. Відсутні: {0}.</value>
+  </data>
+  <data name="shipment.items.required" xml:space="preserve">
+    <value>Товари обов'язкові.</value>
+  </data>
+  <data name="shipment.items.not_empty" xml:space="preserve">
+    <value>Потрібен принаймні один товар відправлення.</value>
+  </data>
+  <data name="shipment.item.required" xml:space="preserve">
+    <value>Товар відправлення обов'язковий.</value>
+  </data>
+  <data name="shipment.item.sku.required" xml:space="preserve">
+    <value>SKU обов'язковий.</value>
+  </data>
+  <data name="shipment.item.quantity.positive" xml:space="preserve">
+    <value>Кількість має бути більше нуля.</value>
+  </data>
+  <data name="shipment.item.sku.duplicates" xml:space="preserve">
+    <value>Дубльовані значення SKU не дозволені: {0}.</value>
+  </data>
+</root>

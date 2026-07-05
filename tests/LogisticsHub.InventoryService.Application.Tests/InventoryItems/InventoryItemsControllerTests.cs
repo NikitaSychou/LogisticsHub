@@ -1,12 +1,14 @@
 using LogisticsHub.InventoryService.Application.InventoryItems;
 using LogisticsHub.InventoryService.Contracts;
 using LogisticsHub.InventoryService.Controllers;
+using LogisticsHub.InventoryService.Localization;
 using LogisticsHub.Results;
 using LogisticsHub.InventoryService.Validation;
 using MediatR;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Localization;
 using Xunit;
 
 namespace LogisticsHub.InventoryService.Application.Tests.InventoryItems;
@@ -83,7 +85,7 @@ public sealed class InventoryItemsControllerTests
             .Services
             .BuildServiceProvider();
 
-        return new InventoryItemsController(mediator, new CreateInventoryItemRequestValidator())
+        return new InventoryItemsController(mediator, new CreateInventoryItemRequestValidator(new FakeInventoryValidationLocalizer()))
         {
             ControllerContext = new ControllerContext
             {
@@ -165,6 +167,18 @@ public sealed class InventoryItemsControllerTests
             where TNotification : INotification
         {
             throw new InvalidOperationException($"Unexpected notification type '{typeof(TNotification).Name}'.");
+        }
+    }
+
+    private sealed class FakeInventoryValidationLocalizer : IStringLocalizer<InventoryValidationMessages>
+    {
+        public LocalizedString this[string name] => new(name, name);
+
+        public LocalizedString this[string name, params object[] arguments] => new(name, string.Format(name, arguments));
+
+        public IEnumerable<LocalizedString> GetAllStrings(bool includeParentCultures)
+        {
+            return [];
         }
     }
 }

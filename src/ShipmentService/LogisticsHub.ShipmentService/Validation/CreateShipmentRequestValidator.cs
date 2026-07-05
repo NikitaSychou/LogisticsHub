@@ -1,16 +1,22 @@
 using FluentValidation;
 using LogisticsHub.ShipmentService.Contracts;
+using LogisticsHub.ShipmentService.Localization;
+using Microsoft.Extensions.Localization;
 
 namespace LogisticsHub.ShipmentService.Validation;
 
 public sealed class CreateShipmentRequestValidator : AbstractValidator<CreateShipmentRequest>
 {
-    public CreateShipmentRequestValidator()
+    private readonly IStringLocalizer<ShipmentValidationMessages> _localizer;
+
+    public CreateShipmentRequestValidator(IStringLocalizer<ShipmentValidationMessages> localizer)
     {
+        _localizer = localizer;
+
         RuleFor(request => request).Custom(ValidateRequest);
     }
 
-    private static void ValidateRequest(
+    private void ValidateRequest(
         CreateShipmentRequest request,
         ValidationContext<CreateShipmentRequest> context)
     {
@@ -39,19 +45,19 @@ public sealed class CreateShipmentRequestValidator : AbstractValidator<CreateShi
         {
             context.AddFailure(
                 "companyAddressReferences",
-                $"Sender company, sender address, receiver company, and receiver address are required. Missing: {string.Join(", ", missingReferenceFields)}."
+                _localizer["shipment.company_address_references.required", string.Join(", ", missingReferenceFields)].Value
             );
         }
 
         if (request.Items is null)
         {
-            context.AddFailure("items", "Items are required.");
+            context.AddFailure("items", _localizer["shipment.items.required"].Value);
             return;
         }
 
         if (request.Items.Count == 0)
         {
-            context.AddFailure("items", "At least one shipment item is required.");
+            context.AddFailure("items", _localizer["shipment.items.not_empty"].Value);
             return;
         }
 
@@ -63,7 +69,7 @@ public sealed class CreateShipmentRequestValidator : AbstractValidator<CreateShi
         {
             if (item is null)
             {
-                context.AddFailure($"items[{index}]", "Shipment item is required.");
+                context.AddFailure($"items[{index}]", _localizer["shipment.item.required"].Value);
                 index++;
                 continue;
             }
@@ -72,7 +78,7 @@ public sealed class CreateShipmentRequestValidator : AbstractValidator<CreateShi
 
             if (string.IsNullOrWhiteSpace(sku))
             {
-                context.AddFailure($"items[{index}].sku", "SKU is required.");
+                context.AddFailure($"items[{index}].sku", _localizer["shipment.item.sku.required"].Value);
             }
             else if (!seenSkus.Add(sku))
             {
@@ -81,7 +87,7 @@ public sealed class CreateShipmentRequestValidator : AbstractValidator<CreateShi
 
             if (item.Quantity <= 0)
             {
-                context.AddFailure($"items[{index}].quantity", "Quantity must be greater than zero.");
+                context.AddFailure($"items[{index}].quantity", _localizer["shipment.item.quantity.positive"].Value);
             }
 
             index++;
@@ -89,7 +95,7 @@ public sealed class CreateShipmentRequestValidator : AbstractValidator<CreateShi
 
         if (duplicateSkus.Count > 0)
         {
-            context.AddFailure("items", $"Duplicate SKU values are not allowed: {string.Join(", ", duplicateSkus)}.");
+            context.AddFailure("items", _localizer["shipment.item.sku.duplicates", string.Join(", ", duplicateSkus)].Value);
         }
     }
 }

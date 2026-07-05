@@ -1,22 +1,28 @@
 using FluentValidation;
 using LogisticsHub.InventoryService.Contracts;
+using LogisticsHub.InventoryService.Localization;
+using Microsoft.Extensions.Localization;
 
 namespace LogisticsHub.InventoryService.Validation;
 
 public sealed class CreateStockReservationRequestValidator : AbstractValidator<CreateStockReservationRequest>
 {
-    public CreateStockReservationRequestValidator()
+    private readonly IStringLocalizer<InventoryValidationMessages> _localizer;
+
+    public CreateStockReservationRequestValidator(IStringLocalizer<InventoryValidationMessages> localizer)
     {
+        _localizer = localizer;
+
         RuleFor(request => request).Custom((request, context) =>
         {
             if (request.ShipmentId == Guid.Empty)
             {
-                context.AddFailure(nameof(request.ShipmentId), "Shipment ID is required.");
+                context.AddFailure(nameof(request.ShipmentId), _localizer["stock_reservation.shipment_id.required"].Value);
             }
 
             if (request.Items is null || request.Items.Count == 0)
             {
-                context.AddFailure(nameof(request.Items), "At least one item is required.");
+                context.AddFailure(nameof(request.Items), _localizer["stock_reservation.items.required"].Value);
                 return;
             }
 
@@ -24,7 +30,7 @@ public sealed class CreateStockReservationRequestValidator : AbstractValidator<C
         });
     }
 
-    private static void ValidateItems(
+    private void ValidateItems(
         IReadOnlyCollection<CreateStockReservationItemRequest> items,
         ValidationContext<CreateStockReservationRequest> context)
     {
@@ -36,18 +42,18 @@ public sealed class CreateStockReservationRequestValidator : AbstractValidator<C
         {
             if (string.IsNullOrWhiteSpace(item.Sku))
             {
-                skuErrors.Add("SKU is required.");
+                skuErrors.Add(_localizer["stock_reservation.item.sku.required"].Value);
                 continue;
             }
 
             if (!skus.Add(item.Sku.Trim()))
             {
-                skuErrors.Add($"Duplicate SKU '{item.Sku}' is not allowed.");
+                skuErrors.Add(_localizer["stock_reservation.item.sku.duplicate", item.Sku].Value);
             }
 
             if (item.Quantity <= 0)
             {
-                quantityErrors.Add("Quantity must be greater than zero.");
+                quantityErrors.Add(_localizer["stock_reservation.item.quantity.positive"].Value);
             }
         }
 
