@@ -1,11 +1,11 @@
 using LogisticsHub.AspNetCore;
 using LogisticsHub.CompanyService.Application.Companies;
-using LogisticsHub.CompanyService.Application.Companies.GenerateCompanyTestData;
 using LogisticsHub.CompanyService.Application.Companies.GetCompanyAddress;
 using LogisticsHub.CompanyService.Contracts;
 using LogisticsHub.CompanyService.Localization;
 using LogisticsHub.CompanyService.Mapping;
 using LogisticsHub.CompanyService.Validation;
+using LogisticsHub.Results;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Localization;
@@ -35,41 +35,22 @@ public sealed class CompaniesController : ControllerBase
         CreateCompanyRequest request,
         CancellationToken cancellationToken)
     {
-        var validationErrors = CompanyRequestValidator.Validate(request);
-        ModelState.AddValidationErrors(validationErrors);
-
-        if (!ModelState.IsValid)
+        var validationProblem = ValidateRequest(CompanyRequestValidator.Validate(request));
+        if (validationProblem is not null)
         {
-            return ValidationProblem(ModelState);
+            return validationProblem;
         }
 
         var result = await _mediator.Send(CompanyMapper.ToCommand(request), cancellationToken);
 
         if (result.IsFailure)
         {
-            return Conflict(new { reason = result.Error.ToLocalizedMessage(_errorLocalizer) });
+            return Conflict(result.Error);
         }
 
         var response = CompanyMapper.ToResponse(result.Value);
 
         return Created($"/companies/{response.Id}", response);
-    }
-
-    [HttpPost("/system/test-data/companies")]
-    [ProducesResponseType(typeof(GenerateCompanyTestDataResult), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> GenerateTestDataAsync(
-        [FromServices] IWebHostEnvironment environment,
-        CancellationToken cancellationToken)
-    {
-        if (!environment.IsDevelopment())
-        {
-            return NotFound();
-        }
-
-        var result = await _mediator.Send(new GenerateCompanyTestDataCommand(), cancellationToken);
-
-        return Ok(result);
     }
 
     [HttpGet("{id:guid}")]
@@ -111,24 +92,18 @@ public sealed class CompaniesController : ControllerBase
         UpdateCompanyRequest request,
         CancellationToken cancellationToken)
     {
-        var validationErrors = CompanyRequestValidator.Validate(request);
-        ModelState.AddValidationErrors(validationErrors);
-
-        if (!ModelState.IsValid)
+        var validationProblem = ValidateRequest(CompanyRequestValidator.Validate(request));
+        if (validationProblem is not null)
         {
-            return ValidationProblem(ModelState);
+            return validationProblem;
         }
 
         var result = await _mediator.Send(CompanyMapper.ToCommand(id, request), cancellationToken);
 
-        if (result.IsFailure)
+        var failure = ToNotFoundOrConflict(result);
+        if (failure is not null)
         {
-            if (result.Error.Code == "company.not_found")
-            {
-                return NotFound();
-            }
-
-            return Conflict(new { reason = result.Error.ToLocalizedMessage(_errorLocalizer) });
+            return failure;
         }
 
         return Ok(CompanyMapper.ToResponse(result.Value));
@@ -143,12 +118,10 @@ public sealed class CompaniesController : ControllerBase
         CreateCompanyAddressRequest request,
         CancellationToken cancellationToken)
     {
-        var validationErrors = CompanyAddressRequestValidator.Validate(request);
-        ModelState.AddValidationErrors(validationErrors);
-
-        if (!ModelState.IsValid)
+        var validationProblem = ValidateRequest(CompanyAddressRequestValidator.Validate(request));
+        if (validationProblem is not null)
         {
-            return ValidationProblem(ModelState);
+            return validationProblem;
         }
 
         var result = await _mediator.Send(CompanyMapper.ToCommand(companyId, request), cancellationToken);
@@ -200,5 +173,34 @@ public sealed class CompaniesController : ControllerBase
         }
 
         return Ok(CompanyMapper.ToResponse(result.Value));
+    }
+
+    private IActionResult? ValidateRequest(Dictionary<string, string[]> validationErrors)
+    {
+        ModelState.AddValidationErrors(validationErrors);
+
+        return ModelState.IsValid
+            ? null
+            : ValidationProblem(ModelState);
+    }
+
+    private IActionResult? ToNotFoundOrConflict<T>(Result<T> result)
+    {
+        if (result.IsSuccess)
+        {
+            return null;
+        }
+
+        if (result.Error.Code == "company.not_found")
+        {
+            return NotFound();
+        }
+
+        return Conflict(result.Error);
+    }
+
+    private ConflictObjectResult Conflict(Error error)
+    {
+        return Conflict(new { reason = error.ToLocalizedMessage(_errorLocalizer) });
     }
 }
