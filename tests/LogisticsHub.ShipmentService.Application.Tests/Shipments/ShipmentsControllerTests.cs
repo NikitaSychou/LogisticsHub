@@ -16,6 +16,25 @@ namespace LogisticsHub.ShipmentService.Application.Tests.Shipments;
 public sealed class ShipmentsControllerTests
 {
     [Fact]
+    public async Task GetAsync_WhenShipmentExists_ReturnsReferencesWithoutLegacyDestinationFields()
+    {
+        var result = CreateGetResult();
+        var controller = CreateController(new FakeMediator(getShipmentResult: Result<GetShipmentResult>.Success(result)));
+
+        var response = await controller.GetAsync(result.ShipmentId, CancellationToken.None);
+
+        var okResult = Assert.IsType<OkObjectResult>(response);
+        var shipment = Assert.IsType<GetShipmentResponse>(okResult.Value);
+        Assert.Equal(result.SenderCompanyId, shipment.SenderCompanyId);
+        Assert.Equal(result.SenderAddressId, shipment.SenderAddressId);
+        Assert.Equal(result.ReceiverCompanyId, shipment.ReceiverCompanyId);
+        Assert.Equal(result.ReceiverAddressId, shipment.ReceiverAddressId);
+        Assert.DoesNotContain(
+            typeof(GetShipmentResponse).GetProperties(),
+            property => property.Name is "DestinationName" or "DestinationAddress");
+    }
+
+    [Fact]
     public async Task CreateAsync_WhenCompanyAddressReferencesAreMissing_ReturnsBadRequest()
     {
         var controller = CreateController(Result<CreateShipmentResult>.Success(CreateResult()));
@@ -154,6 +173,26 @@ public sealed class ShipmentsControllerTests
             Guid.NewGuid());
     }
 
+    private static GetShipmentResult CreateGetResult()
+    {
+        return new GetShipmentResult(
+            Guid.NewGuid(),
+            "SHP-TEST",
+            ShipmentStatus.ReservationRequested,
+            null,
+            null,
+            Guid.NewGuid(),
+            Guid.NewGuid(),
+            Guid.NewGuid(),
+            Guid.NewGuid(),
+            null,
+            DateTime.UtcNow,
+            DateTime.UtcNow,
+            null,
+            null,
+            [new GetShipmentItemResult("TEST-SKU-001", 1)]);
+    }
+
     private static void AssertValidationProblem(IActionResult response, int expectedStatusCode)
     {
         var objectResult = Assert.IsAssignableFrom<ObjectResult>(response);
@@ -164,11 +203,15 @@ public sealed class ShipmentsControllerTests
 
     private sealed class FakeMediator : IMediator
     {
-        private readonly Result<CreateShipmentResult> _createShipmentResult;
+        private readonly Result<CreateShipmentResult>? _createShipmentResult;
+        private readonly Result<GetShipmentResult>? _getShipmentResult;
 
-        public FakeMediator(Result<CreateShipmentResult> createShipmentResult)
+        public FakeMediator(
+            Result<CreateShipmentResult>? createShipmentResult = null,
+            Result<GetShipmentResult>? getShipmentResult = null)
         {
             _createShipmentResult = createShipmentResult;
+            _getShipmentResult = getShipmentResult;
         }
 
         public CreateShipmentCommand? CreateShipmentCommand { get; private set; }
@@ -180,6 +223,12 @@ public sealed class ShipmentsControllerTests
             {
                 CreateShipmentCommand = command;
                 return Task.FromResult(createShipmentResult);
+            }
+
+            if (request is GetShipmentQuery &&
+                _getShipmentResult is TResponse getShipmentResult)
+            {
+                return Task.FromResult(getShipmentResult);
             }
 
             throw new InvalidOperationException($"Unexpected request type '{request.GetType().Name}'.");

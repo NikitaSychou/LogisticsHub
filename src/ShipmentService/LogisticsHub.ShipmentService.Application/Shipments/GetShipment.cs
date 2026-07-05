@@ -35,8 +35,6 @@ public sealed class GetShipment : IRequestHandler<GetShipmentQuery, Result<GetSh
                 shipment.SenderAddressId,
                 shipment.ReceiverCompanyId,
                 shipment.ReceiverAddressId,
-                shipment.DestinationName,
-                shipment.DestinationAddress,
                 shipment.Comment,
                 shipment.CreatedAt,
                 shipment.UpdatedAt,

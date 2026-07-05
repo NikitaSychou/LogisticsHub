@@ -175,8 +175,6 @@ CREATE TABLE [dbo].[shipments](
 	[sender_address_id] [uniqueidentifier] NOT NULL,
 	[receiver_company_id] [uniqueidentifier] NOT NULL,
 	[receiver_address_id] [uniqueidentifier] NOT NULL,
-	[destination_name] [nvarchar](200) COLLATE SQL_Latin1_General_CP1_CI_AS NOT NULL,
-	[destination_address] [nvarchar](500) COLLATE SQL_Latin1_General_CP1_CI_AS NOT NULL,
 	[comment] [nvarchar](1000) COLLATE SQL_Latin1_General_CP1_CI_AS NULL,
 	[created_at] [datetime2](3) NOT NULL,
 	[updated_at] [datetime2](3) NOT NULL,

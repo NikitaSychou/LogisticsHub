@@ -44,12 +44,6 @@ public sealed class ShipmentConfiguration : IEntityTypeConfiguration<Shipment>
             .HasColumnName("receiver_address_id")
             .IsRequired();
 
-        builder.Property(x => x.DestinationName)
-            .HasColumnName("destination_name");
-
-        builder.Property(x => x.DestinationAddress)
-            .HasColumnName("destination_address");
-
         builder.Property(x => x.Comment)
             .HasColumnName("comment");
 

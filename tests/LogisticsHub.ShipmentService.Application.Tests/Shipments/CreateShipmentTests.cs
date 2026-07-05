@@ -3,6 +3,7 @@ using LogisticsHub.IntegrationEvents.StockReservations;
 using LogisticsHub.ShipmentService.Application.Companies;
 using LogisticsHub.ShipmentService.Application.Shipments;
 using LogisticsHub.ShipmentService.Application.Tests.Fakes;
+using LogisticsHub.ShipmentService.Domain.Entities;
 using LogisticsHub.ShipmentService.Domain.Enums;
 using Xunit;
 
@@ -44,6 +45,9 @@ public sealed class CreateShipmentTests
         Assert.Equal(senderAddressId, shipment.SenderAddressId);
         Assert.Equal(receiverCompanyId, shipment.ReceiverCompanyId);
         Assert.Equal(receiverAddressId, shipment.ReceiverAddressId);
+        Assert.DoesNotContain(
+            typeof(Shipment).GetProperties(),
+            property => property.Name is "DestinationName" or "DestinationAddress");
         Assert.Equal(
             [(senderCompanyId, senderAddressId), (receiverCompanyId, receiverAddressId)],
             companyAddressReferenceClient.Requests);
