@@ -50,12 +50,10 @@ public sealed class StockReservationsController : ControllerBase
         CreateStockReservationRequest request,
         CancellationToken cancellationToken)
     {
-        var validationErrors = CreateStockReservationRequestValidator.Validate(request);
-        ModelState.AddValidationErrors(validationErrors);
-
-        if (!ModelState.IsValid)
+        var validationProblem = ValidateRequest(CreateStockReservationRequestValidator.Validate(request));
+        if (validationProblem is not null)
         {
-            return ValidationProblem(ModelState);
+            return validationProblem;
         }
 
         var command = StockReservationMapper.ToCommand(request);
@@ -70,5 +68,14 @@ public sealed class StockReservationsController : ControllerBase
         var response = StockReservationMapper.ToCreateResponse(result.Reservation);
 
         return Created($"/stock-reservations/{result.Reservation.ReservationId}", response);
+    }
+
+    private IActionResult? ValidateRequest(Dictionary<string, string[]> validationErrors)
+    {
+        ModelState.AddValidationErrors(validationErrors);
+
+        return ModelState.IsValid
+            ? null
+            : ValidationProblem(ModelState);
     }
 }

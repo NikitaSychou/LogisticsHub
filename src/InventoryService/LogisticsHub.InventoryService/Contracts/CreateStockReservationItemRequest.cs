@@ -1,5 +1,5 @@
 namespace LogisticsHub.InventoryService.Contracts;
 
 public sealed record CreateStockReservationItemRequest(
-    string Sku,
+    string? Sku,
     int Quantity);

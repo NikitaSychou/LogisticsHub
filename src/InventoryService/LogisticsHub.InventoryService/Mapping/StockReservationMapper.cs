@@ -22,7 +22,7 @@ public static partial class StockReservationMapper
 
     private static StockReservationItemCommand ToCommandItem(CreateStockReservationItemRequest item)
     {
-        return new StockReservationItemCommand(item.Sku.Trim(), item.Quantity);
+        return new StockReservationItemCommand(item.Sku!.Trim(), item.Quantity);
     }
 
     private static partial StockReservationItemResponse ToResponseItem(StockReservationItemResult item);
