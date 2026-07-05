@@ -3,14 +3,13 @@ using LogisticsHub.IntegrationEvents.StockReservations;
 using LogisticsHub.InventoryService.Application.Persistence;
 using LogisticsHub.InventoryService.Domain.Entities;
 using LogisticsHub.Messaging.RabbitMQ;
+using LogisticsHub.Messaging.RabbitMQ.Outbox;
 
 namespace LogisticsHub.InventoryService.Outbox;
 
 public sealed class InventoryOutboxProcessor
 {
     private static readonly JsonSerializerOptions JsonSerializerOptions = new(JsonSerializerDefaults.Web);
-    private static readonly TimeSpan MaxRetryDelay = TimeSpan.FromMinutes(15);
-    private const int MaxRetryCount = 5;
 
     private readonly IInventoryDbContext _dbContext;
     private readonly IRabbitMqPublisher _publisher;
@@ -77,15 +76,20 @@ public sealed class InventoryOutboxProcessor
             {
                 hadFailure = true;
                 var failedAtUtc = DateTime.UtcNow;
-                message.RetryCount++;
+                var retryDecision = OutboxRetryPolicy.RecordFailure(
+                    message.RetryCount,
+                    failedAtUtc,
+                    exception.Message);
+
+                message.RetryCount = retryDecision.RetryCount;
                 message.LockedBy = null;
                 message.LockedAtUtc = null;
-                message.Error = exception.Message;
+                message.Error = retryDecision.Error;
 
-                if (message.RetryCount >= MaxRetryCount)
+                if (retryDecision.ReachedMaxRetryCount)
                 {
-                    message.FailedAtUtc = failedAtUtc;
-                    message.NextAttemptAtUtc = null;
+                    message.FailedAtUtc = retryDecision.FailedAtUtc;
+                    message.NextAttemptAtUtc = retryDecision.NextAttemptAtUtc;
 
                     _logger.LogError(
                         exception,
@@ -95,8 +99,7 @@ public sealed class InventoryOutboxProcessor
                 }
                 else
                 {
-                    var retryDelay = GetRetryDelay(message.RetryCount);
-                    message.NextAttemptAtUtc = failedAtUtc.Add(retryDelay);
+                    message.NextAttemptAtUtc = retryDecision.NextAttemptAtUtc;
 
                     _logger.LogWarning(
                         exception,
@@ -151,20 +154,6 @@ public sealed class InventoryOutboxProcessor
 
         throw new InvalidOperationException(
             $"Unsupported inventory outbox message type '{message.Type}'.");
-    }
-
-    private static TimeSpan GetRetryDelay(int retryCount)
-    {
-        var seconds = retryCount switch
-        {
-            1 => 30,
-            2 => 60,
-            3 => 120,
-            4 => 300,
-            _ => (int)MaxRetryDelay.TotalSeconds
-        };
-
-        return TimeSpan.FromSeconds(seconds);
     }
 }
 
