@@ -16,7 +16,8 @@ public sealed class ShipmentOutboxMessageConfiguration : IEntityTypeConfiguratio
             .HasColumnName("id");
 
         builder.Property(x => x.OccurredAtUtc)
-            .HasColumnName("occurred_at_utc");
+            .HasColumnName("occurred_at_utc")
+            .HasPrecision(7);
 
         builder.Property(x => x.Type)
             .HasColumnName("type")
@@ -33,20 +34,24 @@ public sealed class ShipmentOutboxMessageConfiguration : IEntityTypeConfiguratio
             .IsRequired();
 
         builder.Property(x => x.ProcessedAtUtc)
-            .HasColumnName("processed_at_utc");
+            .HasColumnName("processed_at_utc")
+            .HasPrecision(7);
 
         builder.Property(x => x.LockedBy)
             .HasColumnName("locked_by")
             .HasMaxLength(256);
 
         builder.Property(x => x.LockedAtUtc)
-            .HasColumnName("locked_at_utc");
+            .HasColumnName("locked_at_utc")
+            .HasPrecision(7);
 
         builder.Property(x => x.NextAttemptAtUtc)
-            .HasColumnName("next_attempt_at_utc");
+            .HasColumnName("next_attempt_at_utc")
+            .HasPrecision(7);
 
         builder.Property(x => x.FailedAtUtc)
-            .HasColumnName("failed_at_utc");
+            .HasColumnName("failed_at_utc")
+            .HasPrecision(7);
 
         builder.Property(x => x.Error)
             .HasColumnName("error");
@@ -55,6 +60,7 @@ public sealed class ShipmentOutboxMessageConfiguration : IEntityTypeConfiguratio
             .HasColumnName("retry_count");
 
         builder.Property(x => x.CreatedAtUtc)
-            .HasColumnName("created_at_utc");
+            .HasColumnName("created_at_utc")
+            .HasPrecision(7);
     }
 }

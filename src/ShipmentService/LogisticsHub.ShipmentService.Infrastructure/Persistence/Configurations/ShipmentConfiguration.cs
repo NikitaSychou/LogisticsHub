@@ -16,17 +16,21 @@ public sealed class ShipmentConfiguration : IEntityTypeConfiguration<Shipment>
             .HasColumnName("id");
 
         builder.Property(x => x.ShipmentNumber)
-            .HasColumnName("shipment_number");
+            .HasColumnName("shipment_number")
+            .HasMaxLength(50)
+            .IsRequired();
 
         builder.Property(x => x.Status)
             .HasColumnName("status")
+            .HasMaxLength(32)
             .HasConversion<string>();
 
         builder.Property(x => x.ReservationId)
             .HasColumnName("reservation_id");
 
         builder.Property(x => x.ReservationFailureReason)
-            .HasColumnName("reservation_failure_reason");
+            .HasColumnName("reservation_failure_reason")
+            .HasMaxLength(500);
 
         builder.Property(x => x.SenderCompanyId)
             .HasColumnName("sender_company_id")
@@ -45,18 +49,23 @@ public sealed class ShipmentConfiguration : IEntityTypeConfiguration<Shipment>
             .IsRequired();
 
         builder.Property(x => x.Comment)
-            .HasColumnName("comment");
+            .HasColumnName("comment")
+            .HasMaxLength(1000);
 
         builder.Property(x => x.CreatedAt)
-            .HasColumnName("created_at");
+            .HasColumnName("created_at")
+            .HasPrecision(3);
 
         builder.Property(x => x.UpdatedAt)
-            .HasColumnName("updated_at");
+            .HasColumnName("updated_at")
+            .HasPrecision(3);
 
         builder.Property(x => x.DispatchedAt)
-            .HasColumnName("dispatched_at");
+            .HasColumnName("dispatched_at")
+            .HasPrecision(3);
 
         builder.Property(x => x.CancelledAt)
-            .HasColumnName("cancelled_at");
+            .HasColumnName("cancelled_at")
+            .HasPrecision(3);
     }
 }

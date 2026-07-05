@@ -118,7 +118,7 @@ Invoke-RestMethod http://localhost:5102/health/ready
 
 Expected result for each service is `Healthy`.
 
-CompanyService is part of shipment creation because ShipmentService validates required sender/receiver company/address references through CompanyService. Liveness endpoints are process-only. The existing `/health` endpoints behave like readiness. CompanyService readiness verifies CompanyDb connectivity. InventoryService and ShipmentService readiness checks verify RabbitMQ connectivity. They do not prove that the full SQL schema exists.
+CompanyService is part of shipment creation because ShipmentService validates required sender/receiver company/address references through CompanyService. Liveness endpoints are process-only. The existing `/health` endpoints behave like readiness. CompanyService readiness verifies CompanyDb connectivity. InventoryService and ShipmentService readiness checks verify their SQL database and RabbitMQ connectivity. They do not prove that the full SQL schema exists.
 
 ## Smoke-Test Values
 

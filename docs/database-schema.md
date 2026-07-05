@@ -18,7 +18,7 @@ The export helper is schema-only. It does not script table data and does not mod
 - `ShipmentDb.schema.sql`
 - `CompanyDb.schema.sql`
 
-`CompanyDb.default-shipment-references.sql` is an idempotent manual data patch that ensures stable default sender/receiver Company/Address records exist for legacy shipment backfill. `ShipmentDb.company-address-columns.sql` is an idempotent compatibility patch for existing local `ShipmentDb` databases that do not yet have sender/receiver reference columns. `ShipmentDb.require-company-address-columns.sql` backfills existing shipments and enforces required sender/receiver company and address reference columns without adding cross-database foreign keys.
+`CompanyDb.default-shipment-references.sql` is an idempotent manual data patch that ensures stable default sender/receiver Company/Address records exist for legacy shipment backfill. `ShipmentDb.company-address-columns.sql` is an idempotent compatibility patch for existing local `ShipmentDb` databases that do not yet have sender/receiver reference columns. `ShipmentDb.require-company-address-columns.sql` backfills existing shipments and enforces required sender/receiver company and address reference columns without adding cross-database foreign keys. `ShipmentDb.drop-destination-fields.sql` removes obsolete destination text columns from existing local `ShipmentDb` databases.
 
 `InventoryDb.schema.sql`, `ShipmentDb.schema.sql`, and `CompanyDb.schema.sql` are exported from local SQL Express by the schema export helper. Manual SQL remains the source of truth.
 
@@ -185,6 +185,7 @@ When updating an already-created host `ShipmentDb`, apply any required compatibi
 - `CompanyDb.default-shipment-references.sql`
 - `ShipmentDb.company-address-columns.sql`
 - `ShipmentDb.require-company-address-columns.sql`
+- `ShipmentDb.drop-destination-fields.sql`
 
 `bootstrap-docker-sql.ps1` is a legacy helper for the previous Docker SQL Server setup and is not used by the current Docker Compose flow.
 
