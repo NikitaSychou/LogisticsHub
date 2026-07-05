@@ -170,9 +170,9 @@ public sealed class CompaniesControllerTests
         return new CompaniesController(
             mediator,
             new FakeCompanyBusinessErrorLocalizer(),
-            new CreateCompanyRequestValidator(),
-            new UpdateCompanyRequestValidator(),
-            new CompanyAddressRequestValidator())
+            new CreateCompanyRequestValidator(new FakeCompanyValidationLocalizer()),
+            new UpdateCompanyRequestValidator(new FakeCompanyValidationLocalizer()),
+            new CompanyAddressRequestValidator(new FakeCompanyValidationLocalizer()))
         {
             ControllerContext = new ControllerContext
             {
@@ -309,6 +309,18 @@ public sealed class CompaniesControllerTests
     }
 
     private sealed class FakeCompanyBusinessErrorLocalizer : IStringLocalizer<CompanyBusinessErrorMessages>
+    {
+        public LocalizedString this[string name] => new(name, name);
+
+        public LocalizedString this[string name, params object[] arguments] => new(name, string.Format(name, arguments));
+
+        public IEnumerable<LocalizedString> GetAllStrings(bool includeParentCultures)
+        {
+            return [];
+        }
+    }
+
+    private sealed class FakeCompanyValidationLocalizer : IStringLocalizer<CompanyValidationMessages>
     {
         public LocalizedString this[string name] => new(name, name);
 

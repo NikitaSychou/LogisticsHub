@@ -146,7 +146,7 @@ public sealed class ShipmentsControllerTests
         return new ShipmentsController(
             mediator,
             new FakeShipmentBusinessErrorLocalizer(),
-            new CreateShipmentRequestValidator())
+            new CreateShipmentRequestValidator(new FakeShipmentValidationLocalizer()))
         {
             ControllerContext = new ControllerContext
             {
@@ -280,6 +280,18 @@ public sealed class ShipmentsControllerTests
     }
 
     private sealed class FakeShipmentBusinessErrorLocalizer : IStringLocalizer<ShipmentBusinessErrorMessages>
+    {
+        public LocalizedString this[string name] => new(name, name);
+
+        public LocalizedString this[string name, params object[] arguments] => new(name, string.Format(name, arguments));
+
+        public IEnumerable<LocalizedString> GetAllStrings(bool includeParentCultures)
+        {
+            return [];
+        }
+    }
+
+    private sealed class FakeShipmentValidationLocalizer : IStringLocalizer<ShipmentValidationMessages>
     {
         public LocalizedString this[string name] => new(name, name);
 

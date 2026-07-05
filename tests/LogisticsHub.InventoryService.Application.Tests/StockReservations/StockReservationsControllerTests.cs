@@ -94,7 +94,7 @@ public sealed class StockReservationsControllerTests
         return new StockReservationsController(
             mediator,
             new FakeInventoryBusinessErrorLocalizer(),
-            new CreateStockReservationRequestValidator())
+            new CreateStockReservationRequestValidator(new FakeInventoryValidationLocalizer()))
         {
             ControllerContext = new ControllerContext
             {
@@ -186,6 +186,18 @@ public sealed class StockReservationsControllerTests
     }
 
     private sealed class FakeInventoryBusinessErrorLocalizer : IStringLocalizer<InventoryBusinessErrorMessages>
+    {
+        public LocalizedString this[string name] => new(name, name);
+
+        public LocalizedString this[string name, params object[] arguments] => new(name, string.Format(name, arguments));
+
+        public IEnumerable<LocalizedString> GetAllStrings(bool includeParentCultures)
+        {
+            return [];
+        }
+    }
+
+    private sealed class FakeInventoryValidationLocalizer : IStringLocalizer<InventoryValidationMessages>
     {
         public LocalizedString this[string name] => new(name, name);
 

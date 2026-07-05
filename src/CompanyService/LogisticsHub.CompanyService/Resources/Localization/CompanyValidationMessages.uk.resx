@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="company.name.required" xml:space="preserve">
+    <value>Назва обов'язкова.</value>
+  </data>
+  <data name="company.name.max_length" xml:space="preserve">
+    <value>Назва має містити не більше 200 символів.</value>
+  </data>
+  <data name="company.external_code.max_length" xml:space="preserve">
+    <value>Зовнішній код має містити не більше 64 символів.</value>
+  </data>
+  <data name="company.status.required" xml:space="preserve">
+    <value>Статус обов'язковий.</value>
+  </data>
+  <data name="company.status.invalid" xml:space="preserve">
+    <value>Статус має бути Active або Inactive.</value>
+  </data>
+  <data name="company_address.address_type.required" xml:space="preserve">
+    <value>Тип адреси обов'язковий.</value>
+  </data>
+  <data name="company_address.address_type.invalid" xml:space="preserve">
+    <value>Тип адреси має бути Legal, Billing, Shipping або Warehouse.</value>
+  </data>
+  <data name="company_address.country_code.required" xml:space="preserve">
+    <value>Код країни обов'язковий.</value>
+  </data>
+  <data name="company_address.country_code.exact_length" xml:space="preserve">
+    <value>Код країни має містити рівно 2 символи.</value>
+  </data>
+  <data name="company_address.city.required" xml:space="preserve">
+    <value>Місто обов'язкове.</value>
+  </data>
+  <data name="company_address.city.max_length" xml:space="preserve">
+    <value>Місто має містити не більше 100 символів.</value>
+  </data>
+  <data name="company_address.postal_code.max_length" xml:space="preserve">
+    <value>Поштовий індекс має містити не більше 32 символів.</value>
+  </data>
+  <data name="company_address.line1.required" xml:space="preserve">
+    <value>Line1 обов'язковий.</value>
+  </data>
+  <data name="company_address.line1.max_length" xml:space="preserve">
+    <value>Line1 має містити не більше 200 символів.</value>
+  </data>
+  <data name="company_address.line2.max_length" xml:space="preserve">
+    <value>Line2 має містити не більше 200 символів.</value>
+  </data>
+</root>
