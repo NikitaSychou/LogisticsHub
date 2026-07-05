@@ -173,7 +173,7 @@ Run all tests with:
 dotnet test .\LogisticsHub.sln
 ```
 
-Current tests are Application-level tests under `tests/`. They do not require RabbitMQ or SQL Server.
+Most tests under `tests/` are in-memory application-level tests and do not require manually started RabbitMQ or SQL Server. The RabbitMQ integration tests use Testcontainers, so running the full solution test suite requires Docker to be available.
 
 ## Database Rule
 

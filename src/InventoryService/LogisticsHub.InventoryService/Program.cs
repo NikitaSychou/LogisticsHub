@@ -19,6 +19,7 @@ builder.Services.AddDbInfrastructure(builder.Configuration);
 builder.Services.AddRabbitMqMessaging(builder.Configuration);
 builder.Services
     .AddHealthChecks()
+    .AddInventoryDbHealthCheck()
     .AddRabbitMqHealthCheck();
 builder.Services.AddOpenApi();
 builder.Services.AddLocalization(options =>

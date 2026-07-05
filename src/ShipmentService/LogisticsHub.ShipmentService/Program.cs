@@ -17,6 +17,7 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services
     .AddHealthChecks()
+    .AddShipmentDbHealthCheck()
     .AddRabbitMqHealthCheck();
 builder.Services.AddOpenApi();
 builder.Services.AddLocalization(options =>

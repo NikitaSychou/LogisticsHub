@@ -30,6 +30,11 @@ public static class InfrastructureServiceCollectionExtensions
         return services;
     }
 
+    public static IHealthChecksBuilder AddShipmentDbHealthCheck(this IHealthChecksBuilder builder)
+    {
+        return builder.AddDbContextCheck<ShipmentDbContext>("ShipmentDb");
+    }
+
     public static IServiceCollection AddCompanyServiceClient(
         this IServiceCollection services,
         IConfiguration configuration)
