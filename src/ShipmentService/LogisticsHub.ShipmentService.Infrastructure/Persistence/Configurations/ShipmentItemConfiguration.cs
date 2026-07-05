@@ -16,7 +16,9 @@ public sealed class ShipmentItemConfiguration : IEntityTypeConfiguration<Shipmen
             .HasColumnName("shipment_id");
 
         builder.Property(x => x.Sku)
-            .HasColumnName("sku");
+            .HasColumnName("sku")
+            .HasMaxLength(64)
+            .IsRequired();
 
         builder.Property(x => x.Quantity)
             .HasColumnName("quantity");

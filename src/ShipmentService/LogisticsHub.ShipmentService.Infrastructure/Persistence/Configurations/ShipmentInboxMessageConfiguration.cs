@@ -24,10 +24,12 @@ public sealed class ShipmentInboxMessageConfiguration : IEntityTypeConfiguration
             .IsRequired();
 
         builder.Property(message => message.ProcessedAtUtc)
-            .HasColumnName("processed_at_utc");
+            .HasColumnName("processed_at_utc")
+            .HasPrecision(7);
 
         builder.Property(message => message.CreatedAtUtc)
-            .HasColumnName("created_at_utc");
+            .HasColumnName("created_at_utc")
+            .HasPrecision(7);
 
         builder.HasIndex(message => message.EventId)
             .IsUnique()
