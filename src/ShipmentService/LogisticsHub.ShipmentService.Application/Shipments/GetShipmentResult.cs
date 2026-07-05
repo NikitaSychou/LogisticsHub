@@ -12,8 +12,6 @@ public sealed record GetShipmentResult(
     Guid SenderAddressId,
     Guid ReceiverCompanyId,
     Guid ReceiverAddressId,
-    string DestinationName,
-    string DestinationAddress,
     string? Comment,
     DateTime CreatedAt,
     DateTime UpdatedAt,

@@ -22,10 +22,6 @@ public sealed class Shipment
 
     public Guid ReceiverAddressId { get; set; }
 
-    public string DestinationName { get; set; } = string.Empty;
-
-    public string DestinationAddress { get; set; } = string.Empty;
-
     public string? Comment { get; set; }
 
     public DateTime CreatedAt { get; set; }
