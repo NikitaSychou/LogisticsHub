@@ -115,7 +115,13 @@ public sealed class ShipmentsControllerTests
 
         var createdResult = Assert.IsType<CreatedResult>(response);
         Assert.Equal($"/shipments/{result.ShipmentId}", createdResult.Location);
-        Assert.Same(result, createdResult.Value);
+        var value = Assert.IsType<CreateShipmentResponse>(createdResult.Value);
+        Assert.Equal(result.ShipmentId, value.ShipmentId);
+        Assert.Equal(result.Status, value.Status);
+        Assert.Equal(result.SenderCompanyId, value.SenderCompanyId);
+        Assert.Equal(result.SenderAddressId, value.SenderAddressId);
+        Assert.Equal(result.ReceiverCompanyId, value.ReceiverCompanyId);
+        Assert.Equal(result.ReceiverAddressId, value.ReceiverAddressId);
         Assert.NotNull(mediator.CreateShipmentCommand);
         Assert.Equal(request.SenderCompanyId, mediator.CreateShipmentCommand.SenderCompanyId);
         Assert.Equal(request.SenderAddressId, mediator.CreateShipmentCommand.SenderAddressId);

@@ -44,12 +44,10 @@ public sealed class InventoryItemsController : ControllerBase
         CreateInventoryItemRequest request,
         CancellationToken cancellationToken)
     {
-        var validationErrors = CreateInventoryItemRequestValidator.Validate(request);
-        ModelState.AddValidationErrors(validationErrors);
-
-        if (!ModelState.IsValid)
+        var validationProblem = ValidateRequest(CreateInventoryItemRequestValidator.Validate(request));
+        if (validationProblem is not null)
         {
-            return ValidationProblem(ModelState);
+            return validationProblem;
         }
 
         var command = InventoryItemMapper.ToCommand(request);
@@ -64,5 +62,14 @@ public sealed class InventoryItemsController : ControllerBase
         var response = InventoryItemMapper.ToCreateResponse(result.Value);
 
         return Created($"/inventory-items/{result.Value.Sku}", response);
+    }
+
+    private IActionResult? ValidateRequest(Dictionary<string, string[]> validationErrors)
+    {
+        ModelState.AddValidationErrors(validationErrors);
+
+        return ModelState.IsValid
+            ? null
+            : ValidationProblem(ModelState);
     }
 }

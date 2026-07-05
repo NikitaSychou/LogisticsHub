@@ -4,6 +4,7 @@ using LogisticsHub.ShipmentService.Contracts;
 using LogisticsHub.ShipmentService.Localization;
 using LogisticsHub.ShipmentService.Mapping;
 using LogisticsHub.ShipmentService.Validation;
+using LogisticsHub.Results;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Localization;
@@ -45,19 +46,17 @@ public sealed class ShipmentsController : ControllerBase
     }
 
     [HttpPost]
-    [ProducesResponseType(typeof(CreateShipmentResult), StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(CreateShipmentResponse), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status503ServiceUnavailable)]
     public async Task<IActionResult> CreateAsync(
         CreateShipmentRequest request,
         CancellationToken cancellationToken)
     {
-        var validationErrors = CreateShipmentRequestValidator.Validate(request);
-        ModelState.AddValidationErrors(validationErrors);
-
-        if (!ModelState.IsValid)
+        var validationProblem = ValidateRequest(CreateShipmentRequestValidator.Validate(request));
+        if (validationProblem is not null)
         {
-            return ValidationProblem(ModelState);
+            return validationProblem;
         }
 
         var command = ShipmentMapper.ToCommand(request);
@@ -66,21 +65,37 @@ public sealed class ShipmentsController : ControllerBase
 
         if (result.IsFailure)
         {
-            if (result.Error.Code == "shipment.company_service_unavailable")
-            {
-                return StatusCode(
-                    StatusCodes.Status503ServiceUnavailable,
-                    new { reason = result.Error.ToLocalizedMessage(_errorLocalizer) });
-            }
-
-            var modelStateKey = result.Error.Code == "shipment.sender_company_address_not_found"
-                ? "senderAddressId"
-                : "receiverAddressId";
-
-            ModelState.AddModelError(modelStateKey, result.Error.ToLocalizedMessage(_errorLocalizer));
-            return ValidationProblem(ModelState);
+            return ToCreateFailureResponse(result.Error);
         }
 
-        return Created($"/shipments/{result.Value.ShipmentId}", result.Value);
+        var response = ShipmentMapper.ToResponse(result.Value);
+
+        return Created($"/shipments/{response.ShipmentId}", response);
+    }
+
+    private IActionResult? ValidateRequest(Dictionary<string, string[]> validationErrors)
+    {
+        ModelState.AddValidationErrors(validationErrors);
+
+        return ModelState.IsValid
+            ? null
+            : ValidationProblem(ModelState);
+    }
+
+    private IActionResult ToCreateFailureResponse(Error error)
+    {
+        if (error.Code == "shipment.company_service_unavailable")
+        {
+            return StatusCode(
+                StatusCodes.Status503ServiceUnavailable,
+                new { reason = error.ToLocalizedMessage(_errorLocalizer) });
+        }
+
+        var modelStateKey = error.Code == "shipment.sender_company_address_not_found"
+            ? "senderAddressId"
+            : "receiverAddressId";
+
+        ModelState.AddModelError(modelStateKey, error.ToLocalizedMessage(_errorLocalizer));
+        return ValidationProblem(ModelState);
     }
 }

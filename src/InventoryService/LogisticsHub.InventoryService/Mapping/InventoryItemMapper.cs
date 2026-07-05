@@ -10,8 +10,8 @@ public static partial class InventoryItemMapper
     public static CreateInventoryItemCommand ToCommand(CreateInventoryItemRequest request)
     {
         return new CreateInventoryItemCommand(
-            request.Sku.Trim(),
-            request.Name.Trim(),
+            request.Sku!.Trim(),
+            request.Name!.Trim(),
             request.QuantityAvailable);
     }
 
