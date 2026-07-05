@@ -26,4 +26,9 @@ public static class InfrastructureServiceCollectionExtensions
 
         return services;
     }
+
+    public static IHealthChecksBuilder AddInventoryDbHealthCheck(this IHealthChecksBuilder builder)
+    {
+        return builder.AddDbContextCheck<InventoryDbContext>("InventoryDb");
+    }
 }

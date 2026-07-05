@@ -10,6 +10,7 @@
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
+    <PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks.EntityFrameworkCore" Version="10.0.8" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\LogisticsHub.InventoryService.Application\LogisticsHub.InventoryService.Application.csproj" />
