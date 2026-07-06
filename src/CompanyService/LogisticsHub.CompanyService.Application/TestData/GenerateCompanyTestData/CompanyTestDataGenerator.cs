@@ -2,7 +2,7 @@ using Bogus;
 using LogisticsHub.CompanyService.Domain.Entities;
 using LogisticsHub.CompanyService.Domain.Enums;
 
-namespace LogisticsHub.CompanyService.Application.Companies.GenerateCompanyTestData;
+namespace LogisticsHub.CompanyService.Application.TestData.GenerateCompanyTestData;
 
 public static class CompanyTestDataGenerator
 {

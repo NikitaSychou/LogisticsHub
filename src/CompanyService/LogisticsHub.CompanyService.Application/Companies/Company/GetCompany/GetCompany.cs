@@ -1,9 +1,11 @@
+using LogisticsHub.CompanyService.Application.Companies;
+using LogisticsHub.CompanyService.Application.Companies.Results;
 using LogisticsHub.CompanyService.Application.Caching;
 using LogisticsHub.CompanyService.Application.Persistence;
 using LogisticsHub.Results;
 using MediatR;
 
-namespace LogisticsHub.CompanyService.Application.Companies;
+namespace LogisticsHub.CompanyService.Application.Companies.Company.GetCompany;
 
 public sealed class GetCompany : IRequestHandler<GetCompanyQuery, Result<CompanyResult>>
 {

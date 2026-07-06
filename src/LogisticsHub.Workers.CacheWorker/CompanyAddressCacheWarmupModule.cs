@@ -1,5 +1,5 @@
 using LogisticsHub.Caching;
-using LogisticsHub.CompanyService.Application.Companies;
+using LogisticsHub.CompanyService.Application.Companies.Results;
 using LogisticsHub.CompanyService.Infrastructure.Caching;
 using Microsoft.Extensions.Options;
 

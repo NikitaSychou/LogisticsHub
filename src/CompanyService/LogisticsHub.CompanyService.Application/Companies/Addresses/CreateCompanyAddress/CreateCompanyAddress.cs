@@ -1,10 +1,12 @@
+using LogisticsHub.CompanyService.Application.Companies;
+using LogisticsHub.CompanyService.Application.Companies.Results;
 using LogisticsHub.CompanyService.Application.Caching;
 using LogisticsHub.CompanyService.Application.Persistence;
 using LogisticsHub.CompanyService.Domain.Entities;
 using LogisticsHub.Results;
 using MediatR;
 
-namespace LogisticsHub.CompanyService.Application.Companies;
+namespace LogisticsHub.CompanyService.Application.Companies.Addresses.CreateCompanyAddress;
 
 public sealed class CreateCompanyAddress : IRequestHandler<CreateCompanyAddressCommand, Result<CompanyAddressResult>>
 {
