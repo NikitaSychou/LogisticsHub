@@ -17,12 +17,14 @@ builder.Services
     .LoadFromConfig(reverseProxySection);
 
 builder.Services.AddHealthChecks();
-builder.Services.AddOpenApi();
+builder.Services.AddOpenApi(options => options.AddOpenApiBearerSecurity());
+builder.Services.AddApiAuthentication(builder.Configuration);
 
 var app = builder.Build();
 
 app.UseCorrelationId();
 app.UseApiExceptionHandling();
+app.UseApiAuthentication();
 
 if (app.Environment.IsDevelopment())
 {
@@ -40,7 +42,8 @@ app.MapHealthChecks(LivenessHealthEndpointPath, new HealthCheckOptions
     Predicate = _ => false
 });
 app.MapHealthChecks(ReadinessHealthEndpointPath);
-app.MapReverseProxy();
+app.MapReverseProxy()
+    .RequireApiAuthentication();
 
 app.Run();
 

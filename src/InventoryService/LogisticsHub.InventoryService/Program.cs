@@ -24,7 +24,8 @@ builder.Services
     .AddHealthChecks()
     .AddInventoryDbHealthCheck()
     .AddRabbitMqHealthCheck();
-builder.Services.AddOpenApi();
+builder.Services.AddOpenApi(options => options.AddOpenApiBearerSecurity());
+builder.Services.AddApiAuthentication(builder.Configuration);
 builder.Services.AddLocalization(options =>
 {
     options.ResourcesPath = "Resources";
@@ -57,6 +58,7 @@ app.UseRequestLocalization(new RequestLocalizationOptions
     SupportedCultures = [new CultureInfo("en"), new CultureInfo("uk")],
     SupportedUICultures = [new CultureInfo("en"), new CultureInfo("uk")]
 });
+app.UseApiAuthentication();
 
 if (app.Environment.IsDevelopment())
 {
@@ -74,6 +76,7 @@ app.MapHealthChecks(LivenessHealthEndpointPath, new HealthCheckOptions
     Predicate = _ => false
 });
 app.MapHealthChecks(ReadinessHealthEndpointPath);
-app.MapControllers();
+app.MapControllers()
+    .RequireApiAuthentication();
 
 app.Run();
