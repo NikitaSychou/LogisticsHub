@@ -1,4 +1,4 @@
-using LogisticsHub.CompanyService.Application.Companies;
+using LogisticsHub.CompanyService.Application.Companies.Results;
 using LogisticsHub.CompanyService.Domain.Entities;
 using LogisticsHub.CompanyService.Domain.Enums;
 using Xunit;

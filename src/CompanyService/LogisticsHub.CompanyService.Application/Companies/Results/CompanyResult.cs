@@ -1,6 +1,6 @@
 using LogisticsHub.CompanyService.Domain.Enums;
 
-namespace LogisticsHub.CompanyService.Application.Companies;
+namespace LogisticsHub.CompanyService.Application.Companies.Results;
 
 public sealed record CompanyResult(
     Guid Id,

@@ -1,4 +1,4 @@
-using LogisticsHub.CompanyService.Application.Companies;
+using LogisticsHub.CompanyService.Application.Companies.Results;
 using LogisticsHub.CompanyService.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 

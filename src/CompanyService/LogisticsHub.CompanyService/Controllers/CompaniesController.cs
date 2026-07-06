@@ -1,7 +1,9 @@
+using LogisticsHub.CompanyService.Application.Companies.Addresses.ListCompanyAddresses;
+using LogisticsHub.CompanyService.Application.Companies.Company.ListCompanies;
+using LogisticsHub.CompanyService.Application.Companies.Company.GetCompany;
 using FluentValidation;
 using LogisticsHub.AspNetCore;
-using LogisticsHub.CompanyService.Application.Companies;
-using LogisticsHub.CompanyService.Application.Companies.GetCompanyAddress;
+using LogisticsHub.CompanyService.Application.Companies.Addresses.GetCompanyAddress;
 using LogisticsHub.CompanyService.Contracts;
 using LogisticsHub.CompanyService.Localization;
 using LogisticsHub.CompanyService.Mapping;

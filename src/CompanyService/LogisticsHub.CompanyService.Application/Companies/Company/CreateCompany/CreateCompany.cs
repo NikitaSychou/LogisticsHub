@@ -1,9 +1,11 @@
+using LogisticsHub.CompanyService.Application.Companies;
+using LogisticsHub.CompanyService.Application.Companies.Results;
 using LogisticsHub.CompanyService.Application.Persistence;
-using LogisticsHub.CompanyService.Domain.Entities;
+using CompanyEntity = LogisticsHub.CompanyService.Domain.Entities.Company;
 using LogisticsHub.Results;
 using MediatR;
 
-namespace LogisticsHub.CompanyService.Application.Companies;
+namespace LogisticsHub.CompanyService.Application.Companies.Company.CreateCompany;
 
 public sealed class CreateCompany : IRequestHandler<CreateCompanyCommand, Result<CompanyResult>>
 {
@@ -30,7 +32,7 @@ public sealed class CreateCompany : IRequestHandler<CreateCompanyCommand, Result
         }
 
         var now = DateTime.UtcNow;
-        var company = new Company
+        var company = new CompanyEntity
         {
             Id = Guid.NewGuid(),
             Name = command.Name,

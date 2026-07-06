@@ -1,10 +1,11 @@
-using LogisticsHub.CompanyService.Domain.Entities;
+using CompanyEntity = LogisticsHub.CompanyService.Domain.Entities.Company;
+using CompanyAddressEntity = LogisticsHub.CompanyService.Domain.Entities.CompanyAddress;
 
-namespace LogisticsHub.CompanyService.Application.Companies;
+namespace LogisticsHub.CompanyService.Application.Companies.Results;
 
 public static class CompanyResultFactory
 {
-    public static CompanyResult ToResult(Company company)
+    public static CompanyResult ToResult(CompanyEntity company)
     {
         return new CompanyResult(
             company.Id,
@@ -15,7 +16,7 @@ public static class CompanyResultFactory
             company.UpdatedAtUtc);
     }
 
-    public static CompanyAddressResult ToResult(CompanyAddress address)
+    public static CompanyAddressResult ToResult(CompanyAddressEntity address)
     {
         return new CompanyAddressResult(
             address.Id,

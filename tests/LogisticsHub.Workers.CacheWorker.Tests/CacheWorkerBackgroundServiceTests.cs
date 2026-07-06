@@ -1,6 +1,6 @@
 using LogisticsHub.Workers.CacheWorker;
 using LogisticsHub.Caching;
-using LogisticsHub.CompanyService.Application.Companies;
+using LogisticsHub.CompanyService.Application.Companies.Results;
 using LogisticsHub.CompanyService.Domain.Enums;
 using LogisticsHub.CompanyService.Infrastructure.Caching;
 using Microsoft.Extensions.Configuration;

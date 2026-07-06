@@ -1,8 +1,10 @@
+using LogisticsHub.CompanyService.Application.Companies;
+using LogisticsHub.CompanyService.Application.Companies.Results;
 using LogisticsHub.CompanyService.Application.Persistence;
 using LogisticsHub.Results;
 using MediatR;
 
-namespace LogisticsHub.CompanyService.Application.Companies;
+namespace LogisticsHub.CompanyService.Application.Companies.Addresses.ListCompanyAddresses;
 
 public sealed class ListCompanyAddresses : IRequestHandler<ListCompanyAddressesQuery, Result<IReadOnlyList<CompanyAddressResult>>>
 {

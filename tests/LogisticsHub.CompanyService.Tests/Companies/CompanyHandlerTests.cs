@@ -1,6 +1,12 @@
-using LogisticsHub.CompanyService.Application.Companies;
-using LogisticsHub.CompanyService.Application.Companies.GenerateCompanyTestData;
-using LogisticsHub.CompanyService.Application.Companies.GetCompanyAddress;
+using LogisticsHub.CompanyService.Application.Companies.Addresses.ListCompanyAddresses;
+using LogisticsHub.CompanyService.Application.Companies.Addresses.CreateCompanyAddress;
+using LogisticsHub.CompanyService.Application.Companies.Company.UpdateCompany;
+using LogisticsHub.CompanyService.Application.Companies.Company.ListCompanies;
+using LogisticsHub.CompanyService.Application.Companies.Company.GetCompany;
+using LogisticsHub.CompanyService.Application.Companies.Company.CreateCompany;
+using LogisticsHub.CompanyService.Application.Companies.Results;
+using LogisticsHub.CompanyService.Application.TestData.GenerateCompanyTestData;
+using LogisticsHub.CompanyService.Application.Companies.Addresses.GetCompanyAddress;
 using LogisticsHub.CompanyService.Application.Persistence;
 using LogisticsHub.CompanyService.Domain.Entities;
 using LogisticsHub.CompanyService.Domain.Enums;

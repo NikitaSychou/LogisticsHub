@@ -1,8 +1,9 @@
+using LogisticsHub.CompanyService.Application.Companies.Results;
 using LogisticsHub.CompanyService.Domain.Enums;
 using LogisticsHub.Results;
 using MediatR;
 
-namespace LogisticsHub.CompanyService.Application.Companies;
+namespace LogisticsHub.CompanyService.Application.Companies.Addresses.CreateCompanyAddress;
 
 public sealed record CreateCompanyAddressCommand(
     Guid CompanyId,

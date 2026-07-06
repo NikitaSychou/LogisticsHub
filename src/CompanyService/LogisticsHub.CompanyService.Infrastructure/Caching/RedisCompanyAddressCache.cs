@@ -1,5 +1,5 @@
 using LogisticsHub.CompanyService.Application.Caching;
-using LogisticsHub.CompanyService.Application.Companies;
+using LogisticsHub.CompanyService.Application.Companies.Results;
 using LogisticsHub.Caching;
 
 namespace LogisticsHub.CompanyService.Infrastructure.Caching;

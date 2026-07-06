@@ -1,4 +1,7 @@
-using LogisticsHub.CompanyService.Application.Companies;
+using LogisticsHub.CompanyService.Application.Companies.Addresses.CreateCompanyAddress;
+using LogisticsHub.CompanyService.Application.Companies.Company.UpdateCompany;
+using LogisticsHub.CompanyService.Application.Companies.Company.CreateCompany;
+using LogisticsHub.CompanyService.Application.Companies.Results;
 using LogisticsHub.CompanyService.Contracts;
 using LogisticsHub.CompanyService.Domain.Enums;
 using Riok.Mapperly.Abstractions;

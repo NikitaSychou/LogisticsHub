@@ -1,4 +1,4 @@
-using LogisticsHub.CompanyService.Application.Companies.GenerateCompanyTestData;
+using LogisticsHub.CompanyService.Application.TestData.GenerateCompanyTestData;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 

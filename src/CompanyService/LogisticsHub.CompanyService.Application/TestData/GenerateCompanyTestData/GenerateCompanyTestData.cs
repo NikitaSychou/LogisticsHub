@@ -1,7 +1,7 @@
 using LogisticsHub.CompanyService.Application.Persistence;
 using MediatR;
 
-namespace LogisticsHub.CompanyService.Application.Companies.GenerateCompanyTestData;
+namespace LogisticsHub.CompanyService.Application.TestData.GenerateCompanyTestData;
 
 public sealed record GenerateCompanyTestDataCommand : IRequest<GenerateCompanyTestDataResult>;
 

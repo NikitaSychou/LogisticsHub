@@ -1,6 +1,6 @@
+using LogisticsHub.CompanyService.Application.Companies.Company.CreateCompany;
 using FluentValidation;
 using LogisticsHub.AspNetCore;
-using LogisticsHub.CompanyService.Application.Companies;
 using LogisticsHub.CompanyService.Infrastructure.DependencyInjection;
 using LogisticsHub.CompanyService.Contracts;
 using LogisticsHub.CompanyService.Validation;
