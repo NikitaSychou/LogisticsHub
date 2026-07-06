@@ -9,6 +9,10 @@ services:
       ReverseProxy__Clusters__shipment-cluster__Destinations__shipment-destination__Address: http://shipmentservice:8080/
       ReverseProxy__Clusters__inventory-cluster__Destinations__inventory-destination__Address: http://inventoryservice:8080/
       ReverseProxy__Clusters__company-cluster__Destinations__company-destination__Address: http://companyservice:8080/
+      AzureAd__Instance: ${AZUREAD_INSTANCE}
+      AzureAd__TenantId: ${AZUREAD_TENANT_ID}
+      AzureAd__ClientId: ${AZUREAD_CLIENT_ID}
+      AzureAd__Audience: ${AZUREAD_AUDIENCE}
     depends_on:
       - companyservice
       - inventoryservice
@@ -25,6 +29,10 @@ services:
       ASPNETCORE_ENVIRONMENT: Development
       ConnectionStrings__CompanyDb: "Server=host.docker.internal,14330;Database=CompanyDb;User Id=logisticshub_companyservice;Password=${COMPANYSERVICE_DB_PASSWORD};Encrypt=True;TrustServerCertificate=True;"
       ConnectionStrings__Redis: "redis:6379"
+      AzureAd__Instance: ${AZUREAD_INSTANCE}
+      AzureAd__TenantId: ${AZUREAD_TENANT_ID}
+      AzureAd__ClientId: ${AZUREAD_CLIENT_ID}
+      AzureAd__Audience: ${AZUREAD_AUDIENCE}
     depends_on:
       - redis
     ports:
@@ -43,6 +51,10 @@ services:
       RabbitMq__UserName: guest
       RabbitMq__Password: guest
       RabbitMq__ExchangeName: logisticshub.events
+      AzureAd__Instance: ${AZUREAD_INSTANCE}
+      AzureAd__TenantId: ${AZUREAD_TENANT_ID}
+      AzureAd__ClientId: ${AZUREAD_CLIENT_ID}
+      AzureAd__Audience: ${AZUREAD_AUDIENCE}
     depends_on:
       - rabbitmq
     ports:
@@ -67,6 +79,10 @@ services:
       RabbitMq__UserName: guest
       RabbitMq__Password: guest
       RabbitMq__ExchangeName: logisticshub.events
+      AzureAd__Instance: ${AZUREAD_INSTANCE}
+      AzureAd__TenantId: ${AZUREAD_TENANT_ID}
+      AzureAd__ClientId: ${AZUREAD_CLIENT_ID}
+      AzureAd__Audience: ${AZUREAD_AUDIENCE}
     depends_on:
       - companyservice
       - rabbitmq

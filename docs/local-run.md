@@ -24,6 +24,12 @@ Create a local root `.env` file before running Compose. The file is ignored by G
 - `COMPANYSERVICE_DB_PASSWORD`
 - `INVENTORYSERVICE_DB_PASSWORD`
 - `SHIPMENTSERVICE_DB_PASSWORD`
+- `AZUREAD_INSTANCE`
+- `AZUREAD_TENANT_ID`
+- `AZUREAD_CLIENT_ID`
+- `AZUREAD_AUDIENCE`
+
+For `dotnet run`, provide `AzureAd:Instance`, `AzureAd:TenantId`, `AzureAd:ClientId`, and `AzureAd:Audience` through User Secrets or environment variables. The checked-in appsettings leave these values empty so services fail fast until real Microsoft Entra ID settings are supplied.
 
 The local appsettings used by `dotnet run` still point to local SQL Server databases:
 
