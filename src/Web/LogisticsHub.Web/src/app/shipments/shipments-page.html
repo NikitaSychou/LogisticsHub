@@ -144,15 +144,35 @@
   </div>
 
   <aside class="col-12 col-xl-5">
+    <div class="alert alert-danger validation-alert" *ngIf="statusRefreshError()">{{ statusRefreshError() }}</div>
+
     <div class="card shadow-sm mb-3" *ngIf="createdShipment()">
-      <div class="card-header bg-white">Created shipment</div>
+      <div class="card-header bg-white d-flex justify-content-between align-items-center gap-3">
+        <span>Created shipment</span>
+        <button
+          type="button"
+          class="btn btn-sm btn-outline-primary"
+          (click)="refreshCreatedShipmentStatus()"
+          [disabled]="refreshingCreatedShipment() || !createdShipment()?.shipmentId">
+          {{ refreshingCreatedShipment() ? 'Refreshing...' : 'Refresh status' }}
+        </button>
+      </div>
       <div class="card-body">
         <ng-container *ngTemplateOutlet="shipmentDetails; context: { shipment: createdShipment() }"></ng-container>
       </div>
     </div>
 
     <div class="card shadow-sm" *ngIf="loadedShipment(); else noShipmentLoaded">
-      <div class="card-header bg-white">Loaded shipment</div>
+      <div class="card-header bg-white d-flex justify-content-between align-items-center gap-3">
+        <span>Loaded shipment</span>
+        <button
+          type="button"
+          class="btn btn-sm btn-outline-primary"
+          (click)="refreshLoadedShipmentStatus()"
+          [disabled]="refreshingLoadedShipment() || !loadedShipment()?.shipmentId">
+          {{ refreshingLoadedShipment() ? 'Refreshing...' : 'Refresh status' }}
+        </button>
+      </div>
       <div class="card-body">
         <ng-container *ngTemplateOutlet="shipmentDetails; context: { shipment: loadedShipment() }"></ng-container>
       </div>
