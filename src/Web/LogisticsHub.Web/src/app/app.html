@@ -60,21 +60,19 @@
           [accessTokenFactory]="getAccessToken">
         </app-companies-page>
 
-        <ng-container *ngIf="activePage() !== 'companies'">
+        <app-inventory-page
+          *ngIf="activePage() === 'inventory'"
+          [account]="account()"
+          [active]="activePage() === 'inventory'"
+          [accessTokenFactory]="getAccessToken">
+        </app-inventory-page>
+
+        <ng-container *ngIf="activePage() === 'shipments'">
           <div class="mb-4">
             <h1 class="h3 mb-1">{{ pageTitle() }}</h1>
-            <p class="text-secondary mb-0" *ngIf="activePage() === 'inventory'">
-              Inventory management will be added later.
-            </p>
             <p class="text-secondary mb-0" *ngIf="activePage() === 'shipments'">
               Shipment management will be added later.
             </p>
-          </div>
-
-          <div class="card shadow-sm" *ngIf="activePage() === 'inventory'">
-            <div class="card-body">
-              <p class="mb-0">Inventory management will be added later.</p>
-            </div>
           </div>
 
           <div class="card shadow-sm" *ngIf="activePage() === 'shipments'">

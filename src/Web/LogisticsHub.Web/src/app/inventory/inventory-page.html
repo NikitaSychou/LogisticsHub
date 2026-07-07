@@ -1,0 +1,118 @@
+<div class="d-flex flex-wrap align-items-start justify-content-between gap-3 mb-4">
+  <div>
+    <h1 class="h3 mb-1">Inventory</h1>
+    <p class="text-secondary mb-0">
+      Review inventory items through the Gateway using the signed-in user's access token.
+    </p>
+  </div>
+
+  <button
+    *ngIf="apiError() && !hasLoadedItems()"
+    type="button"
+    class="btn btn-outline-primary"
+    (click)="loadInventory()"
+    [disabled]="isInventoryLoading()">
+    {{ apiLoading() ? 'Retrying...' : 'Retry' }}
+  </button>
+</div>
+
+<div class="alert alert-danger" *ngIf="apiError()">{{ apiError() }}</div>
+
+<div class="row g-3">
+  <div class="col-12 col-xl-8">
+    <div class="card shadow-sm">
+      <div class="card-body">
+        <div class="table-responsive" *ngIf="inventoryItems().length > 0; else emptyInventory">
+          <table class="table table-hover align-middle mb-0">
+            <thead>
+              <tr>
+                <th scope="col">SKU</th>
+                <th scope="col">Name</th>
+                <th scope="col" class="text-end">Available</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr
+                *ngFor="let item of inventoryItems()"
+                class="inventory-row"
+                [class.table-active]="isSelectedItem(item)"
+                (click)="selectItem(item)">
+                <td class="fw-semibold"><code>{{ item.sku || '-' }}</code></td>
+                <td>{{ item.name || 'Unnamed item' }}</td>
+                <td class="text-end">{{ item.quantityAvailable ?? '-' }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <ng-template #emptyInventory>
+          <div class="empty-state text-center py-5">
+            <h2 class="h5">No inventory items loaded</h2>
+            <p class="text-secondary mb-0" *ngIf="!hasLoadedItems() && apiLoading()">
+              Loading inventory items...
+            </p>
+            <p class="text-secondary mb-0" *ngIf="!hasLoadedItems() && !apiLoading() && !apiError()">
+              Inventory items will appear here when they are loaded.
+            </p>
+            <p class="text-secondary mb-0" *ngIf="hasLoadedItems()">
+              The response did not contain any inventory item rows.
+            </p>
+          </div>
+        </ng-template>
+      </div>
+    </div>
+  </div>
+
+  <aside class="col-12 col-xl-4">
+    <div class="card shadow-sm details-panel">
+      <div class="card-body" *ngIf="selectedItem(); else noItemSelected">
+        <div class="d-flex justify-content-between align-items-start gap-3 mb-3">
+          <div>
+            <h2 class="h5 mb-1">{{ selectedItem()?.name || 'Unnamed item' }}</h2>
+            <div class="text-secondary small">{{ selectedItem()?.sku || 'No SKU' }}</div>
+          </div>
+          <span class="badge text-bg-light border">
+            {{ selectedItem()?.quantityAvailable ?? '-' }} available
+          </span>
+        </div>
+
+        <dl class="details-list">
+          <dt>SKU</dt>
+          <dd><code>{{ selectedItem()?.sku || '-' }}</code></dd>
+          <dt>Name</dt>
+          <dd>{{ selectedItem()?.name || '-' }}</dd>
+          <dt>Quantity available</dt>
+          <dd>{{ selectedItem()?.quantityAvailable ?? '-' }}</dd>
+        </dl>
+      </div>
+
+      <ng-template #noItemSelected>
+        <div class="card-body text-center text-secondary py-5">
+          Select an inventory item to view details.
+        </div>
+      </ng-template>
+    </div>
+  </aside>
+</div>
+
+<div
+  #inventoryScrollSentinel
+  class="inventory-scroll-sentinel"
+  aria-hidden="true">
+</div>
+
+<div class="d-flex flex-column align-items-center gap-2 py-3" *ngIf="hasLoadedItems() && inventoryItems().length > 0">
+  <button
+    type="button"
+    class="btn btn-outline-primary"
+    (click)="loadMoreInventory()"
+    [disabled]="isInventoryLoading()"
+    *ngIf="hasMoreItems()">
+    {{ loadingMore() ? 'Loading more...' : 'Load more' }}
+  </button>
+  <div class="small text-secondary" *ngIf="loadingMore()">Loading more...</div>
+  <div class="small text-secondary" *ngIf="!hasMoreItems()">All inventory items loaded.</div>
+  <div class="small text-secondary" *ngIf="currentItemsPage() > 0">
+    Page {{ currentItemsPage() }} loaded<span *ngIf="itemsPageSize() > 0">, {{ itemsPageSize() }} per page</span>.
+  </div>
+</div>
