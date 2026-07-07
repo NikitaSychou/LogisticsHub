@@ -21,6 +21,9 @@
   <data name="inventory_item.quantity_available.non_negative" xml:space="preserve">
     <value>Доступна кількість має бути нуль або більше.</value>
   </data>
+  <data name="inventory_item.stock_adjustment.quantity.positive" xml:space="preserve">
+    <value>Кількість має бути більше нуля.</value>
+  </data>
   <data name="stock_reservation.shipment_id.required" xml:space="preserve">
     <value>ID відправлення обов'язковий.</value>
   </data>

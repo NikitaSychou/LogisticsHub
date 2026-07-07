@@ -27,6 +27,13 @@ public class InventoryDbContext : DbContext, IInventoryDbContext
             .SingleOrDefaultAsync(item => item.Sku == sku, cancellationToken);
     }
 
+    public async Task<Item?> GetItemForUpdateBySkuAsync(string sku, CancellationToken cancellationToken = default)
+    {
+        return await Items
+            .Include(item => item.StockBalance)
+            .SingleOrDefaultAsync(item => item.Sku == sku, cancellationToken);
+    }
+
     public async Task<IReadOnlyList<Item>> GetItemsBySkusAsync(
         IReadOnlyCollection<string> skus,
         CancellationToken cancellationToken = default)

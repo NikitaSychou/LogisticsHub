@@ -17,15 +17,18 @@ public sealed class InventoryItemsController : ControllerBase
 {
     private readonly IMediator _mediator;
     private readonly IValidator<CreateInventoryItemRequest> _validator;
+    private readonly IValidator<CreateStockAdjustmentRequest> _stockAdjustmentValidator;
     private readonly PaginationOptions _paginationOptions;
 
     public InventoryItemsController(
         IMediator mediator,
         IValidator<CreateInventoryItemRequest> validator,
+        IValidator<CreateStockAdjustmentRequest> stockAdjustmentValidator,
         IOptions<PaginationOptions> paginationOptions)
     {
         _mediator = mediator;
         _validator = validator;
+        _stockAdjustmentValidator = stockAdjustmentValidator;
         _paginationOptions = paginationOptions.Value;
     }
 
@@ -96,6 +99,38 @@ public sealed class InventoryItemsController : ControllerBase
         var response = InventoryItemMapper.ToCreateResponse(result.Value);
 
         return Created($"/inventory-items/{result.Value.Sku}", response);
+    }
+
+    [HttpPost("{sku}/stock-adjustments")]
+    [ProducesResponseType(typeof(GetInventoryItemResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> CreateStockAdjustmentAsync(
+        string sku,
+        CreateStockAdjustmentRequest request,
+        CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(sku))
+        {
+            ModelState.AddModelError("sku", "SKU is required.");
+        }
+
+        ModelState.AddValidationErrors(_stockAdjustmentValidator.Validate(request));
+        if (!ModelState.IsValid)
+        {
+            return ValidationProblem(ModelState);
+        }
+
+        var result = await _mediator.Send(
+            new IncreaseInventoryItemStockCommand(sku.Trim(), request.Quantity),
+            cancellationToken);
+
+        if (result.IsFailure)
+        {
+            return NotFound();
+        }
+
+        return Ok(InventoryItemMapper.ToGetResponse(result.Value));
     }
 
     private IActionResult? ValidateRequest(FluentValidation.Results.ValidationResult validationResult)

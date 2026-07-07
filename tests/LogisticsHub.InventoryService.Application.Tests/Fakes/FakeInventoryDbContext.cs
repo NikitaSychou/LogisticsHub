@@ -18,6 +18,11 @@ public sealed class FakeInventoryDbContext : IInventoryDbContext
         return Task.FromResult(Items.SingleOrDefault(item => item.Sku == sku));
     }
 
+    public Task<Item?> GetItemForUpdateBySkuAsync(string sku, CancellationToken cancellationToken = default)
+    {
+        return Task.FromResult(Items.SingleOrDefault(item => item.Sku == sku));
+    }
+
     public Task<IReadOnlyList<Item>> GetItemsBySkusAsync(
         IReadOnlyCollection<string> skus,
         CancellationToken cancellationToken = default)
