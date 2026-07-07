@@ -46,7 +46,6 @@ export class CompaniesPage implements AfterViewInit, OnDestroy {
 
   protected readonly apiLoading = signal(false);
   protected readonly loadingMore = signal(false);
-  protected readonly apiResult = signal('');
   protected readonly apiError = signal('');
   protected readonly companies = signal<CompanyRow[]>([]);
   protected readonly selectedCompany = signal<CompanyRow | null>(null);
@@ -219,25 +218,17 @@ export class CompaniesPage implements AfterViewInit, OnDestroy {
     this.apiError.set('');
 
     if (options.reset) {
-      this.apiResult.set('');
-      this.companies.set([]);
-      this.selectedCompany.set(null);
-      this.companyAddresses.set([]);
-      this.addressesLoaded.set(false);
-      this.addressError.set('');
-      this.hasLoadedCompanies.set(false);
-      this.currentCompaniesPage.set(0);
-      this.companiesPageSize.set(0);
-      this.hasMoreCompanies.set(false);
+      this.resetCompaniesPageState();
     }
 
     try {
       const page = await this.companyApi.getCompaniesPage(pageNumber);
-      this.companies.set(options.reset ? page.items : [...this.companies(), ...page.items]);
-      this.currentCompaniesPage.set(page.pageNumber);
-      this.companiesPageSize.set(page.pageSize);
-      this.hasMoreCompanies.set(page.hasMore);
-      this.apiResult.set(page.debugResponse);
+      this.applyCompaniesPage(page.items, {
+        pageNumber: page.pageNumber,
+        pageSize: page.pageSize,
+        hasMore: page.hasMore,
+        reset: options.reset,
+      });
       this.hasLoadedCompanies.set(true);
     } catch (error) {
       this.apiError.set(error instanceof Error ? error.message : 'Gateway call failed.');
@@ -344,6 +335,28 @@ export class CompaniesPage implements AfterViewInit, OnDestroy {
 
   private formatError(error: unknown, fallback: string): string {
     return formatProblemError(error, fallback);
+  }
+
+  private resetCompaniesPageState(): void {
+    this.companies.set([]);
+    this.selectedCompany.set(null);
+    this.companyAddresses.set([]);
+    this.addressesLoaded.set(false);
+    this.addressError.set('');
+    this.hasLoadedCompanies.set(false);
+    this.currentCompaniesPage.set(0);
+    this.companiesPageSize.set(0);
+    this.hasMoreCompanies.set(false);
+  }
+
+  private applyCompaniesPage(
+    items: CompanyRow[],
+    page: { pageNumber: number; pageSize: number; hasMore: boolean; reset: boolean }
+  ): void {
+    this.companies.set(page.reset ? items : [...this.companies(), ...items]);
+    this.currentCompaniesPage.set(page.pageNumber);
+    this.companiesPageSize.set(page.pageSize);
+    this.hasMoreCompanies.set(page.hasMore);
   }
 
   private initializeCompaniesObserver(): void {

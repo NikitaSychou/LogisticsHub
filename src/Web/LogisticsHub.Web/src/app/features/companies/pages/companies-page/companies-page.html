@@ -85,10 +85,3 @@
   [pageSize]="companiesPageSize()"
   (loadMore)="loadMoreCompanies()">
 </app-load-more-state>
-
-<div class="card mt-3" *ngIf="apiResult()">
-  <div class="card-header bg-white">Debug response</div>
-  <div class="card-body">
-    <pre class="debug-json mb-0">{{ apiResult() }}</pre>
-  </div>
-</div>
