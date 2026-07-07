@@ -6,17 +6,85 @@
     </p>
   </div>
 
-  <button
-    *ngIf="apiError() && !hasLoadedItems()"
-    type="button"
-    class="btn btn-outline-primary"
-    (click)="loadInventory()"
-    [disabled]="isInventoryLoading()">
-    {{ apiLoading() ? 'Retrying...' : 'Retry' }}
-  </button>
+  <div class="d-flex gap-2">
+    <button
+      *ngIf="apiError() && !hasLoadedItems()"
+      type="button"
+      class="btn btn-outline-primary"
+      (click)="loadInventory()"
+      [disabled]="isInventoryLoading()">
+      {{ apiLoading() ? 'Retrying...' : 'Retry' }}
+    </button>
+    <button
+      type="button"
+      class="btn btn-primary"
+      (click)="toggleCreateItemForm()"
+      [disabled]="creatingItem()">
+      New item
+    </button>
+  </div>
 </div>
 
 <div class="alert alert-danger" *ngIf="apiError()">{{ apiError() }}</div>
+
+<div class="card shadow-sm mb-3" *ngIf="showCreateItemForm()">
+  <div class="card-body">
+    <div class="d-flex justify-content-between align-items-start gap-3 mb-3">
+      <div>
+        <h2 class="h5 mb-1">New inventory item</h2>
+        <p class="text-secondary small mb-0">Create an inventory item with starting available quantity.</p>
+      </div>
+      <button type="button" class="btn-close" aria-label="Close" (click)="cancelCreateItem()"></button>
+    </div>
+
+    <div class="alert alert-danger validation-alert" *ngIf="createItemError()">{{ createItemError() }}</div>
+
+    <form class="row g-3" (ngSubmit)="submitCreateItem()">
+      <div class="col-12 col-lg-3">
+        <label for="inventorySku" class="form-label">SKU</label>
+        <input
+          id="inventorySku"
+          name="inventorySku"
+          type="text"
+          class="form-control"
+          [value]="createItemForm.sku"
+          (input)="createItemForm.sku = inputValue($event)"
+          required>
+      </div>
+      <div class="col-12 col-lg-6">
+        <label for="inventoryName" class="form-label">Name</label>
+        <input
+          id="inventoryName"
+          name="inventoryName"
+          type="text"
+          class="form-control"
+          [value]="createItemForm.name"
+          (input)="createItemForm.name = inputValue($event)"
+          required>
+      </div>
+      <div class="col-12 col-lg-3">
+        <label for="inventoryQuantityAvailable" class="form-label">Available quantity</label>
+        <input
+          id="inventoryQuantityAvailable"
+          name="inventoryQuantityAvailable"
+          type="number"
+          class="form-control"
+          [value]="createItemForm.quantityAvailable"
+          (input)="createItemForm.quantityAvailable = inputNumberValue($event)"
+          min="0"
+          required>
+      </div>
+      <div class="col-12 d-flex gap-2">
+        <button type="submit" class="btn btn-primary" [disabled]="creatingItem()">
+          {{ creatingItem() ? 'Creating...' : 'Create item' }}
+        </button>
+        <button type="button" class="btn btn-outline-secondary" (click)="cancelCreateItem()" [disabled]="creatingItem()">
+          Cancel
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
 
 <div class="row g-3">
   <div class="col-12 col-xl-8">

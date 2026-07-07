@@ -1,5 +1,6 @@
 import { Injectable } from '@angular/core';
 import { environment } from '../../environments/environment';
+import { CreateInventoryItemRequest } from './inventory.models';
 
 @Injectable({ providedIn: 'root' })
 export class InventoryApiService {
@@ -11,6 +12,19 @@ export class InventoryApiService {
     });
 
     return this.readResponse(response, 'Inventory load');
+  }
+
+  async createInventoryItem(request: CreateInventoryItemRequest, accessToken: string): Promise<string> {
+    const response = await fetch(`${environment.api.gatewayBaseUrl}/inventory/inventory-items`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(request),
+    });
+
+    return this.readResponse(response, 'Create inventory item');
   }
 
   private async readResponse(response: Response, label: string): Promise<string> {
