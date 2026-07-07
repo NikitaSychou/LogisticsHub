@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { environment } from '../../environments/environment';
+import { environment } from '../../../environments/environment';
 import { CreateInventoryItemRequest, CreateStockAdjustmentRequest } from './inventory.models';
 
 @Injectable({ providedIn: 'root' })

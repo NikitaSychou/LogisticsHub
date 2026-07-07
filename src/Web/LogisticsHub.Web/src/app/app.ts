@@ -7,9 +7,9 @@ import {
 } from '@azure/msal-browser';
 import { environment } from '../environments/environment';
 import { loginRequest, msalConfig, tokenRequest } from './auth-config';
-import { CompaniesPage } from './companies/companies-page';
-import { InventoryPage } from './inventory/inventory-page';
-import { ShipmentsPage } from './shipments/shipments-page';
+import { CompaniesPage } from './features/companies/companies-page';
+import { InventoryPage } from './features/inventory/inventory-page';
+import { ShipmentsPage } from './features/shipments/shipments-page';
 
 type AppPage = 'companies' | 'inventory' | 'shipments';
 
