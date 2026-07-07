@@ -14,7 +14,7 @@ import {
 } from '@angular/core';
 import { AccountInfo } from '@azure/msal-browser';
 import { InventoryApiService } from './inventory-api.service';
-import { InventoryItemRow, PagedResponse } from './inventory.models';
+import { CreateInventoryItemRequest, InventoryItemRow, PagedResponse } from './inventory.models';
 
 @Component({
   selector: 'app-inventory-page',
@@ -43,11 +43,20 @@ export class InventoryPage implements AfterViewInit, OnChanges, OnDestroy {
   protected readonly apiError = signal('');
   protected readonly inventoryItems = signal<InventoryItemRow[]>([]);
   protected readonly selectedItem = signal<InventoryItemRow | null>(null);
+  protected readonly showCreateItemForm = signal(false);
+  protected readonly creatingItem = signal(false);
+  protected readonly createItemError = signal('');
   protected readonly hasLoadedItems = signal(false);
   protected readonly currentItemsPage = signal(0);
   protected readonly itemsPageSize = signal(0);
   protected readonly hasMoreItems = signal(false);
   protected readonly isInventoryLoading = computed(() => this.apiLoading() || this.loadingMore());
+
+  protected readonly createItemForm = {
+    sku: '',
+    name: '',
+    quantityAvailable: 0,
+  };
 
   ngAfterViewInit(): void {
     this.viewReady = true;
@@ -83,6 +92,60 @@ export class InventoryPage implements AfterViewInit, OnChanges, OnDestroy {
 
   protected isSelectedItem(item: InventoryItemRow): boolean {
     return item.sku !== undefined && this.selectedItem()?.sku === item.sku;
+  }
+
+  protected inputValue(event: Event): string {
+    return event.target instanceof HTMLInputElement
+      ? event.target.value
+      : '';
+  }
+
+  protected inputNumberValue(event: Event): number {
+    const value = this.inputValue(event);
+    return value === '' ? 0 : Number(value);
+  }
+
+  protected toggleCreateItemForm(): void {
+    this.showCreateItemForm.update((value) => !value);
+    this.createItemError.set('');
+  }
+
+  protected cancelCreateItem(): void {
+    this.showCreateItemForm.set(false);
+    this.createItemError.set('');
+    this.resetCreateItemForm();
+  }
+
+  protected async submitCreateItem(): Promise<void> {
+    if (this.creatingItem()) {
+      return;
+    }
+
+    const request = this.toCreateItemRequest();
+    if (!request) {
+      return;
+    }
+
+    this.creatingItem.set(true);
+    this.createItemError.set('');
+
+    try {
+      const body = await this.inventoryApi.createInventoryItem(request, await this.accessTokenFactory());
+      const createdItem = this.extractInventoryItems([this.parseBody(body)])[0] ?? null;
+
+      this.showCreateItemForm.set(false);
+      this.resetCreateItemForm();
+      await this.loadInventoryPage(1, { reset: true });
+
+      if (createdItem?.sku) {
+        const listItem = this.inventoryItems().find((item) => item.sku === createdItem.sku) ?? createdItem;
+        this.selectItem(listItem);
+      }
+    } catch (error) {
+      this.createItemError.set(this.formatError(error, 'Create inventory item failed.'));
+    } finally {
+      this.creatingItem.set(false);
+    }
   }
 
   private async loadInventoryPage(pageNumber: number, options: { reset: boolean }): Promise<void> {
@@ -148,6 +211,58 @@ export class InventoryPage implements AfterViewInit, OnChanges, OnDestroy {
     } catch {
       return body;
     }
+  }
+
+  private toCreateItemRequest(): CreateInventoryItemRequest | null {
+    if (!this.createItemForm.sku.trim() || !this.createItemForm.name.trim()) {
+      this.createItemError.set('SKU and name are required.');
+      return null;
+    }
+
+    if (!Number.isFinite(this.createItemForm.quantityAvailable) || this.createItemForm.quantityAvailable < 0) {
+      this.createItemError.set('Quantity available must be greater than or equal to 0.');
+      return null;
+    }
+
+    return {
+      sku: this.createItemForm.sku.trim(),
+      name: this.createItemForm.name.trim(),
+      quantityAvailable: this.createItemForm.quantityAvailable,
+    };
+  }
+
+  private resetCreateItemForm(): void {
+    this.createItemForm.sku = '';
+    this.createItemForm.name = '';
+    this.createItemForm.quantityAvailable = 0;
+  }
+
+  private formatError(error: unknown, fallback: string): string {
+    if (!(error instanceof Error)) {
+      return fallback;
+    }
+
+    const problem = this.tryExtractProblemDetails(error.message);
+    return problem ?? error.message;
+  }
+
+  private tryExtractProblemDetails(message: string): string | null {
+    const jsonStart = message.indexOf('{');
+    if (jsonStart < 0) {
+      return null;
+    }
+
+    const parsed = this.parseBody(message.substring(jsonStart));
+    const record = this.asRecord(parsed);
+    const errors = this.asRecord(record['errors']);
+    const details = Object.entries(errors)
+      .flatMap(([field, value]) =>
+        Array.isArray(value)
+          ? value.map((item) => `${field}: ${String(item)}`)
+          : []
+      );
+
+    return details.length > 0 ? details.join('\n') : null;
   }
 
   private extractInventoryItems(payload: unknown[]): InventoryItemRow[] {

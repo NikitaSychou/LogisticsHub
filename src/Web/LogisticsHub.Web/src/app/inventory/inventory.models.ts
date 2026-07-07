@@ -11,3 +11,9 @@ export interface PagedResponse<T> {
   pageSize: number;
   hasMore: boolean;
 }
+
+export interface CreateInventoryItemRequest {
+  sku: string;
+  name: string;
+  quantityAvailable: number;
+}
