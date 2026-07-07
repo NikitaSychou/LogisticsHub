@@ -56,6 +56,21 @@ public sealed class FakeCompanyDbContext : ICompanyDbContext
         return Task.FromResult<IReadOnlyList<Company>>(Companies.ToArray());
     }
 
+    public Task<IReadOnlyList<Company>> ListCompaniesPageAsync(
+        int pageNumber,
+        int pageSize,
+        CancellationToken cancellationToken = default)
+    {
+        var companies = Companies
+            .OrderBy(company => company.Name)
+            .ThenBy(company => company.Id)
+            .Skip((pageNumber - 1) * pageSize)
+            .Take(pageSize + 1)
+            .ToArray();
+
+        return Task.FromResult<IReadOnlyList<Company>>(companies);
+    }
+
     public Task<bool> CompanyExistsAsync(Guid id, CancellationToken cancellationToken = default)
     {
         return Task.FromResult(Companies.Any(company => company.Id == id));

@@ -1,6 +1,7 @@
 using LogisticsHub.CompanyService.Application.Companies.Addresses.ListCompanyAddresses;
 using LogisticsHub.CompanyService.Application.Companies.Addresses.CreateCompanyAddress;
 using LogisticsHub.CompanyService.Application.Companies.Company.UpdateCompany;
+using LogisticsHub.CompanyService.Application.Companies.Company.ListCompaniesPage;
 using LogisticsHub.CompanyService.Application.Companies.Company.ListCompanies;
 using LogisticsHub.CompanyService.Application.Companies.Company.GetCompany;
 using LogisticsHub.CompanyService.Application.Companies.Company.CreateCompany;
@@ -153,6 +154,45 @@ public sealed class CompanyHandlerTests
         Assert.Equal(2, result.Count);
         Assert.Contains(result, company => company.ExternalCode == "ACME");
         Assert.Contains(result, company => company.ExternalCode == "BETA");
+    }
+
+    [Fact]
+    public async Task ListCompaniesPage_WhenMoreRowsExist_ReturnsPageWithHasMore()
+    {
+        var dbContext = new FakeCompanyDbContext();
+        dbContext.Companies.Add(CreateCompany("Charlie", "CHARLIE"));
+        dbContext.Companies.Add(CreateCompany("Acme", "ACME"));
+        dbContext.Companies.Add(CreateCompany("Beta", "BETA"));
+        var handler = new ListCompaniesPage(dbContext);
+
+        var result = await handler.Handle(new ListCompaniesPageQuery(PageNumber: 1, PageSize: 2), CancellationToken.None);
+
+        Assert.Equal(1, result.PageNumber);
+        Assert.Equal(2, result.PageSize);
+        Assert.True(result.HasMore);
+        Assert.Equal(2, result.Items.Count);
+        Assert.Collection(
+            result.Items,
+            company => Assert.Equal("ACME", company.ExternalCode),
+            company => Assert.Equal("BETA", company.ExternalCode));
+    }
+
+    [Fact]
+    public async Task ListCompaniesPage_WhenFinalPage_ReturnsHasMoreFalse()
+    {
+        var dbContext = new FakeCompanyDbContext();
+        dbContext.Companies.Add(CreateCompany("Acme", "ACME"));
+        dbContext.Companies.Add(CreateCompany("Beta", "BETA"));
+        dbContext.Companies.Add(CreateCompany("Charlie", "CHARLIE"));
+        var handler = new ListCompaniesPage(dbContext);
+
+        var result = await handler.Handle(new ListCompaniesPageQuery(PageNumber: 2, PageSize: 2), CancellationToken.None);
+
+        Assert.Equal(2, result.PageNumber);
+        Assert.Equal(2, result.PageSize);
+        Assert.False(result.HasMore);
+        var company = Assert.Single(result.Items);
+        Assert.Equal("CHARLIE", company.ExternalCode);
     }
 
     [Fact]
