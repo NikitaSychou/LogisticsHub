@@ -1,0 +1,151 @@
+<div class="d-flex flex-wrap align-items-start justify-content-between gap-3 mb-4">
+  <div>
+    <h1 class="h3 mb-1">Companies</h1>
+    <p class="text-secondary mb-0">
+      Load company master data through the Gateway using the signed-in user's access token.
+    </p>
+  </div>
+
+  <button
+    *ngIf="apiError() && !hasLoadedCompanies()"
+    type="button"
+    class="btn btn-outline-primary"
+    (click)="loadCompanies()"
+    [disabled]="isCompaniesLoading()">
+    {{ apiLoading() ? 'Retrying...' : 'Retry' }}
+  </button>
+</div>
+
+<div class="alert alert-danger" *ngIf="apiError()">{{ apiError() }}</div>
+
+<div class="row g-3">
+  <div class="col-12 col-xl-8">
+    <div class="card shadow-sm">
+      <div class="card-body">
+        <div class="table-responsive" *ngIf="companies().length > 0; else emptyCompanies">
+          <table class="table table-hover align-middle mb-0">
+            <thead>
+              <tr>
+                <th scope="col">Name</th>
+                <th scope="col">External code</th>
+                <th scope="col">Status</th>
+                <th scope="col">ID</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr
+                *ngFor="let company of companies()"
+                class="company-row"
+                [class.table-active]="isSelectedCompany(company)"
+                (click)="selectCompany(company)">
+                <td class="fw-semibold">{{ company.name || 'Unnamed company' }}</td>
+                <td>{{ company.externalCode || '-' }}</td>
+                <td>
+                  <span class="badge text-bg-light border">{{ company.status || 'Unknown' }}</span>
+                </td>
+                <td><code>{{ company.id || '-' }}</code></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <ng-template #emptyCompanies>
+          <div class="empty-state text-center py-5">
+            <h2 class="h5">No companies loaded</h2>
+            <p class="text-secondary mb-0" *ngIf="!hasLoadedCompanies() && apiLoading()">
+              Loading companies...
+            </p>
+            <p class="text-secondary mb-0" *ngIf="!hasLoadedCompanies() && !apiLoading() && !apiError()">
+              Companies will appear here when they are loaded.
+            </p>
+            <p class="text-secondary mb-0" *ngIf="hasLoadedCompanies()">
+              The response did not contain any company rows.
+            </p>
+          </div>
+        </ng-template>
+      </div>
+    </div>
+  </div>
+
+  <aside class="col-12 col-xl-4">
+    <div class="card shadow-sm details-panel">
+      <div class="card-body" *ngIf="selectedCompany(); else noCompanySelected">
+        <div class="d-flex justify-content-between align-items-start gap-3 mb-3">
+          <div>
+            <h2 class="h5 mb-1">{{ selectedCompany()?.name || 'Unnamed company' }}</h2>
+            <div class="text-secondary small">{{ selectedCompany()?.externalCode || 'No external code' }}</div>
+          </div>
+          <span class="badge text-bg-light border">{{ selectedCompany()?.status || 'Unknown' }}</span>
+        </div>
+
+        <dl class="details-list">
+          <dt>ID</dt>
+          <dd><code>{{ selectedCompany()?.id || '-' }}</code></dd>
+          <dt>Created</dt>
+          <dd>{{ selectedCompany()?.createdAtUtc || '-' }}</dd>
+          <dt>Updated</dt>
+          <dd>{{ selectedCompany()?.updatedAtUtc || '-' }}</dd>
+        </dl>
+
+        <hr>
+
+        <h3 class="h6 mb-3">Addresses</h3>
+        <div class="text-secondary small" *ngIf="addressesLoading()">Loading addresses...</div>
+        <div class="alert alert-warning py-2" *ngIf="addressError()">{{ addressError() }}</div>
+
+        <div *ngIf="!addressesLoading() && addressesLoaded() && companyAddresses().length === 0" class="text-secondary small">
+          No addresses found.
+        </div>
+
+        <div class="vstack gap-2" *ngIf="companyAddresses().length > 0">
+          <div class="border rounded p-3" *ngFor="let address of companyAddresses()">
+            <div class="d-flex justify-content-between gap-2">
+              <strong>{{ address.addressType || 'Address' }}</strong>
+              <span class="badge text-bg-light border">{{ address.countryCode || '-' }}</span>
+            </div>
+            <div>{{ address.line1 || '-' }}</div>
+            <div class="text-secondary small" *ngIf="address.line2">{{ address.line2 }}</div>
+            <div class="text-secondary small">
+              {{ address.city || '-' }}<span *ngIf="address.postalCode">, {{ address.postalCode }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <ng-template #noCompanySelected>
+        <div class="card-body text-center text-secondary py-5">
+          Select a company to view details.
+        </div>
+      </ng-template>
+    </div>
+  </aside>
+</div>
+
+<div
+  #companiesScrollSentinel
+  class="companies-scroll-sentinel"
+  aria-hidden="true">
+</div>
+
+<div class="d-flex flex-column align-items-center gap-2 py-3" *ngIf="hasLoadedCompanies() && companies().length > 0">
+  <button
+    type="button"
+    class="btn btn-outline-primary"
+    (click)="loadMoreCompanies()"
+    [disabled]="isCompaniesLoading()"
+    *ngIf="hasMoreCompanies()">
+    {{ loadingMore() ? 'Loading more...' : 'Load more' }}
+  </button>
+  <div class="small text-secondary" *ngIf="loadingMore()">Loading more...</div>
+  <div class="small text-secondary" *ngIf="!hasMoreCompanies()">All companies loaded.</div>
+  <div class="small text-secondary" *ngIf="currentCompaniesPage() > 0">
+    Page {{ currentCompaniesPage() }} loaded<span *ngIf="companiesPageSize() > 0">, {{ companiesPageSize() }} per page</span>.
+  </div>
+</div>
+
+<div class="card mt-3" *ngIf="apiResult()">
+  <div class="card-header bg-white">Debug response</div>
+  <div class="card-body">
+    <pre class="debug-json mb-0">{{ apiResult() }}</pre>
+  </div>
+</div>
