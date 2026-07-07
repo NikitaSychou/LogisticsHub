@@ -29,7 +29,32 @@ Create a local root `.env` file before running Compose. The file is ignored by G
 - `AZUREAD_CLIENT_ID`
 - `AZUREAD_AUDIENCE`
 
-For `dotnet run`, provide `AzureAd:Instance`, `AzureAd:TenantId`, `AzureAd:ClientId`, and `AzureAd:Audience` through User Secrets or environment variables. The checked-in appsettings leave these values empty so services fail fast until real Microsoft Entra ID settings are supplied.
+The checked-in `AzureAd` appsettings values are intentionally empty. For `dotnet run`, provide the backend auth settings through .NET User Secrets or environment variables:
+
+- `AzureAd:Instance` = `https://login.microsoftonline.com`
+- `AzureAd:TenantId` = `<tenant-id>`
+- `AzureAd:ClientId` = `<api-app-client-id>`
+- `AzureAd:Audience` = `<api-app-client-id>`
+
+For the current Microsoft Entra ID v2 token setup, `AzureAd:Audience` and `AZUREAD_AUDIENCE` must be the API application client ID without the `api://` prefix. Do not use the full scope as the audience. Request tokens with this scope:
+
+```text
+api://<api-app-client-id>/access_as_user
+```
+
+The API app registration manifest must set `api.requestedAccessTokenVersion` to `2` so access tokens use the v2 issuer expected by the backend.
+
+Docker Compose reads the same auth settings from `AZUREAD_INSTANCE`, `AZUREAD_TENANT_ID`, `AZUREAD_CLIENT_ID`, and `AZUREAD_AUDIENCE` in the local `.env` file.
+
+Quick checks:
+
+```powershell
+curl -i http://localhost:5100/health
+curl -i http://localhost:5100/company/companies
+curl -i -H "Authorization: Bearer <access-token>" http://localhost:5100/company/companies
+```
+
+Health should return `200` without a token. A protected API call without a token should return `401`. With a Bearer token, the protected call should return `200` or another non-`401` application response.
 
 The local appsettings used by `dotnet run` still point to local SQL Server databases:
 
