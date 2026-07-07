@@ -29,6 +29,20 @@ public sealed class FakeInventoryDbContext : IInventoryDbContext
         return Task.FromResult<IReadOnlyList<Item>>(results);
     }
 
+    public Task<IReadOnlyList<Item>> ListItemsPageAsync(
+        int pageNumber,
+        int pageSize,
+        CancellationToken cancellationToken = default)
+    {
+        var results = Items
+            .OrderBy(item => item.Sku)
+            .Skip((pageNumber - 1) * pageSize)
+            .Take(pageSize + 1)
+            .ToArray();
+
+        return Task.FromResult<IReadOnlyList<Item>>(results);
+    }
+
     public Task<StockReservation?> GetStockReservationByIdAsync(
         Guid id,
         CancellationToken cancellationToken = default)

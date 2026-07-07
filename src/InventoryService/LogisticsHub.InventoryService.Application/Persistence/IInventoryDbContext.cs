@@ -10,6 +10,11 @@ public interface IInventoryDbContext
         IReadOnlyCollection<string> skus,
         CancellationToken cancellationToken = default);
 
+    Task<IReadOnlyList<Item>> ListItemsPageAsync(
+        int pageNumber,
+        int pageSize,
+        CancellationToken cancellationToken = default);
+
     Task<StockReservation?> GetStockReservationByIdAsync(
         Guid id,
         CancellationToken cancellationToken = default);

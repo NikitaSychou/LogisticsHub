@@ -7,6 +7,7 @@ using LogisticsHub.InventoryService.Infrastructure.DependencyInjection;
 using LogisticsHub.InventoryService.Outbox;
 using LogisticsHub.InventoryService.Validation;
 using LogisticsHub.Messaging.RabbitMQ;
+using LogisticsHub.Results;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.Localization;
 using System.Globalization;
@@ -26,6 +27,7 @@ builder.Services
     .AddRabbitMqHealthCheck();
 builder.Services.AddOpenApi(options => options.AddOpenApiSecurity(builder.Configuration));
 builder.Services.AddApiAuthentication(builder.Configuration);
+builder.Services.Configure<PaginationOptions>(builder.Configuration.GetSection("Pagination"));
 builder.Services.AddLocalization(options =>
 {
     options.ResourcesPath = "Resources";

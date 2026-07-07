@@ -37,6 +37,20 @@ public class InventoryDbContext : DbContext, IInventoryDbContext
             .ToListAsync(cancellationToken);
     }
 
+    public async Task<IReadOnlyList<Item>> ListItemsPageAsync(
+        int pageNumber,
+        int pageSize,
+        CancellationToken cancellationToken = default)
+    {
+        return await Items
+            .AsNoTracking()
+            .Include(item => item.StockBalance)
+            .OrderBy(item => item.Sku)
+            .Skip((pageNumber - 1) * pageSize)
+            .Take(pageSize + 1)
+            .ToListAsync(cancellationToken);
+    }
+
     public async Task<StockReservation?> GetStockReservationByIdAsync(
         Guid id,
         CancellationToken cancellationToken = default)
