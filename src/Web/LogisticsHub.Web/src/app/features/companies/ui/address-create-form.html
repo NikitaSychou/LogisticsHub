@@ -1,0 +1,95 @@
+<div class="border rounded p-3 mb-3">
+  <div class="d-flex justify-content-between align-items-start gap-3 mb-3">
+    <div>
+      <h4 class="h6 mb-1">Add address</h4>
+      <div class="text-secondary small">Add an address to the selected company.</div>
+    </div>
+    <button type="button" class="btn-close" aria-label="Close" (click)="cancel.emit()"></button>
+  </div>
+
+  <div class="alert alert-danger validation-alert" *ngIf="error">{{ error }}</div>
+
+  <form class="row g-2" (ngSubmit)="submitForm.emit()">
+    <div class="col-12 col-md-6">
+      <label for="addressType" class="form-label">Type</label>
+      <select
+        id="addressType"
+        name="addressType"
+        class="form-select"
+        [value]="form.addressType"
+        (change)="form.addressType = inputValue($event)"
+        required>
+        <option value="Legal">Legal</option>
+        <option value="Billing">Billing</option>
+        <option value="Shipping">Shipping</option>
+        <option value="Warehouse">Warehouse</option>
+      </select>
+    </div>
+    <div class="col-12 col-md-6">
+      <label for="countryCode" class="form-label">Country code</label>
+      <input
+        id="countryCode"
+        name="countryCode"
+        type="text"
+        class="form-control"
+        [value]="form.countryCode"
+        (input)="form.countryCode = inputValue($event)"
+        required
+        maxlength="2">
+    </div>
+    <div class="col-12">
+      <label for="line1" class="form-label">Line 1</label>
+      <input
+        id="line1"
+        name="line1"
+        type="text"
+        class="form-control"
+        [value]="form.line1"
+        (input)="form.line1 = inputValue($event)"
+        required
+        maxlength="200">
+    </div>
+    <div class="col-12">
+      <label for="line2" class="form-label">Line 2</label>
+      <input
+        id="line2"
+        name="line2"
+        type="text"
+        class="form-control"
+        [value]="form.line2"
+        (input)="form.line2 = inputValue($event)"
+        maxlength="200">
+    </div>
+    <div class="col-12 col-md-7">
+      <label for="city" class="form-label">City</label>
+      <input
+        id="city"
+        name="city"
+        type="text"
+        class="form-control"
+        [value]="form.city"
+        (input)="form.city = inputValue($event)"
+        required
+        maxlength="100">
+    </div>
+    <div class="col-12 col-md-5">
+      <label for="postalCode" class="form-label">Postal code</label>
+      <input
+        id="postalCode"
+        name="postalCode"
+        type="text"
+        class="form-control"
+        [value]="form.postalCode"
+        (input)="form.postalCode = inputValue($event)"
+        maxlength="32">
+    </div>
+    <div class="col-12 d-flex gap-2 mt-3">
+      <button type="submit" class="btn btn-primary btn-sm" [disabled]="creating">
+        {{ creating ? 'Adding...' : 'Add address' }}
+      </button>
+      <button type="button" class="btn btn-outline-secondary btn-sm" (click)="cancel.emit()" [disabled]="creating">
+        Cancel
+      </button>
+    </div>
+  </form>
+</div>

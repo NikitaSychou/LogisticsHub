@@ -20,10 +20,13 @@ import {
   CreateStockAdjustmentRequest,
   InventoryItemRow,
 } from './inventory.models';
+import { InventoryCreateForm } from './ui/inventory-create-form';
+import { InventoryDetails } from './ui/inventory-details';
+import { InventoryList } from './ui/inventory-list';
 
 @Component({
   selector: 'app-inventory-page',
-  imports: [CommonModule],
+  imports: [CommonModule, InventoryCreateForm, InventoryDetails, InventoryList],
   templateUrl: './inventory-page.html',
   styleUrl: './inventory-page.css',
 })
@@ -102,21 +105,6 @@ export class InventoryPage implements AfterViewInit, OnChanges, OnDestroy {
     this.selectedItem.set(item);
     this.stockAdjustmentError.set('');
     this.resetStockAdjustmentForm();
-  }
-
-  protected isSelectedItem(item: InventoryItemRow): boolean {
-    return item.sku !== undefined && this.selectedItem()?.sku === item.sku;
-  }
-
-  protected inputValue(event: Event): string {
-    return event.target instanceof HTMLInputElement
-      ? event.target.value
-      : '';
-  }
-
-  protected inputNumberValue(event: Event): number {
-    const value = this.inputValue(event);
-    return value === '' ? 0 : Number(value);
   }
 
   protected toggleCreateItemForm(): void {

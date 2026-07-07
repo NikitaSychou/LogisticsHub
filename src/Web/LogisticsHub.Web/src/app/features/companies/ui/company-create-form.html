@@ -1,0 +1,60 @@
+<div class="card shadow-sm mb-3">
+  <div class="card-body">
+    <div class="d-flex justify-content-between align-items-start gap-3 mb-3">
+      <div>
+        <h2 class="h5 mb-1">New company</h2>
+        <p class="text-secondary small mb-0">Create a customer company record.</p>
+      </div>
+      <button type="button" class="btn-close" aria-label="Close" (click)="cancel.emit()"></button>
+    </div>
+
+    <div class="alert alert-danger validation-alert" *ngIf="error">{{ error }}</div>
+
+    <form class="row g-3" (ngSubmit)="submitForm.emit()">
+      <div class="col-12 col-lg-5">
+        <label for="companyName" class="form-label">Name</label>
+        <input
+          id="companyName"
+          name="companyName"
+          type="text"
+          class="form-control"
+          [value]="form.name"
+          (input)="form.name = inputValue($event)"
+          required
+          maxlength="200">
+      </div>
+      <div class="col-12 col-lg-4">
+        <label for="companyExternalCode" class="form-label">External code</label>
+        <input
+          id="companyExternalCode"
+          name="companyExternalCode"
+          type="text"
+          class="form-control"
+          [value]="form.externalCode"
+          (input)="form.externalCode = inputValue($event)"
+          maxlength="64">
+      </div>
+      <div class="col-12 col-lg-3">
+        <label for="companyStatus" class="form-label">Status</label>
+        <select
+          id="companyStatus"
+          name="companyStatus"
+          class="form-select"
+          [value]="form.status"
+          (change)="form.status = inputValue($event)"
+          required>
+          <option value="Active">Active</option>
+          <option value="Inactive">Inactive</option>
+        </select>
+      </div>
+      <div class="col-12 d-flex gap-2">
+        <button type="submit" class="btn btn-primary" [disabled]="creating">
+          {{ creating ? 'Creating...' : 'Create company' }}
+        </button>
+        <button type="button" class="btn btn-outline-secondary" (click)="cancel.emit()" [disabled]="creating">
+          Cancel
+        </button>
+      </div>
+    </form>
+  </div>
+</div>

@@ -1,0 +1,17 @@
+.details-list {
+  display: grid;
+  grid-template-columns: minmax(140px, max-content) 1fr;
+  gap: 0.5rem 1rem;
+  margin: 0;
+}
+
+.details-list dt {
+  color: #64748b;
+  font-weight: 600;
+}
+
+.details-list dd {
+  margin: 0;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}

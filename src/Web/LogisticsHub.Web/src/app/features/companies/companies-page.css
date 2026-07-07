@@ -1,46 +1,7 @@
-.empty-state {
-  min-height: 180px;
-}
-
-.company-row {
-  cursor: pointer;
-}
-
-.company-row.table-active {
-  --bs-table-bg-state: #eaf2ff;
-}
-
-.details-panel {
-  position: sticky;
-  top: 1rem;
-}
-
-.details-list {
-  display: grid;
-  grid-template-columns: minmax(80px, max-content) 1fr;
-  gap: 0.5rem 1rem;
-  margin: 0;
-}
-
-.details-list dt {
-  color: #64748b;
-  font-weight: 600;
-}
-
-.details-list dd {
-  margin: 0;
-  min-width: 0;
-  overflow-wrap: anywhere;
-}
-
 .debug-json {
   max-height: 280px;
   overflow: auto;
   font-size: 0.875rem;
-}
-
-.validation-alert {
-  white-space: pre-line;
 }
 
 .companies-scroll-sentinel {

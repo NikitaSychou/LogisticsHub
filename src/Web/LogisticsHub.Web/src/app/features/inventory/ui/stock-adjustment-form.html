@@ -1,0 +1,34 @@
+<div class="border rounded p-3">
+  <div class="d-flex justify-content-between align-items-start gap-3 mb-3">
+    <div>
+      <h4 class="h6 mb-1">Increase stock</h4>
+      <div class="text-secondary small">Add available quantity to the selected inventory item.</div>
+    </div>
+    <button type="button" class="btn-close" aria-label="Close" (click)="cancel.emit()"></button>
+  </div>
+
+  <div class="alert alert-danger validation-alert" *ngIf="error">{{ error }}</div>
+
+  <form class="row g-2" (ngSubmit)="submitForm.emit()">
+    <div class="col-12">
+      <label for="stockAdjustmentQuantity" class="form-label">Quantity</label>
+      <input
+        id="stockAdjustmentQuantity"
+        name="stockAdjustmentQuantity"
+        type="number"
+        class="form-control"
+        [value]="form.quantity"
+        (input)="form.quantity = inputNumberValue($event)"
+        min="1"
+        required>
+    </div>
+    <div class="col-12 d-flex gap-2 mt-3">
+      <button type="submit" class="btn btn-primary btn-sm" [disabled]="adjusting">
+        {{ adjusting ? 'Increasing...' : 'Increase stock' }}
+      </button>
+      <button type="button" class="btn btn-outline-secondary btn-sm" (click)="cancel.emit()" [disabled]="adjusting">
+        Cancel
+      </button>
+    </div>
+  </form>
+</div>

@@ -1,0 +1,27 @@
+<div class="card shadow-sm mt-3">
+  <div class="card-body">
+    <h2 class="h5 mb-1">Read shipment</h2>
+    <p class="text-secondary small mb-3">Load a shipment by ID.</p>
+
+    <div class="alert alert-danger validation-alert" *ngIf="error">{{ error }}</div>
+
+    <form class="row g-2 align-items-end" (ngSubmit)="loadShipment.emit()">
+      <div class="col-12 col-md-9">
+        <label for="shipmentIdToLoad" class="form-label">Shipment ID</label>
+        <input
+          id="shipmentIdToLoad"
+          name="shipmentIdToLoad"
+          type="text"
+          class="form-control"
+          [value]="shipmentId"
+          (input)="shipmentIdChange.emit(inputValue($event))"
+          required>
+      </div>
+      <div class="col-12 col-md-3">
+        <button type="submit" class="btn btn-outline-primary w-100" [disabled]="loading">
+          {{ loading ? 'Loading...' : 'Load' }}
+        </button>
+      </div>
+    </form>
+  </div>
+</div>

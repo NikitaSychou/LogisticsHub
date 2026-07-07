@@ -1,0 +1,41 @@
+<div class="card shadow-sm">
+  <div class="card-body">
+    <div class="table-responsive" *ngIf="items.length > 0; else emptyInventory">
+      <table class="table table-hover align-middle mb-0">
+        <thead>
+          <tr>
+            <th scope="col">SKU</th>
+            <th scope="col">Name</th>
+            <th scope="col" class="text-end">Available</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr
+            *ngFor="let item of items"
+            class="inventory-row"
+            [class.table-active]="isSelectedItem(item)"
+            (click)="itemSelected.emit(item)">
+            <td class="fw-semibold"><code>{{ item.sku || '-' }}</code></td>
+            <td>{{ item.name || 'Unnamed item' }}</td>
+            <td class="text-end">{{ item.quantityAvailable ?? '-' }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <ng-template #emptyInventory>
+      <div class="empty-state text-center py-5">
+        <h2 class="h5">No inventory items loaded</h2>
+        <p class="text-secondary mb-0" *ngIf="!hasLoadedItems && apiLoading">
+          Loading inventory items...
+        </p>
+        <p class="text-secondary mb-0" *ngIf="!hasLoadedItems && !apiLoading && !apiError">
+          Inventory items will appear here when they are loaded.
+        </p>
+        <p class="text-secondary mb-0" *ngIf="hasLoadedItems">
+          The response did not contain any inventory item rows.
+        </p>
+      </div>
+    </ng-template>
+  </div>
+</div>
