@@ -26,3 +26,18 @@ export interface PagedResponse<T> {
   pageSize: number;
   hasMore: boolean;
 }
+
+export interface CreateCompanyRequest {
+  name: string;
+  externalCode: string | null;
+  status: string;
+}
+
+export interface CreateCompanyAddressRequest {
+  addressType: string;
+  countryCode: string;
+  city: string;
+  postalCode: string | null;
+  line1: string;
+  line2: string | null;
+}

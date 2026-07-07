@@ -39,6 +39,10 @@
   font-size: 0.875rem;
 }
 
+.validation-alert {
+  white-space: pre-line;
+}
+
 .companies-scroll-sentinel {
   height: 1px;
 }

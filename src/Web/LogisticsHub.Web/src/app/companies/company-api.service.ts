@@ -1,5 +1,6 @@
 import { Injectable } from '@angular/core';
 import { environment } from '../../environments/environment';
+import { CreateCompanyAddressRequest, CreateCompanyRequest } from './company.models';
 
 @Injectable({ providedIn: 'root' })
 export class CompanyApiService {
@@ -24,6 +25,39 @@ export class CompanyApiService {
     );
 
     return this.readResponse(response, 'Address load');
+  }
+
+  async createCompany(request: CreateCompanyRequest, accessToken: string): Promise<string> {
+    const response = await fetch(`${environment.api.gatewayBaseUrl}/company/companies`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(request),
+    });
+
+    return this.readResponse(response, 'Create company');
+  }
+
+  async createCompanyAddress(
+    companyId: string,
+    request: CreateCompanyAddressRequest,
+    accessToken: string
+  ): Promise<string> {
+    const response = await fetch(
+      `${environment.api.gatewayBaseUrl}/company/companies/${companyId}/addresses`,
+      {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(request),
+      }
+    );
+
+    return this.readResponse(response, 'Create address');
   }
 
   private async readResponse(response: Response, label: string): Promise<string> {
