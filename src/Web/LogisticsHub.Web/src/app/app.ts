@@ -7,7 +7,6 @@ import {
 import { environment } from '../environments/environment';
 import { loginRequest, msalConfig, tokenRequest } from './auth-config';
 import { AppShell } from './core/layout/app-shell';
-import { AppPage } from './core/navigation/navigation-item.model';
 import { navigationItems } from './core/navigation/navigation-items';
 
 @Component({
@@ -21,7 +20,6 @@ export class App implements OnInit {
 
   protected readonly account = signal<AccountInfo | null>(null);
   protected readonly loading = signal(true);
-  protected readonly activePage = signal<AppPage>('companies');
   protected readonly navigationItems = navigationItems;
   protected readonly isSignedIn = computed(() => this.account() !== null);
   protected readonly signedInName = computed(() => this.account()?.name ?? this.account()?.username ?? '');
@@ -61,10 +59,6 @@ export class App implements OnInit {
       account: this.account(),
       postLogoutRedirectUri: environment.msal.redirectUri,
     });
-  }
-
-  protected showPage(page: AppPage): void {
-    this.activePage.set(page);
   }
 
   private async acquireAccessToken(account: AccountInfo): Promise<string> {

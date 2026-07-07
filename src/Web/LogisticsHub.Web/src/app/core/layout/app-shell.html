@@ -28,37 +28,18 @@
     <div class="row g-4">
       <aside class="col-12 col-lg-2">
         <div class="sidebar-nav nav nav-pills flex-lg-column gap-2">
-          <button
+          <a
             *ngFor="let item of navigationItems"
-            type="button"
             class="nav-link text-start"
-            [class.active]="activePage === item.id"
-            (click)="pageSelected.emit(item.id)">
+            [routerLink]="item.path"
+            routerLinkActive="active">
             {{ item.label }}
-          </button>
+          </a>
         </div>
       </aside>
 
       <section class="col-12 col-lg-10">
-        <app-companies-page
-          *ngIf="activePage === 'companies'"
-          [account]="account"
-          [active]="activePage === 'companies'"
-          [accessTokenFactory]="accessTokenFactory">
-        </app-companies-page>
-
-        <app-inventory-page
-          *ngIf="activePage === 'inventory'"
-          [account]="account"
-          [active]="activePage === 'inventory'"
-          [accessTokenFactory]="accessTokenFactory">
-        </app-inventory-page>
-
-        <app-shipments-page
-          *ngIf="activePage === 'shipments'"
-          [account]="account"
-          [accessTokenFactory]="accessTokenFactory">
-        </app-shipments-page>
+        <router-outlet (activate)="configureFeaturePage($event)"></router-outlet>
       </section>
     </div>
   </div>
