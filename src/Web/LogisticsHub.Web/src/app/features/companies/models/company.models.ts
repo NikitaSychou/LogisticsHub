@@ -1,3 +1,5 @@
+import { PagedResponse } from '../../../shared/models/paged-response';
+
 export interface CompanyRow {
   id?: string;
   externalCode?: string;
@@ -6,6 +8,10 @@ export interface CompanyRow {
   createdAtUtc?: string;
   updatedAtUtc?: string;
   raw: unknown;
+}
+
+export interface CompanyPageResult extends PagedResponse<CompanyRow> {
+  debugResponse: string;
 }
 
 export interface CompanyAddressRow {

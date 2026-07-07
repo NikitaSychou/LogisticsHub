@@ -69,8 +69,7 @@ export class ShipmentsPage implements OnDestroy {
     this.createShipmentError.set('');
 
     try {
-      const body = await this.shipmentApi.createShipment(request);
-      const shipment = this.toShipmentRow(this.parseBody(body));
+      const shipment = await this.shipmentApi.createShipment(request);
       this.createdShipment.set(shipment);
       this.loadedShipment.set(null);
       this.statusRefreshError.set('');
@@ -98,8 +97,7 @@ export class ShipmentsPage implements OnDestroy {
     this.loadShipmentError.set('');
 
     try {
-      const body = await this.shipmentApi.getShipment(shipmentId);
-      this.loadedShipment.set(this.toShipmentRow(this.parseBody(body)));
+      this.loadedShipment.set(await this.shipmentApi.getShipment(shipmentId));
       this.statusRefreshError.set('');
     } catch (error) {
       this.loadShipmentError.set(this.formatError(error, 'Shipment load failed.'));
@@ -136,8 +134,7 @@ export class ShipmentsPage implements OnDestroy {
     this.statusRefreshError.set('');
 
     try {
-      const body = await this.shipmentApi.getShipment(shipment.shipmentId);
-      const refreshedShipment = this.toShipmentRow(this.parseBody(body));
+      const refreshedShipment = await this.shipmentApi.getShipment(shipment.shipmentId);
 
       if (target === 'created') {
         this.createdShipment.set(refreshedShipment);
@@ -227,69 +224,7 @@ export class ShipmentsPage implements OnDestroy {
     this.autoRefreshTimer = undefined;
   }
 
-  private parseBody(body: string): unknown {
-    if (!body) {
-      return null;
-    }
-
-    try {
-      return JSON.parse(body);
-    } catch {
-      return body;
-    }
-  }
-
-  private toShipmentRow(payload: unknown): ShipmentRow {
-    const record = this.asRecord(payload);
-    const rawItems = Array.isArray(record['items']) ? record['items'] : [];
-
-    return {
-      shipmentId: this.stringValue(record, ['shipmentId', 'id']),
-      shipmentNumber: this.stringValue(record, ['shipmentNumber']),
-      status: this.stringValue(record, ['status']),
-      reservationId: this.stringValue(record, ['reservationId']),
-      reservationFailureReason: this.stringValue(record, ['reservationFailureReason']),
-      senderCompanyId: this.stringValue(record, ['senderCompanyId']),
-      senderAddressId: this.stringValue(record, ['senderAddressId']),
-      receiverCompanyId: this.stringValue(record, ['receiverCompanyId']),
-      receiverAddressId: this.stringValue(record, ['receiverAddressId']),
-      comment: this.stringValue(record, ['comment']),
-      createdAt: this.stringValue(record, ['createdAt']),
-      updatedAt: this.stringValue(record, ['updatedAt']),
-      dispatchedAt: this.stringValue(record, ['dispatchedAt']),
-      cancelledAt: this.stringValue(record, ['cancelledAt']),
-      items: rawItems.map((item) => {
-        const itemRecord = this.asRecord(item);
-        return {
-          sku: this.stringValue(itemRecord, ['sku']),
-          quantity: this.numberValue(itemRecord, 'quantity'),
-        };
-      }),
-      raw: payload,
-    };
-  }
-
   private formatError(error: unknown, fallback: string): string {
     return formatProblemError(error, fallback);
-  }
-
-  private asRecord(value: unknown): Record<string, unknown> {
-    return value !== null && typeof value === 'object' ? (value as Record<string, unknown>) : {};
-  }
-
-  private stringValue(record: Record<string, unknown>, keys: string[]): string | undefined {
-    for (const key of keys) {
-      const value = record[key];
-      if (typeof value === 'string' && value.trim().length > 0) {
-        return value;
-      }
-    }
-
-    return undefined;
-  }
-
-  private numberValue(record: Record<string, unknown>, key: string): number | undefined {
-    const value = record[key];
-    return typeof value === 'number' && Number.isFinite(value) ? value : undefined;
   }
 }

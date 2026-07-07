@@ -11,7 +11,6 @@ import {
 } from '@angular/core';
 import { ApiAuthContext } from '../../../../core/http/api-auth-context';
 import { formatProblemError } from '../../../../core/http/problem-error.mapper';
-import { PagedResponse } from '../../../../shared/models/paged-response';
 import { ErrorAlert } from '../../../../shared/ui/error-alert/error-alert';
 import { LoadMoreState } from '../../../../shared/ui/load-more-state/load-more-state';
 import { CompanyApiService } from '../../data-access/company-api.service';
@@ -146,8 +145,7 @@ export class CompaniesPage implements AfterViewInit, OnDestroy {
     this.createCompanyError.set('');
 
     try {
-      const body = await this.companyApi.createCompany(request);
-      const createdCompany = this.extractCompanies([this.parseBody(body)])[0] ?? null;
+      const createdCompany = await this.companyApi.createCompany(request);
 
       this.showCreateCompanyForm.set(false);
       this.resetCreateCompanyForm();
@@ -234,14 +232,12 @@ export class CompaniesPage implements AfterViewInit, OnDestroy {
     }
 
     try {
-      const body = await this.companyApi.getCompaniesPage(pageNumber);
-      const parsed = this.parseBody(body);
-      const page = this.toPagedCompanies(parsed, pageNumber);
+      const page = await this.companyApi.getCompaniesPage(pageNumber);
       this.companies.set(options.reset ? page.items : [...this.companies(), ...page.items]);
       this.currentCompaniesPage.set(page.pageNumber);
       this.companiesPageSize.set(page.pageSize);
       this.hasMoreCompanies.set(page.hasMore);
-      this.apiResult.set(this.formatResponse(parsed, body));
+      this.apiResult.set(page.debugResponse);
       this.hasLoadedCompanies.set(true);
     } catch (error) {
       this.apiError.set(error instanceof Error ? error.message : 'Gateway call failed.');
@@ -273,15 +269,13 @@ export class CompaniesPage implements AfterViewInit, OnDestroy {
     this.addressesLoading.set(true);
 
     try {
-      const body = await this.companyApi.getCompanyAddresses(company.id);
+      const addresses = await this.companyApi.getCompanyAddresses(company.id);
 
       if (requestVersion !== this.addressLoadVersion) {
         return;
       }
 
-      const parsed = this.parseBody(body);
-      const rows = Array.isArray(parsed) ? parsed : [];
-      this.companyAddresses.set(this.extractAddresses(rows));
+      this.companyAddresses.set(addresses);
       this.addressesLoaded.set(true);
     } catch (error) {
       if (requestVersion === this.addressLoadVersion) {
@@ -291,18 +285,6 @@ export class CompaniesPage implements AfterViewInit, OnDestroy {
       if (requestVersion === this.addressLoadVersion) {
         this.addressesLoading.set(false);
       }
-    }
-  }
-
-  private parseBody(body: string): unknown {
-    if (!body) {
-      return null;
-    }
-
-    try {
-      return JSON.parse(body);
-    } catch {
-      return body;
     }
   }
 
@@ -362,85 +344,6 @@ export class CompaniesPage implements AfterViewInit, OnDestroy {
 
   private formatError(error: unknown, fallback: string): string {
     return formatProblemError(error, fallback);
-  }
-
-  private formatResponse(parsed: unknown, rawBody: string): string {
-    if (!rawBody) {
-      return '(empty response)';
-    }
-
-    return typeof parsed === 'string' ? parsed : JSON.stringify(parsed, null, 2);
-  }
-
-  private extractCompanies(payload: unknown[]): CompanyRow[] {
-    return payload.map((item) => {
-      const record = this.asRecord(item);
-
-      return {
-        id: this.stringValue(record, ['id', 'companyId']),
-        externalCode: this.stringValue(record, ['externalCode', 'code']),
-        name: this.stringValue(record, ['name', 'companyName']),
-        status: this.stringValue(record, ['status']),
-        createdAtUtc: this.stringValue(record, ['createdAtUtc']),
-        updatedAtUtc: this.stringValue(record, ['updatedAtUtc']),
-        raw: item,
-      };
-    });
-  }
-
-  private extractAddresses(payload: unknown[]): CompanyAddressRow[] {
-    return payload.map((item) => {
-      const record = this.asRecord(item);
-
-      return {
-        id: this.stringValue(record, ['id', 'addressId']),
-        addressType: this.stringValue(record, ['addressType', 'type']),
-        countryCode: this.stringValue(record, ['countryCode']),
-        city: this.stringValue(record, ['city']),
-        postalCode: this.stringValue(record, ['postalCode']),
-        line1: this.stringValue(record, ['line1']),
-        line2: this.stringValue(record, ['line2']),
-        createdAtUtc: this.stringValue(record, ['createdAtUtc']),
-        updatedAtUtc: this.stringValue(record, ['updatedAtUtc']),
-      };
-    });
-  }
-
-  private toPagedCompanies(payload: unknown, requestedPage: number): PagedResponse<CompanyRow> {
-    const record = this.asRecord(payload);
-    const rawItems = Array.isArray(record['items']) ? record['items'] : [];
-
-    return {
-      items: this.extractCompanies(rawItems),
-      pageNumber: this.numberValue(record, 'pageNumber') ?? requestedPage,
-      pageSize: this.numberValue(record, 'pageSize') ?? rawItems.length,
-      hasMore: this.booleanValue(record, 'hasMore') ?? false,
-    };
-  }
-
-  private asRecord(value: unknown): Record<string, unknown> {
-    return value !== null && typeof value === 'object' ? (value as Record<string, unknown>) : {};
-  }
-
-  private stringValue(record: Record<string, unknown>, keys: string[]): string | undefined {
-    for (const key of keys) {
-      const value = record[key];
-      if (typeof value === 'string' && value.trim().length > 0) {
-        return value;
-      }
-    }
-
-    return undefined;
-  }
-
-  private numberValue(record: Record<string, unknown>, key: string): number | undefined {
-    const value = record[key];
-    return typeof value === 'number' && Number.isFinite(value) ? value : undefined;
-  }
-
-  private booleanValue(record: Record<string, unknown>, key: string): boolean | undefined {
-    const value = record[key];
-    return typeof value === 'boolean' ? value : undefined;
   }
 
   private initializeCompaniesObserver(): void {
