@@ -53,12 +53,16 @@
       </aside>
 
       <section class="col-12 col-lg-10">
-        <div class="d-flex flex-wrap align-items-start justify-content-between gap-3 mb-4">
-          <div>
+        <app-companies-page
+          *ngIf="activePage() === 'companies'"
+          [account]="account()"
+          [active]="activePage() === 'companies'"
+          [accessTokenFactory]="getAccessToken">
+        </app-companies-page>
+
+        <ng-container *ngIf="activePage() !== 'companies'">
+          <div class="mb-4">
             <h1 class="h3 mb-1">{{ pageTitle() }}</h1>
-            <p class="text-secondary mb-0" *ngIf="activePage() === 'companies'">
-              Load company master data through the Gateway using the signed-in user's access token.
-            </p>
             <p class="text-secondary mb-0" *ngIf="activePage() === 'inventory'">
               Inventory management will be added later.
             </p>
@@ -67,99 +71,18 @@
             </p>
           </div>
 
-          <button
-            *ngIf="activePage() === 'companies'"
-            type="button"
-            class="btn btn-primary"
-            (click)="loadCompanies()"
-            [disabled]="isCompaniesLoading()">
-            {{ apiLoading() ? 'Loading...' : 'Load companies' }}
-          </button>
-        </div>
-
-        <ng-container *ngIf="activePage() === 'companies'">
-          <div class="alert alert-danger" *ngIf="apiError()">{{ apiError() }}</div>
-
-          <div class="card shadow-sm">
+          <div class="card shadow-sm" *ngIf="activePage() === 'inventory'">
             <div class="card-body">
-              <div class="table-responsive" *ngIf="companies().length > 0; else emptyCompanies">
-                <table class="table table-hover align-middle mb-0">
-                  <thead>
-                    <tr>
-                      <th scope="col">Name</th>
-                      <th scope="col">External code</th>
-                      <th scope="col">Status</th>
-                      <th scope="col">ID</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr *ngFor="let company of companies()">
-                      <td class="fw-semibold">{{ company.name || 'Unnamed company' }}</td>
-                      <td>{{ company.externalCode || '-' }}</td>
-                      <td>
-                        <span class="badge text-bg-light border">{{ company.status || 'Unknown' }}</span>
-                      </td>
-                      <td><code>{{ company.id || '-' }}</code></td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-
-              <ng-template #emptyCompanies>
-                <div class="empty-state text-center py-5">
-                  <h2 class="h5">No companies loaded</h2>
-                  <p class="text-secondary mb-0" *ngIf="!hasLoadedCompanies()">
-                    Click Load companies to call the Gateway.
-                  </p>
-                  <p class="text-secondary mb-0" *ngIf="hasLoadedCompanies()">
-                    The response did not contain any company rows.
-                  </p>
-                </div>
-              </ng-template>
+              <p class="mb-0">Inventory management will be added later.</p>
             </div>
           </div>
 
-          <div
-            #companiesScrollSentinel
-            class="companies-scroll-sentinel"
-            aria-hidden="true">
-          </div>
-
-          <div class="d-flex flex-column align-items-center gap-2 py-3" *ngIf="hasLoadedCompanies() && companies().length > 0">
-            <button
-              type="button"
-              class="btn btn-outline-primary"
-              (click)="loadMoreCompanies()"
-              [disabled]="isCompaniesLoading()"
-              *ngIf="hasMoreCompanies()">
-              {{ loadingMore() ? 'Loading more...' : 'Load more' }}
-            </button>
-            <div class="small text-secondary" *ngIf="loadingMore()">Loading more...</div>
-            <div class="small text-secondary" *ngIf="!hasMoreCompanies()">All companies loaded.</div>
-            <div class="small text-secondary" *ngIf="currentCompaniesPage() > 0">
-              Page {{ currentCompaniesPage() }} loaded<span *ngIf="companiesPageSize() > 0">, {{ companiesPageSize() }} per page</span>.
-            </div>
-          </div>
-
-          <div class="card mt-3" *ngIf="apiResult()">
-            <div class="card-header bg-white">Debug response</div>
+          <div class="card shadow-sm" *ngIf="activePage() === 'shipments'">
             <div class="card-body">
-              <pre class="debug-json mb-0">{{ apiResult() }}</pre>
+              <p class="mb-0">Shipment management will be added later.</p>
             </div>
           </div>
         </ng-container>
-
-        <div class="card shadow-sm" *ngIf="activePage() === 'inventory'">
-          <div class="card-body">
-            <p class="mb-0">Inventory management will be added later.</p>
-          </div>
-        </div>
-
-        <div class="card shadow-sm" *ngIf="activePage() === 'shipments'">
-          <div class="card-body">
-            <p class="mb-0">Shipment management will be added later.</p>
-          </div>
-        </div>
       </section>
     </div>
   </div>
