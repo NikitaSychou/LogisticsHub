@@ -9,12 +9,13 @@ import { environment } from '../environments/environment';
 import { loginRequest, msalConfig, tokenRequest } from './auth-config';
 import { CompaniesPage } from './companies/companies-page';
 import { InventoryPage } from './inventory/inventory-page';
+import { ShipmentsPage } from './shipments/shipments-page';
 
 type AppPage = 'companies' | 'inventory' | 'shipments';
 
 @Component({
   selector: 'app-root',
-  imports: [CommonModule, CompaniesPage, InventoryPage],
+  imports: [CommonModule, CompaniesPage, InventoryPage, ShipmentsPage],
   templateUrl: './app.html',
   styleUrl: './app.css',
 })
