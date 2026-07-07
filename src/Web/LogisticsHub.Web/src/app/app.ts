@@ -8,12 +8,13 @@ import {
 import { environment } from '../environments/environment';
 import { loginRequest, msalConfig, tokenRequest } from './auth-config';
 import { CompaniesPage } from './companies/companies-page';
+import { InventoryPage } from './inventory/inventory-page';
 
 type AppPage = 'companies' | 'inventory' | 'shipments';
 
 @Component({
   selector: 'app-root',
-  imports: [CommonModule, CompaniesPage],
+  imports: [CommonModule, CompaniesPage, InventoryPage],
   templateUrl: './app.html',
   styleUrl: './app.css',
 })
