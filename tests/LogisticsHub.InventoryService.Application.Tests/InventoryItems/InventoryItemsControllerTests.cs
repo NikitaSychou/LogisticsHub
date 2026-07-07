@@ -4,11 +4,13 @@ using LogisticsHub.InventoryService.Controllers;
 using LogisticsHub.InventoryService.Localization;
 using LogisticsHub.Results;
 using LogisticsHub.InventoryService.Validation;
+using LogisticsHub.Results;
 using MediatR;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Localization;
+using Microsoft.Extensions.Options;
 using Xunit;
 
 namespace LogisticsHub.InventoryService.Application.Tests.InventoryItems;
@@ -72,12 +74,67 @@ public sealed class InventoryItemsControllerTests
         Assert.Equal(result.Sku, value.Sku);
     }
 
+    [Fact]
+    public async Task ListPageAsync_WhenPageNumberIsInvalid_ReturnsBadRequest()
+    {
+        var controller = CreateController();
+
+        var response = await controller.ListPageAsync(0, CancellationToken.None);
+
+        AssertValidationProblem(response, StatusCodes.Status400BadRequest);
+        Assert.True(controller.ModelState.ContainsKey("pageNumber"));
+    }
+
+    [Fact]
+    public async Task ListPageAsync_WhenMoreItemsExist_ReturnsPageWithHasMore()
+    {
+        var controller = CreateController(new FakeMediator
+        {
+            ListInventoryItemsPageResult = new PagedResponse<InventoryItemResult>(
+                [CreateResult("SKU-001"), CreateResult("SKU-002")],
+                1,
+                2,
+                true)
+        }, pageSize: 2);
+
+        var response = await controller.ListPageAsync(1, CancellationToken.None);
+
+        var okResult = Assert.IsType<OkObjectResult>(response);
+        var value = Assert.IsAssignableFrom<PagedResponse<GetInventoryItemResponse>>(okResult.Value);
+        Assert.Equal(1, value.PageNumber);
+        Assert.Equal(2, value.PageSize);
+        Assert.True(value.HasMore);
+        Assert.Equal(["SKU-001", "SKU-002"], value.Items.Select(item => item.Sku));
+    }
+
+    [Fact]
+    public async Task ListPageAsync_WhenFinalPageIsReturned_ReturnsHasMoreFalse()
+    {
+        var controller = CreateController(new FakeMediator
+        {
+            ListInventoryItemsPageResult = new PagedResponse<InventoryItemResult>(
+                [CreateResult("SKU-003")],
+                2,
+                2,
+                false)
+        }, pageSize: 2);
+
+        var response = await controller.ListPageAsync(2, CancellationToken.None);
+
+        var okResult = Assert.IsType<OkObjectResult>(response);
+        var value = Assert.IsAssignableFrom<PagedResponse<GetInventoryItemResponse>>(okResult.Value);
+        Assert.Equal(2, value.PageNumber);
+        Assert.Equal(2, value.PageSize);
+        Assert.False(value.HasMore);
+        Assert.Single(value.Items);
+    }
+
     private static InventoryItemsController CreateController()
     {
         return CreateController(new FakeMediator());
     }
 
-    private static InventoryItemsController CreateController(FakeMediator mediator)
+    private static InventoryItemsController CreateController(FakeMediator mediator, int pageSize = 50)
     {
         var serviceProvider = new ServiceCollection()
             .AddLogging()
@@ -85,7 +142,14 @@ public sealed class InventoryItemsControllerTests
             .Services
             .BuildServiceProvider();
 
-        return new InventoryItemsController(mediator, new CreateInventoryItemRequestValidator(new FakeInventoryValidationLocalizer()))
+        return new InventoryItemsController(
+            mediator,
+            new CreateInventoryItemRequestValidator(new FakeInventoryValidationLocalizer()),
+            Options.Create(new PaginationOptions
+            {
+                DefaultPageSize = pageSize,
+                MaxPageSize = pageSize
+            }))
         {
             ControllerContext = new ControllerContext
             {
@@ -107,6 +171,11 @@ public sealed class InventoryItemsControllerTests
         return new InventoryItemResult("TEST-SKU", "Test item", 5);
     }
 
+    private static InventoryItemResult CreateResult(string sku)
+    {
+        return new InventoryItemResult(sku, $"Test item {sku}", 5);
+    }
+
     private static void AssertValidationProblem(IActionResult response, int expectedStatusCode)
     {
         var objectResult = Assert.IsAssignableFrom<ObjectResult>(response);
@@ -123,12 +192,16 @@ public sealed class InventoryItemsControllerTests
         public Result<InventoryItemResult> GetInventoryItemResult { get; set; } =
             Result<InventoryItemResult>.Success(InventoryItemsControllerTests.CreateResult());
 
+        public PagedResponse<InventoryItemResult> ListInventoryItemsPageResult { get; set; } =
+            new([InventoryItemsControllerTests.CreateResult()], 1, 50, false);
+
         public Task<TResponse> Send<TResponse>(IRequest<TResponse> request, CancellationToken cancellationToken = default)
         {
             object result = request switch
             {
                 CreateInventoryItemCommand => CreateInventoryItemResult,
                 GetInventoryItemQuery => GetInventoryItemResult,
+                ListInventoryItemsPageQuery => ListInventoryItemsPageResult,
                 _ => throw new InvalidOperationException($"Unexpected request type '{request.GetType().Name}'.")
             };
 

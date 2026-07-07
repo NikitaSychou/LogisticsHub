@@ -4,8 +4,10 @@ using LogisticsHub.InventoryService.Application.InventoryItems;
 using LogisticsHub.InventoryService.Contracts;
 using LogisticsHub.InventoryService.Mapping;
 using LogisticsHub.InventoryService.Validation;
+using LogisticsHub.Results;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Options;
 
 namespace LogisticsHub.InventoryService.Controllers;
 
@@ -15,13 +17,16 @@ public sealed class InventoryItemsController : ControllerBase
 {
     private readonly IMediator _mediator;
     private readonly IValidator<CreateInventoryItemRequest> _validator;
+    private readonly PaginationOptions _paginationOptions;
 
     public InventoryItemsController(
         IMediator mediator,
-        IValidator<CreateInventoryItemRequest> validator)
+        IValidator<CreateInventoryItemRequest> validator,
+        IOptions<PaginationOptions> paginationOptions)
     {
         _mediator = mediator;
         _validator = validator;
+        _paginationOptions = paginationOptions.Value;
     }
 
     [HttpGet("{sku}")]
@@ -39,6 +44,30 @@ public sealed class InventoryItemsController : ControllerBase
         }
 
         return Ok(InventoryItemMapper.ToGetResponse(result.Value));
+    }
+
+    [HttpGet("page")]
+    [ProducesResponseType(typeof(PagedResponse<GetInventoryItemResponse>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> ListPageAsync(
+        [FromQuery] int pageNumber = 1,
+        CancellationToken cancellationToken = default)
+    {
+        if (pageNumber < 1)
+        {
+            ModelState.AddModelError("pageNumber", "pageNumber must be greater than or equal to 1.");
+            return ValidationProblem(ModelState);
+        }
+
+        var pageSize = _paginationOptions.GetEffectivePageSize();
+        var result = await _mediator.Send(new ListInventoryItemsPageQuery(pageNumber, pageSize), cancellationToken);
+        var response = new PagedResponse<GetInventoryItemResponse>(
+            result.Items.Select(InventoryItemMapper.ToGetResponse).ToArray(),
+            result.PageNumber,
+            result.PageSize,
+            result.HasMore);
+
+        return Ok(response);
     }
 
     [HttpPost]
