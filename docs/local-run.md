@@ -28,6 +28,8 @@ Create a local root `.env` file before running Compose. The file is ignored by G
 - `AZUREAD_TENANT_ID`
 - `AZUREAD_CLIENT_ID`
 - `AZUREAD_AUDIENCE`
+- `SWAGGEROAUTH_CLIENT_ID`
+- `SWAGGEROAUTH_SCOPE`
 
 The checked-in `AzureAd` appsettings values are intentionally empty. For `dotnet run`, provide the backend auth settings through .NET User Secrets or environment variables:
 
@@ -45,6 +47,19 @@ api://<api-app-client-id>/access_as_user
 The API app registration manifest must set `api.requestedAccessTokenVersion` to `2` so access tokens use the v2 issuer expected by the backend.
 
 Docker Compose reads the same auth settings from `AZUREAD_INSTANCE`, `AZUREAD_TENANT_ID`, `AZUREAD_CLIENT_ID`, and `AZUREAD_AUDIENCE` in the local `.env` file.
+
+Swagger UI OAuth uses authorization code with PKCE. Set `SwaggerOAuth:ClientId` to the Entra client app registration ID used by Swagger/local frontend, not the API app registration ID. Set `SwaggerOAuth:Scope` to:
+
+```text
+api://<api-app-client-id>/access_as_user
+```
+
+For Docker Compose, set `SWAGGEROAUTH_CLIENT_ID` and `SWAGGEROAUTH_SCOPE` in `.env`. Add these redirect URIs to the Entra client app registration used by Swagger:
+
+- `http://localhost:5100/swagger/oauth2-redirect.html`
+- `http://localhost:5101/swagger/oauth2-redirect.html`
+- `http://localhost:5102/swagger/oauth2-redirect.html`
+- `http://localhost:5103/swagger/oauth2-redirect.html`
 
 Quick checks:
 

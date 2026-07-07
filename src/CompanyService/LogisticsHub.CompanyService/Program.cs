@@ -20,7 +20,7 @@ builder.Services.AddRedisCacheInfrastructure(builder.Configuration);
 builder.Services
     .AddHealthChecks()
     .AddCompanyDbHealthCheck();
-builder.Services.AddOpenApi(options => options.AddOpenApiBearerSecurity());
+builder.Services.AddOpenApi(options => options.AddOpenApiSecurity(builder.Configuration));
 builder.Services.AddApiAuthentication(builder.Configuration);
 builder.Services.AddLocalization(options =>
 {
@@ -60,6 +60,7 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI(options =>
     {
         options.SwaggerEndpoint("/openapi/v1.json", "LogisticsHub Company API v1");
+        options.ConfigureOAuth(app.Configuration);
     });
 }
 

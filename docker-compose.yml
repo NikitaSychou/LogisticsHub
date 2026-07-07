@@ -13,6 +13,8 @@ services:
       AzureAd__TenantId: ${AZUREAD_TENANT_ID}
       AzureAd__ClientId: ${AZUREAD_CLIENT_ID}
       AzureAd__Audience: ${AZUREAD_AUDIENCE}
+      SwaggerOAuth__ClientId: ${SWAGGEROAUTH_CLIENT_ID}
+      SwaggerOAuth__Scope: ${SWAGGEROAUTH_SCOPE}
     depends_on:
       - companyservice
       - inventoryservice
@@ -33,6 +35,8 @@ services:
       AzureAd__TenantId: ${AZUREAD_TENANT_ID}
       AzureAd__ClientId: ${AZUREAD_CLIENT_ID}
       AzureAd__Audience: ${AZUREAD_AUDIENCE}
+      SwaggerOAuth__ClientId: ${SWAGGEROAUTH_CLIENT_ID}
+      SwaggerOAuth__Scope: ${SWAGGEROAUTH_SCOPE}
     depends_on:
       - redis
     ports:
@@ -55,6 +59,8 @@ services:
       AzureAd__TenantId: ${AZUREAD_TENANT_ID}
       AzureAd__ClientId: ${AZUREAD_CLIENT_ID}
       AzureAd__Audience: ${AZUREAD_AUDIENCE}
+      SwaggerOAuth__ClientId: ${SWAGGEROAUTH_CLIENT_ID}
+      SwaggerOAuth__Scope: ${SWAGGEROAUTH_SCOPE}
     depends_on:
       - rabbitmq
     ports:
@@ -83,6 +89,8 @@ services:
       AzureAd__TenantId: ${AZUREAD_TENANT_ID}
       AzureAd__ClientId: ${AZUREAD_CLIENT_ID}
       AzureAd__Audience: ${AZUREAD_AUDIENCE}
+      SwaggerOAuth__ClientId: ${SWAGGEROAUTH_CLIENT_ID}
+      SwaggerOAuth__Scope: ${SWAGGEROAUTH_SCOPE}
     depends_on:
       - companyservice
       - rabbitmq
