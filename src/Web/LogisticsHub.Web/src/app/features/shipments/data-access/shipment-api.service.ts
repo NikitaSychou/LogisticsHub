@@ -1,42 +1,16 @@
 import { Injectable } from '@angular/core';
-import { gatewayBaseUrl } from '../../../core/http/api-config';
+import { ApiHttpClient } from '../../../core/http/api-http-client';
 import { CreateShipmentRequest } from '../models/shipment.models';
 
 @Injectable({ providedIn: 'root' })
 export class ShipmentApiService {
-  async createShipment(request: CreateShipmentRequest, accessToken: string): Promise<string> {
-    const response = await fetch(`${gatewayBaseUrl}/shipment/shipments`, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(request),
-    });
+  constructor(private readonly api: ApiHttpClient) {}
 
-    return this.readResponse(response, 'Create shipment');
+  async createShipment(request: CreateShipmentRequest): Promise<string> {
+    return this.api.post('/shipment/shipments', request, 'Create shipment');
   }
 
-  async getShipment(shipmentId: string, accessToken: string): Promise<string> {
-    const response = await fetch(
-      `${gatewayBaseUrl}/shipment/shipments/${encodeURIComponent(shipmentId)}`,
-      {
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-        },
-      }
-    );
-
-    return this.readResponse(response, 'Shipment load');
-  }
-
-  private async readResponse(response: Response, label: string): Promise<string> {
-    const body = await response.text();
-
-    if (!response.ok) {
-      throw new Error(`${label} returned ${response.status}: ${body || response.statusText}`);
-    }
-
-    return body;
+  async getShipment(shipmentId: string): Promise<string> {
+    return this.api.get(`/shipment/shipments/${encodeURIComponent(shipmentId)}`, 'Shipment load');
   }
 }

@@ -123,7 +123,7 @@ export class InventoryPage implements AfterViewInit, OnDestroy {
     this.createItemError.set('');
 
     try {
-      const body = await this.inventoryApi.createInventoryItem(request, await this.apiAuthContext.getAccessToken());
+      const body = await this.inventoryApi.createInventoryItem(request);
       const createdItem = this.extractInventoryItems([this.parseBody(body)])[0] ?? null;
 
       this.showCreateItemForm.set(false);
@@ -172,11 +172,7 @@ export class InventoryPage implements AfterViewInit, OnDestroy {
     this.stockAdjustmentError.set('');
 
     try {
-      const body = await this.inventoryApi.createStockAdjustment(
-        item.sku,
-        request,
-        await this.apiAuthContext.getAccessToken()
-      );
+      const body = await this.inventoryApi.createStockAdjustment(item.sku, request);
       const adjustedItem = this.extractInventoryItems([this.parseBody(body)])[0] ?? null;
 
       this.showStockAdjustmentForm.set(false);
@@ -219,7 +215,7 @@ export class InventoryPage implements AfterViewInit, OnDestroy {
     }
 
     try {
-      const body = await this.inventoryApi.getInventoryItemsPage(pageNumber, await this.apiAuthContext.getAccessToken());
+      const body = await this.inventoryApi.getInventoryItemsPage(pageNumber);
       const page = this.toPagedInventoryItems(this.parseBody(body), pageNumber);
       this.inventoryItems.set(options.reset ? page.items : [...this.inventoryItems(), ...page.items]);
       this.currentItemsPage.set(page.pageNumber);
