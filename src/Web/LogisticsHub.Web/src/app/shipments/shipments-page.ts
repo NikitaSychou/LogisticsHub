@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, Input, inject, signal } from '@angular/core';
+import { Component, Input, OnDestroy, inject, signal } from '@angular/core';
 import { AccountInfo } from '@azure/msal-browser';
 import { ShipmentApiService } from './shipment-api.service';
 import { CreateShipmentRequest, ShipmentItemFormRow, ShipmentRow } from './shipment.models';
@@ -10,8 +10,9 @@ import { CreateShipmentRequest, ShipmentItemFormRow, ShipmentRow } from './shipm
   templateUrl: './shipments-page.html',
   styleUrl: './shipments-page.css',
 })
-export class ShipmentsPage {
+export class ShipmentsPage implements OnDestroy {
   private readonly shipmentApi = inject(ShipmentApiService);
+  private autoRefreshTimer?: number;
 
   @Input({ required: true }) accessTokenFactory!: () => Promise<string>;
   @Input({ required: true }) account!: AccountInfo | null;
@@ -20,6 +21,9 @@ export class ShipmentsPage {
   protected readonly createShipmentError = signal('');
   protected readonly loadingShipment = signal(false);
   protected readonly loadShipmentError = signal('');
+  protected readonly refreshingCreatedShipment = signal(false);
+  protected readonly refreshingLoadedShipment = signal(false);
+  protected readonly statusRefreshError = signal('');
   protected readonly createdShipment = signal<ShipmentRow | null>(null);
   protected readonly loadedShipment = signal<ShipmentRow | null>(null);
 
@@ -32,6 +36,10 @@ export class ShipmentsPage {
   };
 
   protected shipmentIdToLoad = '';
+
+  ngOnDestroy(): void {
+    this.stopAutoRefresh();
+  }
 
   protected inputValue(event: Event): string {
     return event.target instanceof HTMLInputElement
@@ -72,9 +80,12 @@ export class ShipmentsPage {
 
     try {
       const body = await this.shipmentApi.createShipment(request, await this.accessTokenFactory());
-      this.createdShipment.set(this.toShipmentRow(this.parseBody(body)));
+      const shipment = this.toShipmentRow(this.parseBody(body));
+      this.createdShipment.set(shipment);
       this.loadedShipment.set(null);
+      this.statusRefreshError.set('');
       this.resetCreateShipmentForm();
+      this.startAutoRefreshIfNeeded(shipment);
     } catch (error) {
       this.createShipmentError.set(this.formatError(error, 'Create shipment failed.'));
     } finally {
@@ -99,10 +110,56 @@ export class ShipmentsPage {
     try {
       const body = await this.shipmentApi.getShipment(shipmentId, await this.accessTokenFactory());
       this.loadedShipment.set(this.toShipmentRow(this.parseBody(body)));
+      this.statusRefreshError.set('');
     } catch (error) {
       this.loadShipmentError.set(this.formatError(error, 'Shipment load failed.'));
     } finally {
       this.loadingShipment.set(false);
+    }
+  }
+
+  protected async refreshCreatedShipmentStatus(): Promise<void> {
+    await this.refreshShipmentStatus('created');
+  }
+
+  protected async refreshLoadedShipmentStatus(): Promise<void> {
+    await this.refreshShipmentStatus('loaded');
+  }
+
+  private async refreshShipmentStatus(target: 'created' | 'loaded'): Promise<void> {
+    const shipment = target === 'created'
+      ? this.createdShipment()
+      : this.loadedShipment();
+    if (!shipment?.shipmentId) {
+      this.statusRefreshError.set('Shipment ID is required before refreshing status.');
+      return;
+    }
+
+    const refreshingSignal = target === 'created'
+      ? this.refreshingCreatedShipment
+      : this.refreshingLoadedShipment;
+    if (refreshingSignal()) {
+      return;
+    }
+
+    refreshingSignal.set(true);
+    this.statusRefreshError.set('');
+
+    try {
+      const body = await this.shipmentApi.getShipment(shipment.shipmentId, await this.accessTokenFactory());
+      const refreshedShipment = this.toShipmentRow(this.parseBody(body));
+
+      if (target === 'created') {
+        this.createdShipment.set(refreshedShipment);
+        this.startAutoRefreshIfNeeded(refreshedShipment);
+      } else {
+        this.loadedShipment.set(refreshedShipment);
+      }
+    } catch (error) {
+      this.statusRefreshError.set(this.formatError(error, 'Shipment status refresh failed.'));
+      this.stopAutoRefresh();
+    } finally {
+      refreshingSignal.set(false);
     }
   }
 
@@ -157,6 +214,27 @@ export class ShipmentsPage {
     this.createShipmentForm.receiverCompanyId = '';
     this.createShipmentForm.receiverAddressId = '';
     this.createShipmentForm.items = [{ sku: '', quantity: 1 }];
+  }
+
+  private startAutoRefreshIfNeeded(shipment: ShipmentRow): void {
+    this.stopAutoRefresh();
+
+    if (shipment.status !== 'ReservationRequested' || !shipment.shipmentId) {
+      return;
+    }
+
+    this.autoRefreshTimer = window.setTimeout(() => {
+      void this.refreshCreatedShipmentStatus();
+    }, 2500);
+  }
+
+  private stopAutoRefresh(): void {
+    if (this.autoRefreshTimer === undefined) {
+      return;
+    }
+
+    window.clearTimeout(this.autoRefreshTimer);
+    this.autoRefreshTimer = undefined;
   }
 
   private parseBody(body: string): unknown {
