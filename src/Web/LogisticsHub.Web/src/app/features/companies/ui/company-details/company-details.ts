@@ -1,7 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component, EventEmitter, Input, Output } from '@angular/core';
-import { CompanyAddressRow, CompanyRow } from '../company.models';
-import { AddressCreateForm, AddressCreateFormModel } from './address-create-form';
+import { CompanyAddressRow, CompanyRow } from '../../models/company.models';
+import { AddressCreateForm, AddressCreateFormModel } from '../address-create-form/address-create-form';
 
 @Component({
   selector: 'app-company-details',

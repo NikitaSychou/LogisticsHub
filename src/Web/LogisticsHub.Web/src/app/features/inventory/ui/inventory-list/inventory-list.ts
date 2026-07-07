@@ -1,7 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component, EventEmitter, Input, Output } from '@angular/core';
-import { EmptyState } from '../../../shared/ui/empty-state/empty-state';
-import { InventoryItemRow } from '../inventory.models';
+import { EmptyState } from '../../../../shared/ui/empty-state/empty-state';
+import { InventoryItemRow } from '../../models/inventory.models';
 
 @Component({
   selector: 'app-inventory-list',

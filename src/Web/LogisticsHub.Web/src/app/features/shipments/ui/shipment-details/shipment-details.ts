@@ -1,6 +1,6 @@
 import { CommonModule } from '@angular/common';
 import { Component, EventEmitter, Input, Output } from '@angular/core';
-import { ShipmentRow } from '../shipment.models';
+import { ShipmentRow } from '../../models/shipment.models';
 
 @Component({
   selector: 'app-shipment-details',

@@ -1,6 +1,6 @@
 import { CommonModule } from '@angular/common';
 import { Component, EventEmitter, Input, Output } from '@angular/core';
-import { ShipmentItemFormRow } from '../shipment.models';
+import { ShipmentItemFormRow } from '../../models/shipment.models';
 
 export interface ShipmentCreateFormModel {
   senderCompanyId: string;

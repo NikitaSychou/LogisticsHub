@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
-import { gatewayBaseUrl } from '../../core/http/api-config';
-import { CreateCompanyAddressRequest, CreateCompanyRequest } from './company.models';
+import { gatewayBaseUrl } from '../../../core/http/api-config';
+import { CreateCompanyAddressRequest, CreateCompanyRequest } from '../models/company.models';
 
 @Injectable({ providedIn: 'root' })
 export class CompanyApiService {

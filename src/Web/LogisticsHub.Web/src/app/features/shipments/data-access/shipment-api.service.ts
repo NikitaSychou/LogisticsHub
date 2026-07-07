@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
-import { gatewayBaseUrl } from '../../core/http/api-config';
-import { CreateShipmentRequest } from './shipment.models';
+import { gatewayBaseUrl } from '../../../core/http/api-config';
+import { CreateShipmentRequest } from '../models/shipment.models';
 
 @Injectable({ providedIn: 'root' })
 export class ShipmentApiService {
