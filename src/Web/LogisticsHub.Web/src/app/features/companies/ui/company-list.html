@@ -28,18 +28,10 @@
     </div>
 
     <ng-template #emptyCompanies>
-      <div class="empty-state text-center py-5">
-        <h2 class="h5">No companies loaded</h2>
-        <p class="text-secondary mb-0" *ngIf="!hasLoadedCompanies && apiLoading">
-          Loading companies...
-        </p>
-        <p class="text-secondary mb-0" *ngIf="!hasLoadedCompanies && !apiLoading && !apiError">
-          Companies will appear here when they are loaded.
-        </p>
-        <p class="text-secondary mb-0" *ngIf="hasLoadedCompanies">
-          The response did not contain any company rows.
-        </p>
-      </div>
+      <app-empty-state
+        title="No companies loaded"
+        [message]="emptyStateMessage">
+      </app-empty-state>
     </ng-template>
   </div>
 </div>
