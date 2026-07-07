@@ -152,6 +152,54 @@
           <dt>Quantity available</dt>
           <dd>{{ selectedItem()?.quantityAvailable ?? '-' }}</dd>
         </dl>
+
+        <hr>
+
+        <div class="d-flex justify-content-between align-items-center gap-3 mb-3">
+          <h3 class="h6 mb-0">Stock</h3>
+          <button
+            type="button"
+            class="btn btn-sm btn-outline-primary"
+            (click)="toggleStockAdjustmentForm()"
+            [disabled]="adjustingStock()">
+            Increase stock
+          </button>
+        </div>
+
+        <div class="border rounded p-3" *ngIf="showStockAdjustmentForm()">
+          <div class="d-flex justify-content-between align-items-start gap-3 mb-3">
+            <div>
+              <h4 class="h6 mb-1">Increase stock</h4>
+              <div class="text-secondary small">Add available quantity to the selected inventory item.</div>
+            </div>
+            <button type="button" class="btn-close" aria-label="Close" (click)="cancelStockAdjustment()"></button>
+          </div>
+
+          <div class="alert alert-danger validation-alert" *ngIf="stockAdjustmentError()">{{ stockAdjustmentError() }}</div>
+
+          <form class="row g-2" (ngSubmit)="submitStockAdjustment()">
+            <div class="col-12">
+              <label for="stockAdjustmentQuantity" class="form-label">Quantity</label>
+              <input
+                id="stockAdjustmentQuantity"
+                name="stockAdjustmentQuantity"
+                type="number"
+                class="form-control"
+                [value]="stockAdjustmentForm.quantity"
+                (input)="stockAdjustmentForm.quantity = inputNumberValue($event)"
+                min="1"
+                required>
+            </div>
+            <div class="col-12 d-flex gap-2 mt-3">
+              <button type="submit" class="btn btn-primary btn-sm" [disabled]="adjustingStock()">
+                {{ adjustingStock() ? 'Increasing...' : 'Increase stock' }}
+              </button>
+              <button type="button" class="btn btn-outline-secondary btn-sm" (click)="cancelStockAdjustment()" [disabled]="adjustingStock()">
+                Cancel
+              </button>
+            </div>
+          </form>
+        </div>
       </div>
 
       <ng-template #noItemSelected>

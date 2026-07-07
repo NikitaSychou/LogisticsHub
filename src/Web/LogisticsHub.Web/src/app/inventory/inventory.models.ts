@@ -17,3 +17,7 @@ export interface CreateInventoryItemRequest {
   name: string;
   quantityAvailable: number;
 }
+
+export interface CreateStockAdjustmentRequest {
+  quantity: number;
+}
