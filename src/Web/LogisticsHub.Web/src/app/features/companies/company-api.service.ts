@@ -1,11 +1,11 @@
 import { Injectable } from '@angular/core';
-import { environment } from '../../../environments/environment';
+import { gatewayBaseUrl } from '../../core/http/api-config';
 import { CreateCompanyAddressRequest, CreateCompanyRequest } from './company.models';
 
 @Injectable({ providedIn: 'root' })
 export class CompanyApiService {
   async getCompaniesPage(pageNumber: number, accessToken: string): Promise<string> {
-    const response = await fetch(`${environment.api.gatewayBaseUrl}/company/companies/page?pageNumber=${pageNumber}`, {
+    const response = await fetch(`${gatewayBaseUrl}/company/companies/page?pageNumber=${pageNumber}`, {
       headers: {
         Authorization: `Bearer ${accessToken}`,
       },
@@ -16,7 +16,7 @@ export class CompanyApiService {
 
   async getCompanyAddresses(companyId: string, accessToken: string): Promise<string> {
     const response = await fetch(
-      `${environment.api.gatewayBaseUrl}/company/companies/${companyId}/addresses`,
+      `${gatewayBaseUrl}/company/companies/${companyId}/addresses`,
       {
         headers: {
           Authorization: `Bearer ${accessToken}`,
@@ -28,7 +28,7 @@ export class CompanyApiService {
   }
 
   async createCompany(request: CreateCompanyRequest, accessToken: string): Promise<string> {
-    const response = await fetch(`${environment.api.gatewayBaseUrl}/company/companies`, {
+    const response = await fetch(`${gatewayBaseUrl}/company/companies`, {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${accessToken}`,
@@ -46,7 +46,7 @@ export class CompanyApiService {
     accessToken: string
   ): Promise<string> {
     const response = await fetch(
-      `${environment.api.gatewayBaseUrl}/company/companies/${companyId}/addresses`,
+      `${gatewayBaseUrl}/company/companies/${companyId}/addresses`,
       {
         method: 'POST',
         headers: {

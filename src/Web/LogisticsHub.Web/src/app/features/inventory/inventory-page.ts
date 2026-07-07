@@ -13,12 +13,12 @@ import {
   signal,
 } from '@angular/core';
 import { AccountInfo } from '@azure/msal-browser';
+import { PagedResponse } from '../../shared/models/paged-response';
 import { InventoryApiService } from './inventory-api.service';
 import {
   CreateInventoryItemRequest,
   CreateStockAdjustmentRequest,
   InventoryItemRow,
-  PagedResponse,
 } from './inventory.models';
 
 @Component({

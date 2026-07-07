@@ -1,0 +1,26 @@
+.login-page {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 1.5rem;
+}
+
+.login-card {
+  width: min(420px, 100%);
+}
+
+.sidebar-nav .nav-link {
+  color: #475569;
+  border-radius: 0.5rem;
+}
+
+.sidebar-nav .nav-link:hover {
+  color: #334155;
+  background: #f1f5f9;
+}
+
+.sidebar-nav .nav-link.active {
+  color: #1e3a5f;
+  background: #dbeafe;
+  font-weight: 600;
+}

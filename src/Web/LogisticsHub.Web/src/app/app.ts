@@ -1,4 +1,3 @@
-import { CommonModule } from '@angular/common';
 import { Component, OnInit, computed, signal } from '@angular/core';
 import {
   AccountInfo,
@@ -7,15 +6,13 @@ import {
 } from '@azure/msal-browser';
 import { environment } from '../environments/environment';
 import { loginRequest, msalConfig, tokenRequest } from './auth-config';
-import { CompaniesPage } from './features/companies/companies-page';
-import { InventoryPage } from './features/inventory/inventory-page';
-import { ShipmentsPage } from './features/shipments/shipments-page';
-
-type AppPage = 'companies' | 'inventory' | 'shipments';
+import { AppShell } from './core/layout/app-shell';
+import { AppPage } from './core/navigation/navigation-item.model';
+import { navigationItems } from './core/navigation/navigation-items';
 
 @Component({
   selector: 'app-root',
-  imports: [CommonModule, CompaniesPage, InventoryPage, ShipmentsPage],
+  imports: [AppShell],
   templateUrl: './app.html',
   styleUrl: './app.css',
 })
@@ -25,18 +22,9 @@ export class App implements OnInit {
   protected readonly account = signal<AccountInfo | null>(null);
   protected readonly loading = signal(true);
   protected readonly activePage = signal<AppPage>('companies');
+  protected readonly navigationItems = navigationItems;
   protected readonly isSignedIn = computed(() => this.account() !== null);
   protected readonly signedInName = computed(() => this.account()?.name ?? this.account()?.username ?? '');
-  protected readonly pageTitle = computed(() => {
-    switch (this.activePage()) {
-      case 'inventory':
-        return 'Inventory';
-      case 'shipments':
-        return 'Shipments';
-      default:
-        return 'Companies';
-    }
-  });
 
   protected readonly getAccessToken = async (): Promise<string> => {
     const account = this.account();

@@ -5,13 +5,6 @@ export interface InventoryItemRow {
   raw: unknown;
 }
 
-export interface PagedResponse<T> {
-  items: T[];
-  pageNumber: number;
-  pageSize: number;
-  hasMore: boolean;
-}
-
 export interface CreateInventoryItemRequest {
   sku: string;
   name: string;
