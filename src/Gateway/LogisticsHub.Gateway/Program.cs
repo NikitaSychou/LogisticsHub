@@ -2,6 +2,7 @@ using LogisticsHub.AspNetCore;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 
 const string ReverseProxySectionName = "ReverseProxy";
+const string LocalAngularCorsPolicy = "LocalAngularCors";
 const string HealthEndpointPath = "/health";
 const string LivenessHealthEndpointPath = "/health/live";
 const string ReadinessHealthEndpointPath = "/health/ready";
@@ -19,11 +20,26 @@ builder.Services
 builder.Services.AddHealthChecks();
 builder.Services.AddOpenApi(options => options.AddOpenApiSecurity(builder.Configuration));
 builder.Services.AddApiAuthentication(builder.Configuration);
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy(LocalAngularCorsPolicy, policy =>
+    {
+        policy
+            .WithOrigins("http://localhost:4200")
+            .AllowAnyHeader()
+            .AllowAnyMethod();
+    });
+});
 
 var app = builder.Build();
 
 app.UseCorrelationId();
 app.UseApiExceptionHandling();
+if (app.Environment.IsDevelopment())
+{
+    app.UseCors(LocalAngularCorsPolicy);
+}
+
 app.UseApiAuthentication();
 
 if (app.Environment.IsDevelopment())
