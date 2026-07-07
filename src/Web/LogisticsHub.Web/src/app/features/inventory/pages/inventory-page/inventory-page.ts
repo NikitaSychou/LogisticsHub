@@ -11,7 +11,6 @@ import {
 } from '@angular/core';
 import { ApiAuthContext } from '../../../../core/http/api-auth-context';
 import { formatProblemError } from '../../../../core/http/problem-error.mapper';
-import { PagedResponse } from '../../../../shared/models/paged-response';
 import { ErrorAlert } from '../../../../shared/ui/error-alert/error-alert';
 import { LoadMoreState } from '../../../../shared/ui/load-more-state/load-more-state';
 import { InventoryApiService } from '../../data-access/inventory-api.service';
@@ -123,8 +122,7 @@ export class InventoryPage implements AfterViewInit, OnDestroy {
     this.createItemError.set('');
 
     try {
-      const body = await this.inventoryApi.createInventoryItem(request);
-      const createdItem = this.extractInventoryItems([this.parseBody(body)])[0] ?? null;
+      const createdItem = await this.inventoryApi.createInventoryItem(request);
 
       this.showCreateItemForm.set(false);
       this.resetCreateItemForm();
@@ -172,8 +170,7 @@ export class InventoryPage implements AfterViewInit, OnDestroy {
     this.stockAdjustmentError.set('');
 
     try {
-      const body = await this.inventoryApi.createStockAdjustment(item.sku, request);
-      const adjustedItem = this.extractInventoryItems([this.parseBody(body)])[0] ?? null;
+      const adjustedItem = await this.inventoryApi.createStockAdjustment(item.sku, request);
 
       this.showStockAdjustmentForm.set(false);
       this.resetStockAdjustmentForm();
@@ -215,8 +212,7 @@ export class InventoryPage implements AfterViewInit, OnDestroy {
     }
 
     try {
-      const body = await this.inventoryApi.getInventoryItemsPage(pageNumber);
-      const page = this.toPagedInventoryItems(this.parseBody(body), pageNumber);
+      const page = await this.inventoryApi.getInventoryItemsPage(pageNumber);
       this.inventoryItems.set(options.reset ? page.items : [...this.inventoryItems(), ...page.items]);
       this.currentItemsPage.set(page.pageNumber);
       this.itemsPageSize.set(page.pageSize);
@@ -241,18 +237,6 @@ export class InventoryPage implements AfterViewInit, OnDestroy {
     }
 
     await this.loadInventoryPage(1, { reset: true });
-  }
-
-  private parseBody(body: string): unknown {
-    if (!body) {
-      return null;
-    }
-
-    try {
-      return JSON.parse(body);
-    } catch {
-      return body;
-    }
   }
 
   private toCreateItemRequest(): CreateInventoryItemRequest | null {
@@ -296,56 +280,6 @@ export class InventoryPage implements AfterViewInit, OnDestroy {
 
   private formatError(error: unknown, fallback: string): string {
     return formatProblemError(error, fallback);
-  }
-
-  private extractInventoryItems(payload: unknown[]): InventoryItemRow[] {
-    return payload.map((item) => {
-      const record = this.asRecord(item);
-
-      return {
-        sku: this.stringValue(record, ['sku']),
-        name: this.stringValue(record, ['name']),
-        quantityAvailable: this.numberValue(record, 'quantityAvailable'),
-        raw: item,
-      };
-    });
-  }
-
-  private toPagedInventoryItems(payload: unknown, requestedPage: number): PagedResponse<InventoryItemRow> {
-    const record = this.asRecord(payload);
-    const rawItems = Array.isArray(record['items']) ? record['items'] : [];
-
-    return {
-      items: this.extractInventoryItems(rawItems),
-      pageNumber: this.numberValue(record, 'pageNumber') ?? requestedPage,
-      pageSize: this.numberValue(record, 'pageSize') ?? rawItems.length,
-      hasMore: this.booleanValue(record, 'hasMore') ?? false,
-    };
-  }
-
-  private asRecord(value: unknown): Record<string, unknown> {
-    return value !== null && typeof value === 'object' ? (value as Record<string, unknown>) : {};
-  }
-
-  private stringValue(record: Record<string, unknown>, keys: string[]): string | undefined {
-    for (const key of keys) {
-      const value = record[key];
-      if (typeof value === 'string' && value.trim().length > 0) {
-        return value;
-      }
-    }
-
-    return undefined;
-  }
-
-  private numberValue(record: Record<string, unknown>, key: string): number | undefined {
-    const value = record[key];
-    return typeof value === 'number' && Number.isFinite(value) ? value : undefined;
-  }
-
-  private booleanValue(record: Record<string, unknown>, key: string): boolean | undefined {
-    const value = record[key];
-    return typeof value === 'boolean' ? value : undefined;
   }
 
   private initializeInventoryObserver(): void {

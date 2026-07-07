@@ -18,6 +18,14 @@ export class ApiHttpClient {
     return this.request('POST', path, label, body);
   }
 
+  async getJson<T>(path: string, label: string): Promise<T> {
+    return this.requestJson<T>('GET', path, label);
+  }
+
+  async postJson<T>(path: string, body: unknown, label: string): Promise<T> {
+    return this.requestJson<T>('POST', path, label, body);
+  }
+
   private async request(method: 'GET' | 'POST', path: string, label: string, body?: unknown): Promise<string> {
     const accessToken = await this.authContext.getAccessToken();
 
@@ -33,6 +41,24 @@ export class ApiHttpClient {
       );
 
       return response ?? '';
+    } catch (error) {
+      throw this.toApiError(error, label);
+    }
+  }
+
+  private async requestJson<T>(method: 'GET' | 'POST', path: string, label: string, body?: unknown): Promise<T> {
+    const accessToken = await this.authContext.getAccessToken();
+
+    try {
+      return await firstValueFrom(
+        this.http.request<T>(method, `${gatewayBaseUrl}${path}`, {
+          body,
+          headers: new HttpHeaders({
+            Authorization: `Bearer ${accessToken}`,
+          }),
+          responseType: 'json',
+        })
+      );
     } catch (error) {
       throw this.toApiError(error, label);
     }
