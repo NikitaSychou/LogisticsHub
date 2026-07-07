@@ -1,6 +1,6 @@
 import { CommonModule } from '@angular/common';
-import { Component, Input, OnDestroy, inject, signal } from '@angular/core';
-import { AccountInfo } from '@azure/msal-browser';
+import { Component, OnDestroy, inject, signal } from '@angular/core';
+import { ApiAuthContext } from '../../../../core/http/api-auth-context';
 import { formatProblemError } from '../../../../core/http/problem-error.mapper';
 import { ErrorAlert } from '../../../../shared/ui/error-alert/error-alert';
 import { ShipmentApiService } from '../../data-access/shipment-api.service';
@@ -17,10 +17,8 @@ import { ShipmentReadById } from '../../ui/shipment-read-by-id/shipment-read-by-
 })
 export class ShipmentsPage implements OnDestroy {
   private readonly shipmentApi = inject(ShipmentApiService);
+  private readonly apiAuthContext = inject(ApiAuthContext);
   private autoRefreshTimer?: number;
-
-  @Input({ required: true }) accessTokenFactory!: () => Promise<string>;
-  @Input({ required: true }) account!: AccountInfo | null;
 
   protected readonly creatingShipment = signal(false);
   protected readonly createShipmentError = signal('');
@@ -73,7 +71,7 @@ export class ShipmentsPage implements OnDestroy {
     this.createShipmentError.set('');
 
     try {
-      const body = await this.shipmentApi.createShipment(request, await this.accessTokenFactory());
+      const body = await this.shipmentApi.createShipment(request, await this.apiAuthContext.getAccessToken());
       const shipment = this.toShipmentRow(this.parseBody(body));
       this.createdShipment.set(shipment);
       this.loadedShipment.set(null);
@@ -102,7 +100,7 @@ export class ShipmentsPage implements OnDestroy {
     this.loadShipmentError.set('');
 
     try {
-      const body = await this.shipmentApi.getShipment(shipmentId, await this.accessTokenFactory());
+      const body = await this.shipmentApi.getShipment(shipmentId, await this.apiAuthContext.getAccessToken());
       this.loadedShipment.set(this.toShipmentRow(this.parseBody(body)));
       this.statusRefreshError.set('');
     } catch (error) {
@@ -140,7 +138,7 @@ export class ShipmentsPage implements OnDestroy {
     this.statusRefreshError.set('');
 
     try {
-      const body = await this.shipmentApi.getShipment(shipment.shipmentId, await this.accessTokenFactory());
+      const body = await this.shipmentApi.getShipment(shipment.shipmentId, await this.apiAuthContext.getAccessToken());
       const refreshedShipment = this.toShipmentRow(this.parseBody(body));
 
       if (target === 'created') {

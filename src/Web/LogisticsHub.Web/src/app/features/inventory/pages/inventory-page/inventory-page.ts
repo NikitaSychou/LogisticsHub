@@ -3,16 +3,13 @@ import {
   AfterViewInit,
   Component,
   ElementRef,
-  Input,
-  OnChanges,
   OnDestroy,
-  SimpleChanges,
   ViewChild,
   computed,
   inject,
   signal,
 } from '@angular/core';
-import { AccountInfo } from '@azure/msal-browser';
+import { ApiAuthContext } from '../../../../core/http/api-auth-context';
 import { formatProblemError } from '../../../../core/http/problem-error.mapper';
 import { PagedResponse } from '../../../../shared/models/paged-response';
 import { ErrorAlert } from '../../../../shared/ui/error-alert/error-alert';
@@ -33,15 +30,12 @@ import { InventoryList } from '../../ui/inventory-list/inventory-list';
   templateUrl: './inventory-page.html',
   styleUrl: './inventory-page.css',
 })
-export class InventoryPage implements AfterViewInit, OnChanges, OnDestroy {
+export class InventoryPage implements AfterViewInit, OnDestroy {
   private readonly inventoryApi = inject(InventoryApiService);
+  private readonly apiAuthContext = inject(ApiAuthContext);
   private observer?: IntersectionObserver;
   private sentinelElement?: HTMLElement;
   private viewReady = false;
-
-  @Input({ required: true }) accessTokenFactory!: () => Promise<string>;
-  @Input({ required: true }) account!: AccountInfo | null;
-  @Input({ required: true }) active = false;
 
   @ViewChild('inventoryScrollSentinel')
   private set inventoryScrollSentinel(value: ElementRef<HTMLElement> | undefined) {
@@ -80,12 +74,6 @@ export class InventoryPage implements AfterViewInit, OnChanges, OnDestroy {
     this.viewReady = true;
     this.initializeInventoryObserver();
     void this.ensureInventoryLoaded();
-  }
-
-  ngOnChanges(changes: SimpleChanges): void {
-    if (changes['active'] || changes['account']) {
-      void this.ensureInventoryLoaded();
-    }
   }
 
   ngOnDestroy(): void {
@@ -135,7 +123,7 @@ export class InventoryPage implements AfterViewInit, OnChanges, OnDestroy {
     this.createItemError.set('');
 
     try {
-      const body = await this.inventoryApi.createInventoryItem(request, await this.accessTokenFactory());
+      const body = await this.inventoryApi.createInventoryItem(request, await this.apiAuthContext.getAccessToken());
       const createdItem = this.extractInventoryItems([this.parseBody(body)])[0] ?? null;
 
       this.showCreateItemForm.set(false);
@@ -184,7 +172,11 @@ export class InventoryPage implements AfterViewInit, OnChanges, OnDestroy {
     this.stockAdjustmentError.set('');
 
     try {
-      const body = await this.inventoryApi.createStockAdjustment(item.sku, request, await this.accessTokenFactory());
+      const body = await this.inventoryApi.createStockAdjustment(
+        item.sku,
+        request,
+        await this.apiAuthContext.getAccessToken()
+      );
       const adjustedItem = this.extractInventoryItems([this.parseBody(body)])[0] ?? null;
 
       this.showStockAdjustmentForm.set(false);
@@ -208,7 +200,7 @@ export class InventoryPage implements AfterViewInit, OnChanges, OnDestroy {
       return;
     }
 
-    if (!this.account) {
+    if (!this.apiAuthContext.account()) {
       this.apiError.set('Sign in before calling the Gateway.');
       return;
     }
@@ -227,7 +219,7 @@ export class InventoryPage implements AfterViewInit, OnChanges, OnDestroy {
     }
 
     try {
-      const body = await this.inventoryApi.getInventoryItemsPage(pageNumber, await this.accessTokenFactory());
+      const body = await this.inventoryApi.getInventoryItemsPage(pageNumber, await this.apiAuthContext.getAccessToken());
       const page = this.toPagedInventoryItems(this.parseBody(body), pageNumber);
       this.inventoryItems.set(options.reset ? page.items : [...this.inventoryItems(), ...page.items]);
       this.currentItemsPage.set(page.pageNumber);
@@ -244,8 +236,7 @@ export class InventoryPage implements AfterViewInit, OnChanges, OnDestroy {
 
   private async ensureInventoryLoaded(): Promise<void> {
     if (
-      !this.active ||
-      !this.account ||
+      !this.apiAuthContext.account() ||
       this.hasLoadedItems() ||
       this.inventoryItems().length > 0 ||
       this.isInventoryLoading()
@@ -370,7 +361,7 @@ export class InventoryPage implements AfterViewInit, OnChanges, OnDestroy {
     this.observer = new IntersectionObserver(
       (entries) => {
         const isVisible = entries.some((entry) => entry.isIntersecting);
-        if (isVisible && this.active && this.hasLoadedItems() && this.hasMoreItems()) {
+        if (isVisible && this.hasLoadedItems() && this.hasMoreItems()) {
           void this.loadMoreInventory();
         }
       },
