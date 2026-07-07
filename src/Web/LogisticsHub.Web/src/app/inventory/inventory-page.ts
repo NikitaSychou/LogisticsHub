@@ -14,7 +14,12 @@ import {
 } from '@angular/core';
 import { AccountInfo } from '@azure/msal-browser';
 import { InventoryApiService } from './inventory-api.service';
-import { CreateInventoryItemRequest, InventoryItemRow, PagedResponse } from './inventory.models';
+import {
+  CreateInventoryItemRequest,
+  CreateStockAdjustmentRequest,
+  InventoryItemRow,
+  PagedResponse,
+} from './inventory.models';
 
 @Component({
   selector: 'app-inventory-page',
@@ -46,6 +51,9 @@ export class InventoryPage implements AfterViewInit, OnChanges, OnDestroy {
   protected readonly showCreateItemForm = signal(false);
   protected readonly creatingItem = signal(false);
   protected readonly createItemError = signal('');
+  protected readonly showStockAdjustmentForm = signal(false);
+  protected readonly adjustingStock = signal(false);
+  protected readonly stockAdjustmentError = signal('');
   protected readonly hasLoadedItems = signal(false);
   protected readonly currentItemsPage = signal(0);
   protected readonly itemsPageSize = signal(0);
@@ -56,6 +64,10 @@ export class InventoryPage implements AfterViewInit, OnChanges, OnDestroy {
     sku: '',
     name: '',
     quantityAvailable: 0,
+  };
+
+  protected readonly stockAdjustmentForm = {
+    quantity: 1,
   };
 
   ngAfterViewInit(): void {
@@ -88,6 +100,8 @@ export class InventoryPage implements AfterViewInit, OnChanges, OnDestroy {
 
   protected selectItem(item: InventoryItemRow): void {
     this.selectedItem.set(item);
+    this.stockAdjustmentError.set('');
+    this.resetStockAdjustmentForm();
   }
 
   protected isSelectedItem(item: InventoryItemRow): boolean {
@@ -145,6 +159,56 @@ export class InventoryPage implements AfterViewInit, OnChanges, OnDestroy {
       this.createItemError.set(this.formatError(error, 'Create inventory item failed.'));
     } finally {
       this.creatingItem.set(false);
+    }
+  }
+
+  protected toggleStockAdjustmentForm(): void {
+    this.showStockAdjustmentForm.update((value) => !value);
+    this.stockAdjustmentError.set('');
+  }
+
+  protected cancelStockAdjustment(): void {
+    this.showStockAdjustmentForm.set(false);
+    this.stockAdjustmentError.set('');
+    this.resetStockAdjustmentForm();
+  }
+
+  protected async submitStockAdjustment(): Promise<void> {
+    if (this.adjustingStock()) {
+      return;
+    }
+
+    const item = this.selectedItem();
+    if (!item?.sku) {
+      this.stockAdjustmentError.set('Select an inventory item before increasing stock.');
+      return;
+    }
+
+    const request = this.toStockAdjustmentRequest();
+    if (!request) {
+      return;
+    }
+
+    this.adjustingStock.set(true);
+    this.stockAdjustmentError.set('');
+
+    try {
+      const body = await this.inventoryApi.createStockAdjustment(item.sku, request, await this.accessTokenFactory());
+      const adjustedItem = this.extractInventoryItems([this.parseBody(body)])[0] ?? null;
+
+      this.showStockAdjustmentForm.set(false);
+      this.resetStockAdjustmentForm();
+      await this.loadInventoryPage(1, { reset: true });
+
+      const skuToSelect = adjustedItem?.sku ?? item.sku;
+      const listItem = this.inventoryItems().find((inventoryItem) => inventoryItem.sku === skuToSelect) ?? adjustedItem;
+      if (listItem) {
+        this.selectItem(listItem);
+      }
+    } catch (error) {
+      this.stockAdjustmentError.set(this.formatError(error, 'Stock adjustment failed.'));
+    } finally {
+      this.adjustingStock.set(false);
     }
   }
 
@@ -231,10 +295,25 @@ export class InventoryPage implements AfterViewInit, OnChanges, OnDestroy {
     };
   }
 
+  private toStockAdjustmentRequest(): CreateStockAdjustmentRequest | null {
+    if (!Number.isFinite(this.stockAdjustmentForm.quantity) || this.stockAdjustmentForm.quantity <= 0) {
+      this.stockAdjustmentError.set('Quantity must be greater than 0.');
+      return null;
+    }
+
+    return {
+      quantity: this.stockAdjustmentForm.quantity,
+    };
+  }
+
   private resetCreateItemForm(): void {
     this.createItemForm.sku = '';
     this.createItemForm.name = '';
     this.createItemForm.quantityAvailable = 0;
+  }
+
+  private resetStockAdjustmentForm(): void {
+    this.stockAdjustmentForm.quantity = 1;
   }
 
   private formatError(error: unknown, fallback: string): string {

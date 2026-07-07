@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { environment } from '../../environments/environment';
-import { CreateInventoryItemRequest } from './inventory.models';
+import { CreateInventoryItemRequest, CreateStockAdjustmentRequest } from './inventory.models';
 
 @Injectable({ providedIn: 'root' })
 export class InventoryApiService {
@@ -25,6 +25,26 @@ export class InventoryApiService {
     });
 
     return this.readResponse(response, 'Create inventory item');
+  }
+
+  async createStockAdjustment(
+    sku: string,
+    request: CreateStockAdjustmentRequest,
+    accessToken: string
+  ): Promise<string> {
+    const response = await fetch(
+      `${environment.api.gatewayBaseUrl}/inventory/inventory-items/${encodeURIComponent(sku)}/stock-adjustments`,
+      {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(request),
+      }
+    );
+
+    return this.readResponse(response, 'Stock adjustment');
   }
 
   private async readResponse(response: Response, label: string): Promise<string> {
