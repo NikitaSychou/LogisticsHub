@@ -2,11 +2,9 @@
   [loading]="loading()"
   [isSignedIn]="isSignedIn()"
   [signedInName]="signedInName()"
-  [activePage]="activePage()"
   [navigationItems]="navigationItems"
   [account]="account()"
   [accessTokenFactory]="getAccessToken"
   (login)="login()"
-  (logout)="logout()"
-  (pageSelected)="showPage($event)">
+  (logout)="logout()">
 </app-shell>
