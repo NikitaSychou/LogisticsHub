@@ -1,5 +1,14 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnInit, computed, signal } from '@angular/core';
+import {
+  AfterViewInit,
+  Component,
+  ElementRef,
+  OnDestroy,
+  OnInit,
+  ViewChild,
+  computed,
+  signal,
+} from '@angular/core';
 import {
   AccountInfo,
   InteractionRequiredAuthError,
@@ -18,24 +27,45 @@ interface CompanyRow {
   raw: unknown;
 }
 
+interface PagedResponse<T> {
+  items: T[];
+  pageNumber: number;
+  pageSize: number;
+  hasMore: boolean;
+}
+
 @Component({
   selector: 'app-root',
   imports: [CommonModule],
   templateUrl: './app.html',
   styleUrl: './app.css'
 })
-export class App implements OnInit {
+export class App implements OnInit, AfterViewInit, OnDestroy {
   private readonly msal = new PublicClientApplication(msalConfig);
+  private observer?: IntersectionObserver;
+  private sentinelElement?: HTMLElement;
+  private viewReady = false;
+
+  @ViewChild('companiesScrollSentinel')
+  private set companiesScrollSentinel(value: ElementRef<HTMLElement> | undefined) {
+    this.sentinelElement = value?.nativeElement;
+    this.initializeCompaniesObserver();
+  }
 
   protected readonly account = signal<AccountInfo | null>(null);
   protected readonly loading = signal(true);
   protected readonly activePage = signal<AppPage>('companies');
   protected readonly apiLoading = signal(false);
+  protected readonly loadingMore = signal(false);
   protected readonly apiResult = signal<string>('');
   protected readonly apiError = signal<string>('');
   protected readonly companies = signal<CompanyRow[]>([]);
   protected readonly hasLoadedCompanies = signal(false);
+  protected readonly currentCompaniesPage = signal(0);
+  protected readonly companiesPageSize = signal(0);
+  protected readonly hasMoreCompanies = signal(false);
   protected readonly isSignedIn = computed(() => this.account() !== null);
+  protected readonly isCompaniesLoading = computed(() => this.apiLoading() || this.loadingMore());
   protected readonly signedInName = computed(() => this.account()?.name ?? this.account()?.username ?? '');
   protected readonly pageTitle = computed(() => {
     switch (this.activePage()) {
@@ -65,6 +95,15 @@ export class App implements OnInit {
     this.loading.set(false);
   }
 
+  ngAfterViewInit(): void {
+    this.viewReady = true;
+    this.initializeCompaniesObserver();
+  }
+
+  ngOnDestroy(): void {
+    this.observer?.disconnect();
+  }
+
   protected async login(): Promise<void> {
     await this.msal.loginRedirect(loginRequest);
   }
@@ -77,21 +116,48 @@ export class App implements OnInit {
   }
 
   protected async loadCompanies(): Promise<void> {
+    await this.loadCompaniesPage(1, { reset: true });
+  }
+
+  protected async loadMoreCompanies(): Promise<void> {
+    if (!this.hasMoreCompanies()) {
+      return;
+    }
+
+    await this.loadCompaniesPage(this.currentCompaniesPage() + 1, { reset: false });
+  }
+
+  protected showPage(page: AppPage): void {
+    this.activePage.set(page);
+  }
+
+  private async loadCompaniesPage(pageNumber: number, options: { reset: boolean }): Promise<void> {
+    if (this.isCompaniesLoading()) {
+      return;
+    }
+
     const account = this.account();
     if (!account) {
       this.apiError.set('Sign in before calling the Gateway.');
       return;
     }
 
-    this.apiLoading.set(true);
-    this.apiResult.set('');
+    this.apiLoading.set(options.reset);
+    this.loadingMore.set(!options.reset);
     this.apiError.set('');
-    this.companies.set([]);
-    this.hasLoadedCompanies.set(false);
+
+    if (options.reset) {
+      this.apiResult.set('');
+      this.companies.set([]);
+      this.hasLoadedCompanies.set(false);
+      this.currentCompaniesPage.set(0);
+      this.companiesPageSize.set(0);
+      this.hasMoreCompanies.set(false);
+    }
 
     try {
       const token = await this.acquireAccessToken(account);
-      const response = await fetch(`${environment.api.gatewayBaseUrl}/company/companies`, {
+      const response = await fetch(`${environment.api.gatewayBaseUrl}/company/companies/page?pageNumber=${pageNumber}`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -104,18 +170,19 @@ export class App implements OnInit {
       }
 
       const parsed = this.parseBody(body);
-      this.companies.set(this.extractCompanies(parsed));
+      const page = this.toPagedCompanies(parsed, pageNumber);
+      this.companies.set(options.reset ? page.items : [...this.companies(), ...page.items]);
+      this.currentCompaniesPage.set(page.pageNumber);
+      this.companiesPageSize.set(page.pageSize);
+      this.hasMoreCompanies.set(page.hasMore);
       this.apiResult.set(this.formatResponse(parsed, body));
       this.hasLoadedCompanies.set(true);
     } catch (error) {
       this.apiError.set(error instanceof Error ? error.message : 'Gateway call failed.');
     } finally {
       this.apiLoading.set(false);
+      this.loadingMore.set(false);
     }
-  }
-
-  protected showPage(page: AppPage): void {
-    this.activePage.set(page);
   }
 
   private async acquireAccessToken(account: AccountInfo): Promise<string> {
@@ -152,10 +219,8 @@ export class App implements OnInit {
     return typeof parsed === 'string' ? parsed : JSON.stringify(parsed, null, 2);
   }
 
-  private extractCompanies(payload: unknown): CompanyRow[] {
-    const items = this.extractItems(payload);
-
-    return items.map((item) => {
+  private extractCompanies(payload: unknown[]): CompanyRow[] {
+    return payload.map((item) => {
       const record = this.asRecord(item);
 
       return {
@@ -168,20 +233,16 @@ export class App implements OnInit {
     });
   }
 
-  private extractItems(payload: unknown): unknown[] {
-    if (Array.isArray(payload)) {
-      return payload;
-    }
-
+  private toPagedCompanies(payload: unknown, requestedPage: number): PagedResponse<CompanyRow> {
     const record = this.asRecord(payload);
-    for (const key of ['items', 'data', 'results', 'companies']) {
-      const value = record[key];
-      if (Array.isArray(value)) {
-        return value;
-      }
-    }
+    const rawItems = Array.isArray(record['items']) ? record['items'] : [];
 
-    return [];
+    return {
+      items: this.extractCompanies(rawItems),
+      pageNumber: this.numberValue(record, 'pageNumber') ?? requestedPage,
+      pageSize: this.numberValue(record, 'pageSize') ?? rawItems.length,
+      hasMore: this.booleanValue(record, 'hasMore') ?? false,
+    };
   }
 
   private asRecord(value: unknown): Record<string, unknown> {
@@ -197,5 +258,33 @@ export class App implements OnInit {
     }
 
     return undefined;
+  }
+
+  private numberValue(record: Record<string, unknown>, key: string): number | undefined {
+    const value = record[key];
+    return typeof value === 'number' && Number.isFinite(value) ? value : undefined;
+  }
+
+  private booleanValue(record: Record<string, unknown>, key: string): boolean | undefined {
+    const value = record[key];
+    return typeof value === 'boolean' ? value : undefined;
+  }
+
+  private initializeCompaniesObserver(): void {
+    if (!this.viewReady || !this.sentinelElement || !('IntersectionObserver' in window)) {
+      return;
+    }
+
+    this.observer?.disconnect();
+    this.observer = new IntersectionObserver(
+      (entries) => {
+        const isVisible = entries.some((entry) => entry.isIntersecting);
+        if (isVisible && this.activePage() === 'companies' && this.hasLoadedCompanies() && this.hasMoreCompanies()) {
+          void this.loadMoreCompanies();
+        }
+      },
+      { rootMargin: '240px 0px' }
+    );
+    this.observer.observe(this.sentinelElement);
   }
 }

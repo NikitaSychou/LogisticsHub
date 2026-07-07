@@ -34,3 +34,7 @@
   overflow: auto;
   font-size: 0.875rem;
 }
+
+.companies-scroll-sentinel {
+  height: 1px;
+}
