@@ -5,12 +5,14 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
+using Swashbuckle.AspNetCore.SwaggerUI;
 
 namespace LogisticsHub.AspNetCore;
 
 public static class AuthenticationExtensions
 {
     private const string BearerSchemeName = "Bearer";
+    private const string OAuthSchemeName = "OAuth2";
 
     public static IServiceCollection AddApiAuthentication(
         this IServiceCollection services,
@@ -36,8 +38,13 @@ public static class AuthenticationExtensions
         return services;
     }
 
-    public static OpenApiOptions AddOpenApiBearerSecurity(this OpenApiOptions options)
+    public static OpenApiOptions AddOpenApiSecurity(
+        this OpenApiOptions options,
+        IConfiguration configuration)
     {
+        var azureAdOptions = AzureAdAuthenticationOptions.FromConfiguration(configuration);
+        var swaggerOAuthOptions = SwaggerOAuthOptions.TryFromConfiguration(configuration, azureAdOptions);
+
         options.AddDocumentTransformer((document, _, _) =>
         {
             document.Components ??= new OpenApiComponents();
@@ -49,6 +56,26 @@ public static class AuthenticationExtensions
                 BearerFormat = "JWT",
                 Description = "Microsoft Entra ID JWT bearer token."
             };
+            if (swaggerOAuthOptions is not null)
+            {
+                document.Components.SecuritySchemes[OAuthSchemeName] = new OpenApiSecurityScheme
+                {
+                    Type = SecuritySchemeType.OAuth2,
+                    Description = "Microsoft Entra ID authorization code flow with PKCE.",
+                    Flows = new OpenApiOAuthFlows
+                    {
+                        AuthorizationCode = new OpenApiOAuthFlow
+                        {
+                            AuthorizationUrl = swaggerOAuthOptions.AuthorizationUrl,
+                            TokenUrl = swaggerOAuthOptions.TokenUrl,
+                            Scopes = new Dictionary<string, string>
+                            {
+                                [swaggerOAuthOptions.Scope] = "Access LogisticsHub APIs"
+                            }
+                        }
+                    }
+                };
+            }
 
             if (document.Paths is null)
             {
@@ -70,15 +97,31 @@ public static class AuthenticationExtensions
                 foreach (var operation in pathItem.Operations.Values)
                 {
                     operation.Security ??= [];
-                    operation.Security.Add(new OpenApiSecurityRequirement
-                    {
-                        [new OpenApiSecuritySchemeReference(BearerSchemeName, document)] = []
-                    });
+                    operation.Security.Add(CreateSecurityRequirement(document, swaggerOAuthOptions));
                 }
             }
 
             return Task.CompletedTask;
         });
+
+        return options;
+    }
+
+    public static SwaggerUIOptions ConfigureOAuth(
+        this SwaggerUIOptions options,
+        IConfiguration configuration)
+    {
+        var azureAdOptions = AzureAdAuthenticationOptions.FromConfiguration(configuration);
+        var swaggerOAuthOptions = SwaggerOAuthOptions.TryFromConfiguration(configuration, azureAdOptions);
+
+        if (swaggerOAuthOptions is null)
+        {
+            return options;
+        }
+
+        options.OAuthClientId(swaggerOAuthOptions.ClientId);
+        options.OAuthScopes(swaggerOAuthOptions.Scope);
+        options.OAuthUsePkce();
 
         return options;
     }
@@ -95,6 +138,24 @@ public static class AuthenticationExtensions
         where TBuilder : IEndpointConventionBuilder
     {
         return builder.RequireAuthorization();
+    }
+
+    private static OpenApiSecurityRequirement CreateSecurityRequirement(
+        OpenApiDocument document,
+        SwaggerOAuthOptions? swaggerOAuthOptions)
+    {
+        if (swaggerOAuthOptions is null)
+        {
+            return new OpenApiSecurityRequirement
+            {
+                [new OpenApiSecuritySchemeReference(BearerSchemeName, document)] = []
+            };
+        }
+
+        return new OpenApiSecurityRequirement
+        {
+            [new OpenApiSecuritySchemeReference(OAuthSchemeName, document)] = [swaggerOAuthOptions.Scope]
+        };
     }
 
     private sealed record AzureAdAuthenticationOptions(
@@ -129,6 +190,35 @@ public static class AuthenticationExtensions
             }
 
             return value;
+        }
+    }
+
+    private sealed record SwaggerOAuthOptions(
+        string ClientId,
+        string Scope,
+        Uri AuthorizationUrl,
+        Uri TokenUrl)
+    {
+        public static SwaggerOAuthOptions? TryFromConfiguration(
+            IConfiguration configuration,
+            AzureAdAuthenticationOptions azureAdOptions)
+        {
+            var section = configuration.GetSection("SwaggerOAuth");
+            var clientId = section["ClientId"];
+            var scope = section["Scope"];
+
+            if (string.IsNullOrWhiteSpace(clientId) || string.IsNullOrWhiteSpace(scope))
+            {
+                return null;
+            }
+
+            var tenantBaseUrl = $"{azureAdOptions.Instance.TrimEnd('/')}/{azureAdOptions.TenantId}";
+
+            return new SwaggerOAuthOptions(
+                clientId,
+                scope,
+                new Uri($"{tenantBaseUrl}/oauth2/v2.0/authorize"),
+                new Uri($"{tenantBaseUrl}/oauth2/v2.0/token"));
         }
     }
 }

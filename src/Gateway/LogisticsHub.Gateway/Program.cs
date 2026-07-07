@@ -17,7 +17,7 @@ builder.Services
     .LoadFromConfig(reverseProxySection);
 
 builder.Services.AddHealthChecks();
-builder.Services.AddOpenApi(options => options.AddOpenApiBearerSecurity());
+builder.Services.AddOpenApi(options => options.AddOpenApiSecurity(builder.Configuration));
 builder.Services.AddApiAuthentication(builder.Configuration);
 
 var app = builder.Build();
@@ -33,6 +33,7 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI(options =>
     {
         options.SwaggerEndpoint("/openapi/v1.json", "LogisticsHub Gateway API v1");
+        options.ConfigureOAuth(app.Configuration);
     });
 }
 
