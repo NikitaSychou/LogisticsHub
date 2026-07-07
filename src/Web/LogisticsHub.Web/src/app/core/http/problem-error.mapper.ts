@@ -1,22 +1,20 @@
+import { ApiHttpError } from './api-http-error';
 import { ProblemDetails } from './problem-details.models';
 
 export function formatProblemError(error: unknown, fallback: string): string {
+  if (error instanceof ApiHttpError) {
+    return tryFormatProblemDetails(error.body) ?? error.message;
+  }
+
   if (!(error instanceof Error)) {
     return fallback;
   }
 
-  const problem = tryExtractProblemDetails(error.message);
-  return problem ?? error.message;
+  return error.message;
 }
 
-function tryExtractProblemDetails(message: string): string | null {
-  const jsonStart = message.indexOf('{');
-  if (jsonStart < 0) {
-    return null;
-  }
-
-  const parsed = parseJson(message.substring(jsonStart));
-  const record = asRecord(parsed) as ProblemDetails;
+function tryFormatProblemDetails(body: unknown): string | null {
+  const record = asRecord(body) as ProblemDetails;
   const errors = asRecord(record.errors);
   const details = Object.entries(errors)
     .flatMap(([field, value]) =>
@@ -26,14 +24,6 @@ function tryExtractProblemDetails(message: string): string | null {
     );
 
   return details.length > 0 ? details.join('\n') : null;
-}
-
-function parseJson(value: string): unknown {
-  try {
-    return JSON.parse(value);
-  } catch {
-    return value;
-  }
 }
 
 function asRecord(value: unknown): Record<string, unknown> {

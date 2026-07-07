@@ -146,7 +146,7 @@ export class CompaniesPage implements AfterViewInit, OnDestroy {
     this.createCompanyError.set('');
 
     try {
-      const body = await this.companyApi.createCompany(request, await this.apiAuthContext.getAccessToken());
+      const body = await this.companyApi.createCompany(request);
       const createdCompany = this.extractCompanies([this.parseBody(body)])[0] ?? null;
 
       this.showCreateCompanyForm.set(false);
@@ -195,7 +195,7 @@ export class CompaniesPage implements AfterViewInit, OnDestroy {
     this.createAddressError.set('');
 
     try {
-      await this.companyApi.createCompanyAddress(company.id, request, await this.apiAuthContext.getAccessToken());
+      await this.companyApi.createCompanyAddress(company.id, request);
       this.showCreateAddressForm.set(false);
       this.resetCreateAddressForm();
       await this.loadCompanyAddresses(company);
@@ -234,7 +234,7 @@ export class CompaniesPage implements AfterViewInit, OnDestroy {
     }
 
     try {
-      const body = await this.companyApi.getCompaniesPage(pageNumber, await this.apiAuthContext.getAccessToken());
+      const body = await this.companyApi.getCompaniesPage(pageNumber);
       const parsed = this.parseBody(body);
       const page = this.toPagedCompanies(parsed, pageNumber);
       this.companies.set(options.reset ? page.items : [...this.companies(), ...page.items]);
@@ -273,7 +273,7 @@ export class CompaniesPage implements AfterViewInit, OnDestroy {
     this.addressesLoading.set(true);
 
     try {
-      const body = await this.companyApi.getCompanyAddresses(company.id, await this.apiAuthContext.getAccessToken());
+      const body = await this.companyApi.getCompanyAddresses(company.id);
 
       if (requestVersion !== this.addressLoadVersion) {
         return;
