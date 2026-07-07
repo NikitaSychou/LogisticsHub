@@ -10,9 +10,7 @@ export interface CompanyRow {
   raw: unknown;
 }
 
-export interface CompanyPageResult extends PagedResponse<CompanyRow> {
-  debugResponse: string;
-}
+export interface CompanyPageResult extends PagedResponse<CompanyRow> {}
 
 export interface CompanyAddressRow {
   id?: string;

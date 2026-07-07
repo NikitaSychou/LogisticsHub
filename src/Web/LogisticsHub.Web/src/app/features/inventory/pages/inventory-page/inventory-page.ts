@@ -203,20 +203,17 @@ export class InventoryPage implements AfterViewInit, OnDestroy {
     this.apiError.set('');
 
     if (options.reset) {
-      this.inventoryItems.set([]);
-      this.selectedItem.set(null);
-      this.hasLoadedItems.set(false);
-      this.currentItemsPage.set(0);
-      this.itemsPageSize.set(0);
-      this.hasMoreItems.set(false);
+      this.resetInventoryPageState();
     }
 
     try {
       const page = await this.inventoryApi.getInventoryItemsPage(pageNumber);
-      this.inventoryItems.set(options.reset ? page.items : [...this.inventoryItems(), ...page.items]);
-      this.currentItemsPage.set(page.pageNumber);
-      this.itemsPageSize.set(page.pageSize);
-      this.hasMoreItems.set(page.hasMore);
+      this.applyInventoryPage(page.items, {
+        pageNumber: page.pageNumber,
+        pageSize: page.pageSize,
+        hasMore: page.hasMore,
+        reset: options.reset,
+      });
       this.hasLoadedItems.set(true);
     } catch (error) {
       this.apiError.set(error instanceof Error ? error.message : 'Inventory load failed.');
@@ -280,6 +277,25 @@ export class InventoryPage implements AfterViewInit, OnDestroy {
 
   private formatError(error: unknown, fallback: string): string {
     return formatProblemError(error, fallback);
+  }
+
+  private resetInventoryPageState(): void {
+    this.inventoryItems.set([]);
+    this.selectedItem.set(null);
+    this.hasLoadedItems.set(false);
+    this.currentItemsPage.set(0);
+    this.itemsPageSize.set(0);
+    this.hasMoreItems.set(false);
+  }
+
+  private applyInventoryPage(
+    items: InventoryItemRow[],
+    page: { pageNumber: number; pageSize: number; hasMore: boolean; reset: boolean }
+  ): void {
+    this.inventoryItems.set(page.reset ? items : [...this.inventoryItems(), ...items]);
+    this.currentItemsPage.set(page.pageNumber);
+    this.itemsPageSize.set(page.pageSize);
+    this.hasMoreItems.set(page.hasMore);
   }
 
   private initializeInventoryObserver(): void {

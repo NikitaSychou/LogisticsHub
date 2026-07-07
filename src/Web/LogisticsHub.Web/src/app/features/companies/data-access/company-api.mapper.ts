@@ -9,7 +9,6 @@ export function toCompanyPageResult(payload: unknown, requestedPage: number): Co
     pageNumber: numberValue(record, 'pageNumber') ?? requestedPage,
     pageSize: numberValue(record, 'pageSize') ?? rawItems.length,
     hasMore: booleanValue(record, 'hasMore') ?? false,
-    debugResponse: formatResponse(payload),
   };
 }
 
@@ -45,12 +44,6 @@ function toCompanyAddressRow(payload: unknown): CompanyAddressRow {
     createdAtUtc: stringValue(record, ['createdAtUtc']),
     updatedAtUtc: stringValue(record, ['updatedAtUtc']),
   };
-}
-
-function formatResponse(payload: unknown): string {
-  return payload === null || payload === undefined
-    ? '(empty response)'
-    : JSON.stringify(payload, null, 2);
 }
 
 function asRecord(value: unknown): Record<string, unknown> {
