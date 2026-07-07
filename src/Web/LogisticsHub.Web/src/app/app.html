@@ -72,7 +72,7 @@
             type="button"
             class="btn btn-primary"
             (click)="loadCompanies()"
-            [disabled]="apiLoading()">
+            [disabled]="isCompaniesLoading()">
             {{ apiLoading() ? 'Loading...' : 'Load companies' }}
           </button>
         </div>
@@ -116,6 +116,28 @@
                   </p>
                 </div>
               </ng-template>
+            </div>
+          </div>
+
+          <div
+            #companiesScrollSentinel
+            class="companies-scroll-sentinel"
+            aria-hidden="true">
+          </div>
+
+          <div class="d-flex flex-column align-items-center gap-2 py-3" *ngIf="hasLoadedCompanies() && companies().length > 0">
+            <button
+              type="button"
+              class="btn btn-outline-primary"
+              (click)="loadMoreCompanies()"
+              [disabled]="isCompaniesLoading()"
+              *ngIf="hasMoreCompanies()">
+              {{ loadingMore() ? 'Loading more...' : 'Load more' }}
+            </button>
+            <div class="small text-secondary" *ngIf="loadingMore()">Loading more...</div>
+            <div class="small text-secondary" *ngIf="!hasMoreCompanies()">All companies loaded.</div>
+            <div class="small text-secondary" *ngIf="currentCompaniesPage() > 0">
+              Page {{ currentCompaniesPage() }} loaded<span *ngIf="companiesPageSize() > 0">, {{ companiesPageSize() }} per page</span>.
             </div>
           </div>
 
