@@ -47,6 +47,20 @@ public sealed class CompanyDbContext : DbContext, ICompanyDbContext
             .ToListAsync(cancellationToken);
     }
 
+    public async Task<IReadOnlyList<Company>> ListCompaniesPageAsync(
+        int pageNumber,
+        int pageSize,
+        CancellationToken cancellationToken = default)
+    {
+        return await Companies
+            .AsNoTracking()
+            .OrderBy(company => company.Name)
+            .ThenBy(company => company.Id)
+            .Skip((pageNumber - 1) * pageSize)
+            .Take(pageSize + 1)
+            .ToListAsync(cancellationToken);
+    }
+
     public async Task<bool> CompanyExistsAsync(Guid id, CancellationToken cancellationToken = default)
     {
         return await Companies

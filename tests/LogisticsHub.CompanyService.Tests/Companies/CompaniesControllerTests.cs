@@ -1,6 +1,7 @@
 using LogisticsHub.CompanyService.Application.Companies.Addresses.ListCompanyAddresses;
 using LogisticsHub.CompanyService.Application.Companies.Addresses.CreateCompanyAddress;
 using LogisticsHub.CompanyService.Application.Companies.Company.UpdateCompany;
+using LogisticsHub.CompanyService.Application.Companies.Company.ListCompaniesPage;
 using LogisticsHub.CompanyService.Application.Companies.Company.ListCompanies;
 using LogisticsHub.CompanyService.Application.Companies.Company.GetCompany;
 using LogisticsHub.CompanyService.Application.Companies.Company.CreateCompany;
@@ -18,6 +19,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Localization;
+using Microsoft.Extensions.Options;
 using Xunit;
 
 namespace LogisticsHub.CompanyService.Tests.Companies;
@@ -91,6 +93,41 @@ public sealed class CompaniesControllerTests
 
         var objectResult = Assert.IsAssignableFrom<ObjectResult>(response);
         Assert.Equal(StatusCodes.Status409Conflict, objectResult.StatusCode);
+    }
+
+    [Fact]
+    public async Task ListPageAsync_WhenPageNumberIsOmitted_ReturnsFirstPage()
+    {
+        var company = CreateCompanyResult();
+        var controller = CreateController(new FakeMediator
+        {
+            ListCompaniesPageResult = new PagedResponse<CompanyResult>(
+                [company],
+                PageNumber: 1,
+                PageSize: 50,
+                HasMore: true)
+        });
+
+        var response = await controller.ListPageAsync(cancellationToken: CancellationToken.None);
+
+        var okResult = Assert.IsType<OkObjectResult>(response);
+        var value = Assert.IsAssignableFrom<PagedResponse<CompanyResponse>>(okResult.Value);
+        Assert.Equal(1, value.PageNumber);
+        Assert.Equal(50, value.PageSize);
+        Assert.True(value.HasMore);
+        var item = Assert.Single(value.Items);
+        Assert.Equal(company.Id, item.Id);
+    }
+
+    [Fact]
+    public async Task ListPageAsync_WhenPageNumberIsInvalid_ReturnsBadRequest()
+    {
+        var controller = CreateController();
+
+        var response = await controller.ListPageAsync(pageNumber: 0, CancellationToken.None);
+
+        AssertValidationProblem(response, StatusCodes.Status400BadRequest);
+        Assert.True(controller.ModelState.ContainsKey("pageNumber"));
     }
 
     [Fact]
@@ -179,7 +216,12 @@ public sealed class CompaniesControllerTests
             new FakeCompanyBusinessErrorLocalizer(),
             new CreateCompanyRequestValidator(new FakeCompanyValidationLocalizer()),
             new UpdateCompanyRequestValidator(new FakeCompanyValidationLocalizer()),
-            new CompanyAddressRequestValidator(new FakeCompanyValidationLocalizer()))
+            new CompanyAddressRequestValidator(new FakeCompanyValidationLocalizer()),
+            Options.Create(new PaginationOptions
+            {
+                DefaultPageSize = 50,
+                MaxPageSize = 100
+            }))
         {
             ControllerContext = new ControllerContext
             {
@@ -263,6 +305,9 @@ public sealed class CompaniesControllerTests
         public Result<CompanyAddressResult> GetCompanyAddressResult { get; set; } =
             Result<CompanyAddressResult>.Success(CompaniesControllerTests.CreateAddressResult());
 
+        public PagedResponse<CompanyResult> ListCompaniesPageResult { get; set; } =
+            new([], PageNumber: 1, PageSize: 50, HasMore: false);
+
         public Task<TResponse> Send<TResponse>(IRequest<TResponse> request, CancellationToken cancellationToken = default)
         {
             object result = request switch
@@ -272,6 +317,7 @@ public sealed class CompaniesControllerTests
                 UpdateCompanyCommand => UpdateCompanyResult,
                 CreateCompanyAddressCommand => CreateCompanyAddressResult,
                 GetCompanyAddressQuery => GetCompanyAddressResult,
+                ListCompaniesPageQuery => ListCompaniesPageResult,
                 ListCompaniesQuery => Array.Empty<CompanyResult>(),
                 ListCompanyAddressesQuery => Array.Empty<CompanyAddressResult>(),
                 _ => throw new InvalidOperationException($"Unexpected request type '{request.GetType().Name}'.")

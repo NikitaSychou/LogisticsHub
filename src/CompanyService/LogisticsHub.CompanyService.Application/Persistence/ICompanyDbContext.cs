@@ -12,6 +12,11 @@ public interface ICompanyDbContext
 
     Task<IReadOnlyList<Company>> ListCompaniesAsync(CancellationToken cancellationToken = default);
 
+    Task<IReadOnlyList<Company>> ListCompaniesPageAsync(
+        int pageNumber,
+        int pageSize,
+        CancellationToken cancellationToken = default);
+
     Task<bool> CompanyExistsAsync(Guid id, CancellationToken cancellationToken = default);
 
     Task AddCompanyAsync(Company company, CancellationToken cancellationToken = default);

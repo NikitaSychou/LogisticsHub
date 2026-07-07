@@ -1,4 +1,5 @@
 using LogisticsHub.CompanyService.Application.Companies.Addresses.ListCompanyAddresses;
+using LogisticsHub.CompanyService.Application.Companies.Company.ListCompaniesPage;
 using LogisticsHub.CompanyService.Application.Companies.Company.ListCompanies;
 using LogisticsHub.CompanyService.Application.Companies.Company.GetCompany;
 using FluentValidation;
@@ -12,6 +13,7 @@ using LogisticsHub.Results;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Localization;
+using Microsoft.Extensions.Options;
 
 namespace LogisticsHub.CompanyService.Controllers;
 
@@ -24,19 +26,22 @@ public sealed class CompaniesController : ControllerBase
     private readonly IValidator<CreateCompanyRequest> _createCompanyValidator;
     private readonly IValidator<UpdateCompanyRequest> _updateCompanyValidator;
     private readonly IValidator<CreateCompanyAddressRequest> _createCompanyAddressValidator;
+    private readonly PaginationOptions _paginationOptions;
 
     public CompaniesController(
         IMediator mediator,
         IStringLocalizer<CompanyBusinessErrorMessages> errorLocalizer,
         IValidator<CreateCompanyRequest> createCompanyValidator,
         IValidator<UpdateCompanyRequest> updateCompanyValidator,
-        IValidator<CreateCompanyAddressRequest> createCompanyAddressValidator)
+        IValidator<CreateCompanyAddressRequest> createCompanyAddressValidator,
+        IOptions<PaginationOptions> paginationOptions)
     {
         _mediator = mediator;
         _errorLocalizer = errorLocalizer;
         _createCompanyValidator = createCompanyValidator;
         _updateCompanyValidator = updateCompanyValidator;
         _createCompanyAddressValidator = createCompanyAddressValidator;
+        _paginationOptions = paginationOptions.Value;
     }
 
     [HttpPost]
@@ -90,6 +95,30 @@ public sealed class CompaniesController : ControllerBase
         var response = result
             .Select(CompanyMapper.ToResponse)
             .ToArray();
+
+        return Ok(response);
+    }
+
+    [HttpGet("page")]
+    [ProducesResponseType(typeof(PagedResponse<CompanyResponse>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> ListPageAsync(
+        [FromQuery] int pageNumber = 1,
+        CancellationToken cancellationToken = default)
+    {
+        if (pageNumber < 1)
+        {
+            ModelState.AddModelError("pageNumber", "pageNumber must be greater than or equal to 1.");
+            return ValidationProblem(ModelState);
+        }
+
+        var pageSize = _paginationOptions.GetEffectivePageSize();
+        var result = await _mediator.Send(new ListCompaniesPageQuery(pageNumber, pageSize), cancellationToken);
+        var response = new PagedResponse<CompanyResponse>(
+            result.Items.Select(CompanyMapper.ToResponse).ToArray(),
+            result.PageNumber,
+            result.PageSize,
+            result.HasMore);
 
         return Ok(response);
     }

@@ -6,6 +6,7 @@ using LogisticsHub.CompanyService.Contracts;
 using LogisticsHub.CompanyService.Validation;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.Localization;
+using LogisticsHub.Results;
 using System.Globalization;
 using System.Text.Json.Serialization;
 
@@ -22,6 +23,7 @@ builder.Services
     .AddCompanyDbHealthCheck();
 builder.Services.AddOpenApi(options => options.AddOpenApiSecurity(builder.Configuration));
 builder.Services.AddApiAuthentication(builder.Configuration);
+builder.Services.Configure<PaginationOptions>(builder.Configuration.GetSection("Pagination"));
 builder.Services.AddLocalization(options =>
 {
     options.ResourcesPath = "Resources";
