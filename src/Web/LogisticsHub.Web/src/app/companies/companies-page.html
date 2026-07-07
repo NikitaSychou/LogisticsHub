@@ -6,17 +6,87 @@
     </p>
   </div>
 
-  <button
-    *ngIf="apiError() && !hasLoadedCompanies()"
-    type="button"
-    class="btn btn-outline-primary"
-    (click)="loadCompanies()"
-    [disabled]="isCompaniesLoading()">
-    {{ apiLoading() ? 'Retrying...' : 'Retry' }}
-  </button>
+  <div class="d-flex gap-2">
+    <button
+      *ngIf="apiError() && !hasLoadedCompanies()"
+      type="button"
+      class="btn btn-outline-primary"
+      (click)="loadCompanies()"
+      [disabled]="isCompaniesLoading()">
+      {{ apiLoading() ? 'Retrying...' : 'Retry' }}
+    </button>
+    <button
+      type="button"
+      class="btn btn-primary"
+      (click)="toggleCreateCompanyForm()"
+      [disabled]="creatingCompany()">
+      New company
+    </button>
+  </div>
 </div>
 
 <div class="alert alert-danger" *ngIf="apiError()">{{ apiError() }}</div>
+
+<div class="card shadow-sm mb-3" *ngIf="showCreateCompanyForm()">
+  <div class="card-body">
+    <div class="d-flex justify-content-between align-items-start gap-3 mb-3">
+      <div>
+        <h2 class="h5 mb-1">New company</h2>
+        <p class="text-secondary small mb-0">Create a customer company record.</p>
+      </div>
+      <button type="button" class="btn-close" aria-label="Close" (click)="cancelCreateCompany()"></button>
+    </div>
+
+    <div class="alert alert-danger validation-alert" *ngIf="createCompanyError()">{{ createCompanyError() }}</div>
+
+    <form class="row g-3" (ngSubmit)="submitCreateCompany()">
+      <div class="col-12 col-lg-5">
+        <label for="companyName" class="form-label">Name</label>
+        <input
+          id="companyName"
+          name="companyName"
+          type="text"
+          class="form-control"
+          [value]="createCompanyForm.name"
+          (input)="createCompanyForm.name = inputValue($event)"
+          required
+          maxlength="200">
+      </div>
+      <div class="col-12 col-lg-4">
+        <label for="companyExternalCode" class="form-label">External code</label>
+        <input
+          id="companyExternalCode"
+          name="companyExternalCode"
+          type="text"
+          class="form-control"
+          [value]="createCompanyForm.externalCode"
+          (input)="createCompanyForm.externalCode = inputValue($event)"
+          maxlength="64">
+      </div>
+      <div class="col-12 col-lg-3">
+        <label for="companyStatus" class="form-label">Status</label>
+        <select
+          id="companyStatus"
+          name="companyStatus"
+          class="form-select"
+          [value]="createCompanyForm.status"
+          (change)="createCompanyForm.status = inputValue($event)"
+          required>
+          <option value="Active">Active</option>
+          <option value="Inactive">Inactive</option>
+        </select>
+      </div>
+      <div class="col-12 d-flex gap-2">
+        <button type="submit" class="btn btn-primary" [disabled]="creatingCompany()">
+          {{ creatingCompany() ? 'Creating...' : 'Create company' }}
+        </button>
+        <button type="button" class="btn btn-outline-secondary" (click)="cancelCreateCompany()" [disabled]="creatingCompany()">
+          Cancel
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
 
 <div class="row g-3">
   <div class="col-12 col-xl-8">
@@ -89,7 +159,113 @@
 
         <hr>
 
-        <h3 class="h6 mb-3">Addresses</h3>
+        <div class="d-flex justify-content-between align-items-center gap-3 mb-3">
+          <h3 class="h6 mb-0">Addresses</h3>
+          <button
+            type="button"
+            class="btn btn-sm btn-outline-primary"
+            (click)="toggleCreateAddressForm()"
+            [disabled]="creatingAddress()">
+            Add address
+          </button>
+        </div>
+
+        <div class="border rounded p-3 mb-3" *ngIf="showCreateAddressForm()">
+          <div class="d-flex justify-content-between align-items-start gap-3 mb-3">
+            <div>
+              <h4 class="h6 mb-1">Add address</h4>
+              <div class="text-secondary small">Add an address to the selected company.</div>
+            </div>
+            <button type="button" class="btn-close" aria-label="Close" (click)="cancelCreateAddress()"></button>
+          </div>
+
+          <div class="alert alert-danger validation-alert" *ngIf="createAddressError()">{{ createAddressError() }}</div>
+
+          <form class="row g-2" (ngSubmit)="submitCreateAddress()">
+            <div class="col-12 col-md-6">
+              <label for="addressType" class="form-label">Type</label>
+              <select
+                id="addressType"
+                name="addressType"
+                class="form-select"
+                [value]="createAddressForm.addressType"
+                (change)="createAddressForm.addressType = inputValue($event)"
+                required>
+                <option value="Legal">Legal</option>
+                <option value="Billing">Billing</option>
+                <option value="Shipping">Shipping</option>
+                <option value="Warehouse">Warehouse</option>
+              </select>
+            </div>
+            <div class="col-12 col-md-6">
+              <label for="countryCode" class="form-label">Country code</label>
+              <input
+                id="countryCode"
+                name="countryCode"
+                type="text"
+                class="form-control"
+                [value]="createAddressForm.countryCode"
+                (input)="createAddressForm.countryCode = inputValue($event)"
+                required
+                maxlength="2">
+            </div>
+            <div class="col-12">
+              <label for="line1" class="form-label">Line 1</label>
+              <input
+                id="line1"
+                name="line1"
+                type="text"
+                class="form-control"
+                [value]="createAddressForm.line1"
+                (input)="createAddressForm.line1 = inputValue($event)"
+                required
+                maxlength="200">
+            </div>
+            <div class="col-12">
+              <label for="line2" class="form-label">Line 2</label>
+              <input
+                id="line2"
+                name="line2"
+                type="text"
+                class="form-control"
+                [value]="createAddressForm.line2"
+                (input)="createAddressForm.line2 = inputValue($event)"
+                maxlength="200">
+            </div>
+            <div class="col-12 col-md-7">
+              <label for="city" class="form-label">City</label>
+              <input
+                id="city"
+                name="city"
+                type="text"
+                class="form-control"
+                [value]="createAddressForm.city"
+                (input)="createAddressForm.city = inputValue($event)"
+                required
+                maxlength="100">
+            </div>
+            <div class="col-12 col-md-5">
+              <label for="postalCode" class="form-label">Postal code</label>
+              <input
+                id="postalCode"
+                name="postalCode"
+                type="text"
+                class="form-control"
+                [value]="createAddressForm.postalCode"
+                (input)="createAddressForm.postalCode = inputValue($event)"
+                maxlength="32">
+            </div>
+            <div class="col-12 d-flex gap-2 mt-3">
+              <button type="submit" class="btn btn-primary btn-sm" [disabled]="creatingAddress()">
+                {{ creatingAddress() ? 'Adding...' : 'Add address' }}
+              </button>
+              <button type="button" class="btn btn-outline-secondary btn-sm" (click)="cancelCreateAddress()" [disabled]="creatingAddress()">
+                Cancel
+              </button>
+            </div>
+          </form>
+        </div>
+
         <div class="text-secondary small" *ngIf="addressesLoading()">Loading addresses...</div>
         <div class="alert alert-warning py-2" *ngIf="addressError()">{{ addressError() }}</div>
 
