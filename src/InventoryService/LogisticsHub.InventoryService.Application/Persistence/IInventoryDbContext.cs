@@ -6,6 +6,8 @@ public interface IInventoryDbContext
 {
     Task<Item?> GetItemBySkuAsync(string sku, CancellationToken cancellationToken = default);
 
+    Task<Item?> GetItemForUpdateBySkuAsync(string sku, CancellationToken cancellationToken = default);
+
     Task<IReadOnlyList<Item>> GetItemsBySkusAsync(
         IReadOnlyCollection<string> skus,
         CancellationToken cancellationToken = default);

@@ -4,7 +4,6 @@ using LogisticsHub.InventoryService.Controllers;
 using LogisticsHub.InventoryService.Localization;
 using LogisticsHub.Results;
 using LogisticsHub.InventoryService.Validation;
-using LogisticsHub.Results;
 using MediatR;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -129,6 +128,56 @@ public sealed class InventoryItemsControllerTests
         Assert.Single(value.Items);
     }
 
+    [Fact]
+    public async Task CreateStockAdjustmentAsync_WhenQuantityIsInvalid_ReturnsBadRequest()
+    {
+        var controller = CreateController();
+
+        var response = await controller.CreateStockAdjustmentAsync(
+            "TEST-SKU",
+            new CreateStockAdjustmentRequest(0),
+            CancellationToken.None);
+
+        AssertValidationProblem(response, StatusCodes.Status400BadRequest);
+        Assert.True(controller.ModelState.ContainsKey(nameof(CreateStockAdjustmentRequest.Quantity)));
+    }
+
+    [Fact]
+    public async Task CreateStockAdjustmentAsync_WhenInventoryItemDoesNotExist_ReturnsNotFound()
+    {
+        var controller = CreateController(new FakeMediator
+        {
+            IncreaseInventoryItemStockResult = Result<InventoryItemResult>.Failure(InventoryItemErrors.NotFound("TEST-SKU"))
+        });
+
+        var response = await controller.CreateStockAdjustmentAsync(
+            "TEST-SKU",
+            new CreateStockAdjustmentRequest(10),
+            CancellationToken.None);
+
+        Assert.IsType<NotFoundResult>(response);
+    }
+
+    [Fact]
+    public async Task CreateStockAdjustmentAsync_WhenStockIsIncreased_ReturnsUpdatedItem()
+    {
+        var result = new InventoryItemResult("TEST-SKU", "Test item", 15);
+        var controller = CreateController(new FakeMediator
+        {
+            IncreaseInventoryItemStockResult = Result<InventoryItemResult>.Success(result)
+        });
+
+        var response = await controller.CreateStockAdjustmentAsync(
+            "TEST-SKU",
+            new CreateStockAdjustmentRequest(10),
+            CancellationToken.None);
+
+        var okResult = Assert.IsType<OkObjectResult>(response);
+        var value = Assert.IsAssignableFrom<GetInventoryItemResponse>(okResult.Value);
+        Assert.Equal(result.Sku, value.Sku);
+        Assert.Equal(15, value.QuantityAvailable);
+    }
+
     private static InventoryItemsController CreateController()
     {
         return CreateController(new FakeMediator());
@@ -145,6 +194,7 @@ public sealed class InventoryItemsControllerTests
         return new InventoryItemsController(
             mediator,
             new CreateInventoryItemRequestValidator(new FakeInventoryValidationLocalizer()),
+            new CreateStockAdjustmentRequestValidator(new FakeInventoryValidationLocalizer()),
             Options.Create(new PaginationOptions
             {
                 DefaultPageSize = pageSize,
@@ -195,6 +245,9 @@ public sealed class InventoryItemsControllerTests
         public PagedResponse<InventoryItemResult> ListInventoryItemsPageResult { get; set; } =
             new([InventoryItemsControllerTests.CreateResult()], 1, 50, false);
 
+        public Result<InventoryItemResult> IncreaseInventoryItemStockResult { get; set; } =
+            Result<InventoryItemResult>.Success(InventoryItemsControllerTests.CreateResult());
+
         public Task<TResponse> Send<TResponse>(IRequest<TResponse> request, CancellationToken cancellationToken = default)
         {
             object result = request switch
@@ -202,6 +255,7 @@ public sealed class InventoryItemsControllerTests
                 CreateInventoryItemCommand => CreateInventoryItemResult,
                 GetInventoryItemQuery => GetInventoryItemResult,
                 ListInventoryItemsPageQuery => ListInventoryItemsPageResult,
+                IncreaseInventoryItemStockCommand => IncreaseInventoryItemStockResult,
                 _ => throw new InvalidOperationException($"Unexpected request type '{request.GetType().Name}'.")
             };
 

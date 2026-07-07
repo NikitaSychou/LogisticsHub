@@ -44,6 +44,7 @@ builder.Services.AddMediatR(configuration =>
     configuration.RegisterServicesFromAssembly(typeof(CreateInventoryItem).Assembly);
 });
 builder.Services.AddScoped<IValidator<CreateInventoryItemRequest>, CreateInventoryItemRequestValidator>();
+builder.Services.AddScoped<IValidator<CreateStockAdjustmentRequest>, CreateStockAdjustmentRequestValidator>();
 builder.Services.AddScoped<IValidator<CreateStockReservationRequest>, CreateStockReservationRequestValidator>();
 
 builder.Services.AddHostedService<StockReservationRequestedConsumer>();
