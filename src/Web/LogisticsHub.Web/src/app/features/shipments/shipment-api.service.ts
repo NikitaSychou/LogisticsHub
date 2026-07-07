@@ -1,11 +1,11 @@
 import { Injectable } from '@angular/core';
-import { environment } from '../../../environments/environment';
+import { gatewayBaseUrl } from '../../core/http/api-config';
 import { CreateShipmentRequest } from './shipment.models';
 
 @Injectable({ providedIn: 'root' })
 export class ShipmentApiService {
   async createShipment(request: CreateShipmentRequest, accessToken: string): Promise<string> {
-    const response = await fetch(`${environment.api.gatewayBaseUrl}/shipment/shipments`, {
+    const response = await fetch(`${gatewayBaseUrl}/shipment/shipments`, {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${accessToken}`,
@@ -19,7 +19,7 @@ export class ShipmentApiService {
 
   async getShipment(shipmentId: string, accessToken: string): Promise<string> {
     const response = await fetch(
-      `${environment.api.gatewayBaseUrl}/shipment/shipments/${encodeURIComponent(shipmentId)}`,
+      `${gatewayBaseUrl}/shipment/shipments/${encodeURIComponent(shipmentId)}`,
       {
         headers: {
           Authorization: `Bearer ${accessToken}`,

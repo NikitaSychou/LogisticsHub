@@ -13,13 +13,13 @@ import {
   signal,
 } from '@angular/core';
 import { AccountInfo } from '@azure/msal-browser';
+import { PagedResponse } from '../../shared/models/paged-response';
 import { CompanyApiService } from './company-api.service';
 import {
   CompanyAddressRow,
   CompanyRow,
   CreateCompanyAddressRequest,
   CreateCompanyRequest,
-  PagedResponse,
 } from './company.models';
 
 @Component({

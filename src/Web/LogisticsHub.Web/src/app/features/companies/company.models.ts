@@ -20,13 +20,6 @@ export interface CompanyAddressRow {
   updatedAtUtc?: string;
 }
 
-export interface PagedResponse<T> {
-  items: T[];
-  pageNumber: number;
-  pageSize: number;
-  hasMore: boolean;
-}
-
 export interface CreateCompanyRequest {
   name: string;
   externalCode: string | null;

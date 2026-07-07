@@ -1,11 +1,11 @@
 import { Injectable } from '@angular/core';
-import { environment } from '../../../environments/environment';
+import { gatewayBaseUrl } from '../../core/http/api-config';
 import { CreateInventoryItemRequest, CreateStockAdjustmentRequest } from './inventory.models';
 
 @Injectable({ providedIn: 'root' })
 export class InventoryApiService {
   async getInventoryItemsPage(pageNumber: number, accessToken: string): Promise<string> {
-    const response = await fetch(`${environment.api.gatewayBaseUrl}/inventory/inventory-items/page?pageNumber=${pageNumber}`, {
+    const response = await fetch(`${gatewayBaseUrl}/inventory/inventory-items/page?pageNumber=${pageNumber}`, {
       headers: {
         Authorization: `Bearer ${accessToken}`,
       },
@@ -15,7 +15,7 @@ export class InventoryApiService {
   }
 
   async createInventoryItem(request: CreateInventoryItemRequest, accessToken: string): Promise<string> {
-    const response = await fetch(`${environment.api.gatewayBaseUrl}/inventory/inventory-items`, {
+    const response = await fetch(`${gatewayBaseUrl}/inventory/inventory-items`, {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${accessToken}`,
@@ -33,7 +33,7 @@ export class InventoryApiService {
     accessToken: string
   ): Promise<string> {
     const response = await fetch(
-      `${environment.api.gatewayBaseUrl}/inventory/inventory-items/${encodeURIComponent(sku)}/stock-adjustments`,
+      `${gatewayBaseUrl}/inventory/inventory-items/${encodeURIComponent(sku)}/stock-adjustments`,
       {
         method: 'POST',
         headers: {

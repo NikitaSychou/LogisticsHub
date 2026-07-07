@@ -1,78 +1,12 @@
-<main *ngIf="loading()" class="min-vh-100 d-flex align-items-center justify-content-center bg-body-tertiary">
-  <div class="text-secondary">Checking sign-in state...</div>
-</main>
-
-<main *ngIf="!loading() && !isSignedIn()" class="login-page bg-body-tertiary">
-  <section class="card login-card shadow-sm">
-    <div class="card-body p-4 p-md-5">
-      <p class="text-primary fw-semibold text-uppercase small mb-2">LogisticsHub</p>
-      <h1 class="h3 mb-2">Operations dashboard</h1>
-      <p class="text-secondary mb-4">Sign in to access operational data through the protected Gateway.</p>
-      <button type="button" class="btn btn-primary w-100" (click)="login()">Sign in with Microsoft</button>
-    </div>
-  </section>
-</main>
-
-<ng-container *ngIf="!loading() && isSignedIn()">
-  <nav class="navbar navbar-expand border-bottom bg-white">
-    <div class="container-fluid px-4">
-      <span class="navbar-brand fw-semibold">LogisticsHub</span>
-      <div class="ms-auto d-flex align-items-center gap-3">
-        <span class="text-secondary small d-none d-sm-inline">{{ signedInName() }}</span>
-        <button type="button" class="btn btn-outline-secondary btn-sm" (click)="logout()">Sign out</button>
-      </div>
-    </div>
-  </nav>
-
-  <div class="container-fluid px-4 py-4">
-    <div class="row g-4">
-      <aside class="col-12 col-lg-2">
-        <div class="sidebar-nav nav nav-pills flex-lg-column gap-2">
-          <button
-            type="button"
-            class="nav-link text-start"
-            [class.active]="activePage() === 'companies'"
-            (click)="showPage('companies')">
-            Companies
-          </button>
-          <button
-            type="button"
-            class="nav-link text-start"
-            [class.active]="activePage() === 'inventory'"
-            (click)="showPage('inventory')">
-            Inventory
-          </button>
-          <button
-            type="button"
-            class="nav-link text-start"
-            [class.active]="activePage() === 'shipments'"
-            (click)="showPage('shipments')">
-            Shipments
-          </button>
-        </div>
-      </aside>
-
-      <section class="col-12 col-lg-10">
-        <app-companies-page
-          *ngIf="activePage() === 'companies'"
-          [account]="account()"
-          [active]="activePage() === 'companies'"
-          [accessTokenFactory]="getAccessToken">
-        </app-companies-page>
-
-        <app-inventory-page
-          *ngIf="activePage() === 'inventory'"
-          [account]="account()"
-          [active]="activePage() === 'inventory'"
-          [accessTokenFactory]="getAccessToken">
-        </app-inventory-page>
-
-        <app-shipments-page
-          *ngIf="activePage() === 'shipments'"
-          [account]="account()"
-          [accessTokenFactory]="getAccessToken">
-        </app-shipments-page>
-      </section>
-    </div>
-  </div>
-</ng-container>
+<app-shell
+  [loading]="loading()"
+  [isSignedIn]="isSignedIn()"
+  [signedInName]="signedInName()"
+  [activePage]="activePage()"
+  [navigationItems]="navigationItems"
+  [account]="account()"
+  [accessTokenFactory]="getAccessToken"
+  (login)="login()"
+  (logout)="logout()"
+  (pageSelected)="showPage($event)">
+</app-shell>
