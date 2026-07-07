@@ -1,0 +1,36 @@
+<main class="shell">
+  <section class="panel">
+    <header>
+      <p class="eyebrow">LogisticsHub</p>
+      <h1>Gateway auth smoke test</h1>
+    </header>
+
+    <div *ngIf="loading()" class="status">Checking sign-in state...</div>
+
+    <ng-container *ngIf="!loading()">
+      <div class="account" *ngIf="isSignedIn(); else signedOut">
+        <span>Signed in as</span>
+        <strong>{{ account()?.username }}</strong>
+      </div>
+
+      <ng-template #signedOut>
+        <div class="account muted">Signed out</div>
+      </ng-template>
+
+      <div class="actions">
+        <button type="button" (click)="login()" *ngIf="!isSignedIn()">Sign in</button>
+        <button type="button" (click)="logout()" *ngIf="isSignedIn()">Sign out</button>
+        <button type="button" (click)="loadCompanies()" [disabled]="!isSignedIn() || apiLoading()">
+          {{ apiLoading() ? 'Calling Gateway...' : 'Load companies' }}
+        </button>
+      </div>
+
+      <p class="hint">
+        Calls <code>GET http://localhost:5100/company/companies</code> with an MSAL access token.
+      </p>
+
+      <pre class="result" *ngIf="apiResult()">{{ apiResult() }}</pre>
+      <p class="error" *ngIf="apiError()">{{ apiError() }}</p>
+    </ng-container>
+  </section>
+</main>
