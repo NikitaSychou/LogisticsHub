@@ -1,7 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component, EventEmitter, Input, Output } from '@angular/core';
-import { EmptyState } from '../../../shared/ui/empty-state/empty-state';
-import { CompanyRow } from '../company.models';
+import { EmptyState } from '../../../../shared/ui/empty-state/empty-state';
+import { CompanyRow } from '../../models/company.models';
 
 @Component({
   selector: 'app-company-list',

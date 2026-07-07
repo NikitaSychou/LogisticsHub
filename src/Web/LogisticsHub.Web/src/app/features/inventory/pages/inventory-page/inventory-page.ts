@@ -13,19 +13,19 @@ import {
   signal,
 } from '@angular/core';
 import { AccountInfo } from '@azure/msal-browser';
-import { formatProblemError } from '../../core/http/problem-error.mapper';
-import { PagedResponse } from '../../shared/models/paged-response';
-import { ErrorAlert } from '../../shared/ui/error-alert/error-alert';
-import { LoadMoreState } from '../../shared/ui/load-more-state/load-more-state';
-import { InventoryApiService } from './inventory-api.service';
+import { formatProblemError } from '../../../../core/http/problem-error.mapper';
+import { PagedResponse } from '../../../../shared/models/paged-response';
+import { ErrorAlert } from '../../../../shared/ui/error-alert/error-alert';
+import { LoadMoreState } from '../../../../shared/ui/load-more-state/load-more-state';
+import { InventoryApiService } from '../../data-access/inventory-api.service';
 import {
   CreateInventoryItemRequest,
   CreateStockAdjustmentRequest,
   InventoryItemRow,
-} from './inventory.models';
-import { InventoryCreateForm } from './ui/inventory-create-form';
-import { InventoryDetails } from './ui/inventory-details';
-import { InventoryList } from './ui/inventory-list';
+} from '../../models/inventory.models';
+import { InventoryCreateForm } from '../../ui/inventory-create-form/inventory-create-form';
+import { InventoryDetails } from '../../ui/inventory-details/inventory-details';
+import { InventoryList } from '../../ui/inventory-list/inventory-list';
 
 @Component({
   selector: 'app-inventory-page',

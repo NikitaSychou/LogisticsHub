@@ -13,20 +13,20 @@ import {
   signal,
 } from '@angular/core';
 import { AccountInfo } from '@azure/msal-browser';
-import { formatProblemError } from '../../core/http/problem-error.mapper';
-import { PagedResponse } from '../../shared/models/paged-response';
-import { ErrorAlert } from '../../shared/ui/error-alert/error-alert';
-import { LoadMoreState } from '../../shared/ui/load-more-state/load-more-state';
-import { CompanyApiService } from './company-api.service';
+import { formatProblemError } from '../../../../core/http/problem-error.mapper';
+import { PagedResponse } from '../../../../shared/models/paged-response';
+import { ErrorAlert } from '../../../../shared/ui/error-alert/error-alert';
+import { LoadMoreState } from '../../../../shared/ui/load-more-state/load-more-state';
+import { CompanyApiService } from '../../data-access/company-api.service';
 import {
   CompanyAddressRow,
   CompanyRow,
   CreateCompanyAddressRequest,
   CreateCompanyRequest,
-} from './company.models';
-import { CompanyCreateForm } from './ui/company-create-form';
-import { CompanyDetails } from './ui/company-details';
-import { CompanyList } from './ui/company-list';
+} from '../../models/company.models';
+import { CompanyCreateForm } from '../../ui/company-create-form/company-create-form';
+import { CompanyDetails } from '../../ui/company-details/company-details';
+import { CompanyList } from '../../ui/company-list/company-list';
 
 @Component({
   selector: 'app-companies-page',

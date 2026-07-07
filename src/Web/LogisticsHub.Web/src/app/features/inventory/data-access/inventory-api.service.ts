@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
-import { gatewayBaseUrl } from '../../core/http/api-config';
-import { CreateInventoryItemRequest, CreateStockAdjustmentRequest } from './inventory.models';
+import { gatewayBaseUrl } from '../../../core/http/api-config';
+import { CreateInventoryItemRequest, CreateStockAdjustmentRequest } from '../models/inventory.models';
 
 @Injectable({ providedIn: 'root' })
 export class InventoryApiService {

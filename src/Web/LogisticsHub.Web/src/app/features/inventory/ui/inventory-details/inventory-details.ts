@@ -1,7 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component, EventEmitter, Input, Output } from '@angular/core';
-import { InventoryItemRow } from '../inventory.models';
-import { StockAdjustmentForm, StockAdjustmentFormModel } from './stock-adjustment-form';
+import { InventoryItemRow } from '../../models/inventory.models';
+import { StockAdjustmentForm, StockAdjustmentFormModel } from '../stock-adjustment-form/stock-adjustment-form';
 
 @Component({
   selector: 'app-inventory-details',

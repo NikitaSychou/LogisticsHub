@@ -1,13 +1,13 @@
 import { CommonModule } from '@angular/common';
 import { Component, Input, OnDestroy, inject, signal } from '@angular/core';
 import { AccountInfo } from '@azure/msal-browser';
-import { formatProblemError } from '../../core/http/problem-error.mapper';
-import { ErrorAlert } from '../../shared/ui/error-alert/error-alert';
-import { ShipmentApiService } from './shipment-api.service';
-import { CreateShipmentRequest, ShipmentItemFormRow, ShipmentRow } from './shipment.models';
-import { ShipmentCreateForm } from './ui/shipment-create-form';
-import { ShipmentDetails } from './ui/shipment-details';
-import { ShipmentReadById } from './ui/shipment-read-by-id';
+import { formatProblemError } from '../../../../core/http/problem-error.mapper';
+import { ErrorAlert } from '../../../../shared/ui/error-alert/error-alert';
+import { ShipmentApiService } from '../../data-access/shipment-api.service';
+import { CreateShipmentRequest, ShipmentItemFormRow, ShipmentRow } from '../../models/shipment.models';
+import { ShipmentCreateForm } from '../../ui/shipment-create-form/shipment-create-form';
+import { ShipmentDetails } from '../../ui/shipment-details/shipment-details';
+import { ShipmentReadById } from '../../ui/shipment-read-by-id/shipment-read-by-id';
 
 @Component({
   selector: 'app-shipments-page',
