@@ -21,10 +21,13 @@ import {
   CreateCompanyAddressRequest,
   CreateCompanyRequest,
 } from './company.models';
+import { CompanyCreateForm } from './ui/company-create-form';
+import { CompanyDetails } from './ui/company-details';
+import { CompanyList } from './ui/company-list';
 
 @Component({
   selector: 'app-companies-page',
-  imports: [CommonModule],
+  imports: [CommonModule, CompanyCreateForm, CompanyDetails, CompanyList],
   templateUrl: './companies-page.html',
   styleUrl: './companies-page.css',
 })
@@ -125,16 +128,6 @@ export class CompaniesPage implements AfterViewInit, OnChanges, OnDestroy {
     }
 
     await this.loadCompanyAddresses(company);
-  }
-
-  protected isSelectedCompany(company: CompanyRow): boolean {
-    return company.id !== undefined && this.selectedCompany()?.id === company.id;
-  }
-
-  protected inputValue(event: Event): string {
-    return event.target instanceof HTMLInputElement || event.target instanceof HTMLSelectElement
-      ? event.target.value
-      : '';
   }
 
   protected toggleCreateCompanyForm(): void {

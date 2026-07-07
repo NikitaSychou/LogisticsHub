@@ -1,0 +1,11 @@
+.empty-state {
+  min-height: 180px;
+}
+
+.company-row {
+  cursor: pointer;
+}
+
+.company-row.table-active {
+  --bs-table-bg-state: #eaf2ff;
+}

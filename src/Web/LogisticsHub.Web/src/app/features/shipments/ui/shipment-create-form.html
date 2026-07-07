@@ -1,0 +1,106 @@
+<div class="card shadow-sm">
+  <div class="card-body">
+    <h2 class="h5 mb-1">Create shipment</h2>
+    <p class="text-secondary small mb-3">Enter company/address IDs and one or more item lines.</p>
+
+    <div class="alert alert-danger validation-alert" *ngIf="error">{{ error }}</div>
+
+    <form class="vstack gap-3" (ngSubmit)="submitForm.emit()">
+      <div class="row g-3">
+        <div class="col-12 col-lg-6">
+          <label for="senderCompanyId" class="form-label">Sender company ID</label>
+          <input
+            id="senderCompanyId"
+            name="senderCompanyId"
+            type="text"
+            class="form-control"
+            [value]="form.senderCompanyId"
+            (input)="form.senderCompanyId = inputValue($event)"
+            required>
+        </div>
+        <div class="col-12 col-lg-6">
+          <label for="senderAddressId" class="form-label">Sender address ID</label>
+          <input
+            id="senderAddressId"
+            name="senderAddressId"
+            type="text"
+            class="form-control"
+            [value]="form.senderAddressId"
+            (input)="form.senderAddressId = inputValue($event)"
+            required>
+        </div>
+        <div class="col-12 col-lg-6">
+          <label for="receiverCompanyId" class="form-label">Receiver company ID</label>
+          <input
+            id="receiverCompanyId"
+            name="receiverCompanyId"
+            type="text"
+            class="form-control"
+            [value]="form.receiverCompanyId"
+            (input)="form.receiverCompanyId = inputValue($event)"
+            required>
+        </div>
+        <div class="col-12 col-lg-6">
+          <label for="receiverAddressId" class="form-label">Receiver address ID</label>
+          <input
+            id="receiverAddressId"
+            name="receiverAddressId"
+            type="text"
+            class="form-control"
+            [value]="form.receiverAddressId"
+            (input)="form.receiverAddressId = inputValue($event)"
+            required>
+        </div>
+      </div>
+
+      <div class="border rounded p-3">
+        <div class="d-flex justify-content-between align-items-center gap-3 mb-3">
+          <h3 class="h6 mb-0">Items</h3>
+          <button type="button" class="btn btn-sm btn-outline-primary" (click)="addItem.emit()">
+            Add item
+          </button>
+        </div>
+
+        <div class="row g-2 align-items-end mb-2" *ngFor="let item of form.items; let index = index">
+          <div class="col-12 col-md-7">
+            <label class="form-label" [for]="'shipmentItemSku' + index">SKU</label>
+            <input
+              [id]="'shipmentItemSku' + index"
+              [name]="'shipmentItemSku' + index"
+              type="text"
+              class="form-control"
+              [value]="item.sku"
+              (input)="item.sku = inputValue($event)"
+              required>
+          </div>
+          <div class="col-8 col-md-3">
+            <label class="form-label" [for]="'shipmentItemQuantity' + index">Quantity</label>
+            <input
+              [id]="'shipmentItemQuantity' + index"
+              [name]="'shipmentItemQuantity' + index"
+              type="number"
+              class="form-control"
+              [value]="item.quantity"
+              (input)="item.quantity = inputNumberValue($event)"
+              min="1"
+              required>
+          </div>
+          <div class="col-4 col-md-2">
+            <button
+              type="button"
+              class="btn btn-outline-secondary w-100"
+              (click)="removeItem.emit(index)">
+              Remove
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <button type="submit" class="btn btn-primary" [disabled]="creating">
+          {{ creating ? 'Creating...' : 'Create shipment' }}
+        </button>
+      </div>
+    </form>
+  </div>
+</div>

@@ -1,0 +1,50 @@
+<div class="card shadow-sm details-panel">
+  <div class="card-body" *ngIf="item; else noItemSelected">
+    <div class="d-flex justify-content-between align-items-start gap-3 mb-3">
+      <div>
+        <h2 class="h5 mb-1">{{ item.name || 'Unnamed item' }}</h2>
+        <div class="text-secondary small">{{ item.sku || 'No SKU' }}</div>
+      </div>
+      <span class="badge text-bg-light border">
+        {{ item.quantityAvailable ?? '-' }} available
+      </span>
+    </div>
+
+    <dl class="details-list">
+      <dt>SKU</dt>
+      <dd><code>{{ item.sku || '-' }}</code></dd>
+      <dt>Name</dt>
+      <dd>{{ item.name || '-' }}</dd>
+      <dt>Quantity available</dt>
+      <dd>{{ item.quantityAvailable ?? '-' }}</dd>
+    </dl>
+
+    <hr>
+
+    <div class="d-flex justify-content-between align-items-center gap-3 mb-3">
+      <h3 class="h6 mb-0">Stock</h3>
+      <button
+        type="button"
+        class="btn btn-sm btn-outline-primary"
+        (click)="toggleStockAdjustment.emit()"
+        [disabled]="adjustingStock">
+        Increase stock
+      </button>
+    </div>
+
+    <app-stock-adjustment-form
+      *ngIf="showStockAdjustmentForm"
+      [form]="stockAdjustmentForm"
+      [adjusting]="adjustingStock"
+      [error]="stockAdjustmentError"
+      (submitForm)="submitStockAdjustment.emit()"
+      (cancel)="cancelStockAdjustment.emit()">
+    </app-stock-adjustment-form>
+  </div>
+
+  <ng-template #noItemSelected>
+    <div class="card-body text-center text-secondary py-5">
+      Select an inventory item to view details.
+    </div>
+  </ng-template>
+</div>

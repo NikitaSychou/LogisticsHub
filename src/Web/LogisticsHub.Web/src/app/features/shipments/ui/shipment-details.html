@@ -1,0 +1,65 @@
+<div class="card shadow-sm" *ngIf="shipment">
+  <div class="card-header bg-white d-flex justify-content-between align-items-center gap-3">
+    <span>{{ title }}</span>
+    <button
+      type="button"
+      class="btn btn-sm btn-outline-primary"
+      (click)="refreshStatus.emit()"
+      [disabled]="refreshing || !shipment.shipmentId">
+      {{ refreshing ? 'Refreshing...' : 'Refresh status' }}
+    </button>
+  </div>
+  <div class="card-body">
+    <div class="d-flex justify-content-between align-items-start gap-3 mb-3">
+      <div>
+        <h3 class="h5 mb-1">{{ shipment.shipmentNumber || shipment.shipmentId || 'Shipment' }}</h3>
+        <div class="text-secondary small">{{ shipment.shipmentId || '-' }}</div>
+      </div>
+      <span class="badge text-bg-light border">{{ shipment.status || 'Unknown' }}</span>
+    </div>
+
+    <dl class="details-list">
+      <dt>Reservation ID</dt>
+      <dd>{{ shipment.reservationId || '-' }}</dd>
+      <dt>Reservation error</dt>
+      <dd>{{ shipment.reservationFailureReason || '-' }}</dd>
+      <dt>Sender company</dt>
+      <dd><code>{{ shipment.senderCompanyId || '-' }}</code></dd>
+      <dt>Sender address</dt>
+      <dd><code>{{ shipment.senderAddressId || '-' }}</code></dd>
+      <dt>Receiver company</dt>
+      <dd><code>{{ shipment.receiverCompanyId || '-' }}</code></dd>
+      <dt>Receiver address</dt>
+      <dd><code>{{ shipment.receiverAddressId || '-' }}</code></dd>
+      <dt>Created</dt>
+      <dd>{{ shipment.createdAt || '-' }}</dd>
+      <dt>Updated</dt>
+      <dd>{{ shipment.updatedAt || '-' }}</dd>
+      <dt>Dispatched</dt>
+      <dd>{{ shipment.dispatchedAt || '-' }}</dd>
+      <dt>Cancelled</dt>
+      <dd>{{ shipment.cancelledAt || '-' }}</dd>
+    </dl>
+
+    <hr>
+
+    <h4 class="h6 mb-3">Items</h4>
+    <div class="text-secondary small" *ngIf="shipment.items.length === 0">No item rows returned.</div>
+    <div class="table-responsive" *ngIf="shipment.items.length > 0">
+      <table class="table table-sm align-middle mb-0">
+        <thead>
+          <tr>
+            <th scope="col">SKU</th>
+            <th scope="col" class="text-end">Quantity</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let item of shipment.items">
+            <td><code>{{ item.sku || '-' }}</code></td>
+            <td class="text-end">{{ item.quantity ?? '-' }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>

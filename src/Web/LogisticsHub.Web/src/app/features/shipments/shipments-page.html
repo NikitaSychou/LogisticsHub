@@ -7,176 +7,43 @@
 
 <div class="row g-3">
   <div class="col-12 col-xl-7">
-    <div class="card shadow-sm">
-      <div class="card-body">
-        <h2 class="h5 mb-1">Create shipment</h2>
-        <p class="text-secondary small mb-3">Enter company/address IDs and one or more item lines.</p>
+    <app-shipment-create-form
+      [form]="createShipmentForm"
+      [creating]="creatingShipment()"
+      [error]="createShipmentError()"
+      (addItem)="addItemRow()"
+      (removeItem)="removeItemRow($event)"
+      (submitForm)="submitCreateShipment()">
+    </app-shipment-create-form>
 
-        <div class="alert alert-danger validation-alert" *ngIf="createShipmentError()">{{ createShipmentError() }}</div>
-
-        <form class="vstack gap-3" (ngSubmit)="submitCreateShipment()">
-          <div class="row g-3">
-            <div class="col-12 col-lg-6">
-              <label for="senderCompanyId" class="form-label">Sender company ID</label>
-              <input
-                id="senderCompanyId"
-                name="senderCompanyId"
-                type="text"
-                class="form-control"
-                [value]="createShipmentForm.senderCompanyId"
-                (input)="createShipmentForm.senderCompanyId = inputValue($event)"
-                required>
-            </div>
-            <div class="col-12 col-lg-6">
-              <label for="senderAddressId" class="form-label">Sender address ID</label>
-              <input
-                id="senderAddressId"
-                name="senderAddressId"
-                type="text"
-                class="form-control"
-                [value]="createShipmentForm.senderAddressId"
-                (input)="createShipmentForm.senderAddressId = inputValue($event)"
-                required>
-            </div>
-            <div class="col-12 col-lg-6">
-              <label for="receiverCompanyId" class="form-label">Receiver company ID</label>
-              <input
-                id="receiverCompanyId"
-                name="receiverCompanyId"
-                type="text"
-                class="form-control"
-                [value]="createShipmentForm.receiverCompanyId"
-                (input)="createShipmentForm.receiverCompanyId = inputValue($event)"
-                required>
-            </div>
-            <div class="col-12 col-lg-6">
-              <label for="receiverAddressId" class="form-label">Receiver address ID</label>
-              <input
-                id="receiverAddressId"
-                name="receiverAddressId"
-                type="text"
-                class="form-control"
-                [value]="createShipmentForm.receiverAddressId"
-                (input)="createShipmentForm.receiverAddressId = inputValue($event)"
-                required>
-            </div>
-          </div>
-
-          <div class="border rounded p-3">
-            <div class="d-flex justify-content-between align-items-center gap-3 mb-3">
-              <h3 class="h6 mb-0">Items</h3>
-              <button type="button" class="btn btn-sm btn-outline-primary" (click)="addItemRow()">
-                Add item
-              </button>
-            </div>
-
-            <div class="row g-2 align-items-end mb-2" *ngFor="let item of createShipmentForm.items; let index = index">
-              <div class="col-12 col-md-7">
-                <label class="form-label" [for]="'shipmentItemSku' + index">SKU</label>
-                <input
-                  [id]="'shipmentItemSku' + index"
-                  [name]="'shipmentItemSku' + index"
-                  type="text"
-                  class="form-control"
-                  [value]="item.sku"
-                  (input)="item.sku = inputValue($event)"
-                  required>
-              </div>
-              <div class="col-8 col-md-3">
-                <label class="form-label" [for]="'shipmentItemQuantity' + index">Quantity</label>
-                <input
-                  [id]="'shipmentItemQuantity' + index"
-                  [name]="'shipmentItemQuantity' + index"
-                  type="number"
-                  class="form-control"
-                  [value]="item.quantity"
-                  (input)="item.quantity = inputNumberValue($event)"
-                  min="1"
-                  required>
-              </div>
-              <div class="col-4 col-md-2">
-                <button
-                  type="button"
-                  class="btn btn-outline-secondary w-100"
-                  (click)="removeItemRow(index)">
-                  Remove
-                </button>
-              </div>
-            </div>
-          </div>
-
-          <div>
-            <button type="submit" class="btn btn-primary" [disabled]="creatingShipment()">
-              {{ creatingShipment() ? 'Creating...' : 'Create shipment' }}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
-
-    <div class="card shadow-sm mt-3">
-      <div class="card-body">
-        <h2 class="h5 mb-1">Read shipment</h2>
-        <p class="text-secondary small mb-3">Load a shipment by ID.</p>
-
-        <div class="alert alert-danger validation-alert" *ngIf="loadShipmentError()">{{ loadShipmentError() }}</div>
-
-        <form class="row g-2 align-items-end" (ngSubmit)="loadShipment()">
-          <div class="col-12 col-md-9">
-            <label for="shipmentIdToLoad" class="form-label">Shipment ID</label>
-            <input
-              id="shipmentIdToLoad"
-              name="shipmentIdToLoad"
-              type="text"
-              class="form-control"
-              [value]="shipmentIdToLoad"
-              (input)="shipmentIdToLoad = inputValue($event)"
-              required>
-          </div>
-          <div class="col-12 col-md-3">
-            <button type="submit" class="btn btn-outline-primary w-100" [disabled]="loadingShipment()">
-              {{ loadingShipment() ? 'Loading...' : 'Load' }}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
+    <app-shipment-read-by-id
+      [shipmentId]="shipmentIdToLoad"
+      [loading]="loadingShipment()"
+      [error]="loadShipmentError()"
+      (shipmentIdChange)="shipmentIdToLoad = $event"
+      (loadShipment)="loadShipment()">
+    </app-shipment-read-by-id>
   </div>
 
   <aside class="col-12 col-xl-5">
     <div class="alert alert-danger validation-alert" *ngIf="statusRefreshError()">{{ statusRefreshError() }}</div>
 
-    <div class="card shadow-sm mb-3" *ngIf="createdShipment()">
-      <div class="card-header bg-white d-flex justify-content-between align-items-center gap-3">
-        <span>Created shipment</span>
-        <button
-          type="button"
-          class="btn btn-sm btn-outline-primary"
-          (click)="refreshCreatedShipmentStatus()"
-          [disabled]="refreshingCreatedShipment() || !createdShipment()?.shipmentId">
-          {{ refreshingCreatedShipment() ? 'Refreshing...' : 'Refresh status' }}
-        </button>
-      </div>
-      <div class="card-body">
-        <ng-container *ngTemplateOutlet="shipmentDetails; context: { shipment: createdShipment() }"></ng-container>
-      </div>
-    </div>
+    <app-shipment-details
+      class="d-block mb-3"
+      *ngIf="createdShipment()"
+      title="Created shipment"
+      [shipment]="createdShipment()"
+      [refreshing]="refreshingCreatedShipment()"
+      (refreshStatus)="refreshCreatedShipmentStatus()">
+    </app-shipment-details>
 
-    <div class="card shadow-sm" *ngIf="loadedShipment(); else noShipmentLoaded">
-      <div class="card-header bg-white d-flex justify-content-between align-items-center gap-3">
-        <span>Loaded shipment</span>
-        <button
-          type="button"
-          class="btn btn-sm btn-outline-primary"
-          (click)="refreshLoadedShipmentStatus()"
-          [disabled]="refreshingLoadedShipment() || !loadedShipment()?.shipmentId">
-          {{ refreshingLoadedShipment() ? 'Refreshing...' : 'Refresh status' }}
-        </button>
-      </div>
-      <div class="card-body">
-        <ng-container *ngTemplateOutlet="shipmentDetails; context: { shipment: loadedShipment() }"></ng-container>
-      </div>
-    </div>
+    <app-shipment-details
+      *ngIf="loadedShipment(); else noShipmentLoaded"
+      title="Loaded shipment"
+      [shipment]="loadedShipment()"
+      [refreshing]="refreshingLoadedShipment()"
+      (refreshStatus)="refreshLoadedShipmentStatus()">
+    </app-shipment-details>
 
     <ng-template #noShipmentLoaded>
       <div class="card shadow-sm" *ngIf="!createdShipment()">
@@ -187,57 +54,3 @@
     </ng-template>
   </aside>
 </div>
-
-<ng-template #shipmentDetails let-shipment="shipment">
-  <div class="d-flex justify-content-between align-items-start gap-3 mb-3">
-    <div>
-      <h3 class="h5 mb-1">{{ shipment.shipmentNumber || shipment.shipmentId || 'Shipment' }}</h3>
-      <div class="text-secondary small">{{ shipment.shipmentId || '-' }}</div>
-    </div>
-    <span class="badge text-bg-light border">{{ shipment.status || 'Unknown' }}</span>
-  </div>
-
-  <dl class="details-list">
-    <dt>Reservation ID</dt>
-    <dd>{{ shipment.reservationId || '-' }}</dd>
-    <dt>Reservation error</dt>
-    <dd>{{ shipment.reservationFailureReason || '-' }}</dd>
-    <dt>Sender company</dt>
-    <dd><code>{{ shipment.senderCompanyId || '-' }}</code></dd>
-    <dt>Sender address</dt>
-    <dd><code>{{ shipment.senderAddressId || '-' }}</code></dd>
-    <dt>Receiver company</dt>
-    <dd><code>{{ shipment.receiverCompanyId || '-' }}</code></dd>
-    <dt>Receiver address</dt>
-    <dd><code>{{ shipment.receiverAddressId || '-' }}</code></dd>
-    <dt>Created</dt>
-    <dd>{{ shipment.createdAt || '-' }}</dd>
-    <dt>Updated</dt>
-    <dd>{{ shipment.updatedAt || '-' }}</dd>
-    <dt>Dispatched</dt>
-    <dd>{{ shipment.dispatchedAt || '-' }}</dd>
-    <dt>Cancelled</dt>
-    <dd>{{ shipment.cancelledAt || '-' }}</dd>
-  </dl>
-
-  <hr>
-
-  <h4 class="h6 mb-3">Items</h4>
-  <div class="text-secondary small" *ngIf="shipment.items.length === 0">No item rows returned.</div>
-  <div class="table-responsive" *ngIf="shipment.items.length > 0">
-    <table class="table table-sm align-middle mb-0">
-      <thead>
-        <tr>
-          <th scope="col">SKU</th>
-          <th scope="col" class="text-end">Quantity</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr *ngFor="let item of shipment.items">
-          <td><code>{{ item.sku || '-' }}</code></td>
-          <td class="text-end">{{ item.quantity ?? '-' }}</td>
-        </tr>
-      </tbody>
-    </table>
-  </div>
-</ng-template>

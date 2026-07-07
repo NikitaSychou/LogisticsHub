@@ -27,187 +27,38 @@
 
 <div class="alert alert-danger" *ngIf="apiError()">{{ apiError() }}</div>
 
-<div class="card shadow-sm mb-3" *ngIf="showCreateItemForm()">
-  <div class="card-body">
-    <div class="d-flex justify-content-between align-items-start gap-3 mb-3">
-      <div>
-        <h2 class="h5 mb-1">New inventory item</h2>
-        <p class="text-secondary small mb-0">Create an inventory item with starting available quantity.</p>
-      </div>
-      <button type="button" class="btn-close" aria-label="Close" (click)="cancelCreateItem()"></button>
-    </div>
-
-    <div class="alert alert-danger validation-alert" *ngIf="createItemError()">{{ createItemError() }}</div>
-
-    <form class="row g-3" (ngSubmit)="submitCreateItem()">
-      <div class="col-12 col-lg-3">
-        <label for="inventorySku" class="form-label">SKU</label>
-        <input
-          id="inventorySku"
-          name="inventorySku"
-          type="text"
-          class="form-control"
-          [value]="createItemForm.sku"
-          (input)="createItemForm.sku = inputValue($event)"
-          required>
-      </div>
-      <div class="col-12 col-lg-6">
-        <label for="inventoryName" class="form-label">Name</label>
-        <input
-          id="inventoryName"
-          name="inventoryName"
-          type="text"
-          class="form-control"
-          [value]="createItemForm.name"
-          (input)="createItemForm.name = inputValue($event)"
-          required>
-      </div>
-      <div class="col-12 col-lg-3">
-        <label for="inventoryQuantityAvailable" class="form-label">Available quantity</label>
-        <input
-          id="inventoryQuantityAvailable"
-          name="inventoryQuantityAvailable"
-          type="number"
-          class="form-control"
-          [value]="createItemForm.quantityAvailable"
-          (input)="createItemForm.quantityAvailable = inputNumberValue($event)"
-          min="0"
-          required>
-      </div>
-      <div class="col-12 d-flex gap-2">
-        <button type="submit" class="btn btn-primary" [disabled]="creatingItem()">
-          {{ creatingItem() ? 'Creating...' : 'Create item' }}
-        </button>
-        <button type="button" class="btn btn-outline-secondary" (click)="cancelCreateItem()" [disabled]="creatingItem()">
-          Cancel
-        </button>
-      </div>
-    </form>
-  </div>
-</div>
+<app-inventory-create-form
+  *ngIf="showCreateItemForm()"
+  [form]="createItemForm"
+  [creating]="creatingItem()"
+  [error]="createItemError()"
+  (submitForm)="submitCreateItem()"
+  (cancel)="cancelCreateItem()">
+</app-inventory-create-form>
 
 <div class="row g-3">
   <div class="col-12 col-xl-8">
-    <div class="card shadow-sm">
-      <div class="card-body">
-        <div class="table-responsive" *ngIf="inventoryItems().length > 0; else emptyInventory">
-          <table class="table table-hover align-middle mb-0">
-            <thead>
-              <tr>
-                <th scope="col">SKU</th>
-                <th scope="col">Name</th>
-                <th scope="col" class="text-end">Available</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr
-                *ngFor="let item of inventoryItems()"
-                class="inventory-row"
-                [class.table-active]="isSelectedItem(item)"
-                (click)="selectItem(item)">
-                <td class="fw-semibold"><code>{{ item.sku || '-' }}</code></td>
-                <td>{{ item.name || 'Unnamed item' }}</td>
-                <td class="text-end">{{ item.quantityAvailable ?? '-' }}</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-
-        <ng-template #emptyInventory>
-          <div class="empty-state text-center py-5">
-            <h2 class="h5">No inventory items loaded</h2>
-            <p class="text-secondary mb-0" *ngIf="!hasLoadedItems() && apiLoading()">
-              Loading inventory items...
-            </p>
-            <p class="text-secondary mb-0" *ngIf="!hasLoadedItems() && !apiLoading() && !apiError()">
-              Inventory items will appear here when they are loaded.
-            </p>
-            <p class="text-secondary mb-0" *ngIf="hasLoadedItems()">
-              The response did not contain any inventory item rows.
-            </p>
-          </div>
-        </ng-template>
-      </div>
-    </div>
+    <app-inventory-list
+      [items]="inventoryItems()"
+      [selectedItem]="selectedItem()"
+      [hasLoadedItems]="hasLoadedItems()"
+      [apiLoading]="apiLoading()"
+      [apiError]="apiError()"
+      (itemSelected)="selectItem($event)">
+    </app-inventory-list>
   </div>
 
   <aside class="col-12 col-xl-4">
-    <div class="card shadow-sm details-panel">
-      <div class="card-body" *ngIf="selectedItem(); else noItemSelected">
-        <div class="d-flex justify-content-between align-items-start gap-3 mb-3">
-          <div>
-            <h2 class="h5 mb-1">{{ selectedItem()?.name || 'Unnamed item' }}</h2>
-            <div class="text-secondary small">{{ selectedItem()?.sku || 'No SKU' }}</div>
-          </div>
-          <span class="badge text-bg-light border">
-            {{ selectedItem()?.quantityAvailable ?? '-' }} available
-          </span>
-        </div>
-
-        <dl class="details-list">
-          <dt>SKU</dt>
-          <dd><code>{{ selectedItem()?.sku || '-' }}</code></dd>
-          <dt>Name</dt>
-          <dd>{{ selectedItem()?.name || '-' }}</dd>
-          <dt>Quantity available</dt>
-          <dd>{{ selectedItem()?.quantityAvailable ?? '-' }}</dd>
-        </dl>
-
-        <hr>
-
-        <div class="d-flex justify-content-between align-items-center gap-3 mb-3">
-          <h3 class="h6 mb-0">Stock</h3>
-          <button
-            type="button"
-            class="btn btn-sm btn-outline-primary"
-            (click)="toggleStockAdjustmentForm()"
-            [disabled]="adjustingStock()">
-            Increase stock
-          </button>
-        </div>
-
-        <div class="border rounded p-3" *ngIf="showStockAdjustmentForm()">
-          <div class="d-flex justify-content-between align-items-start gap-3 mb-3">
-            <div>
-              <h4 class="h6 mb-1">Increase stock</h4>
-              <div class="text-secondary small">Add available quantity to the selected inventory item.</div>
-            </div>
-            <button type="button" class="btn-close" aria-label="Close" (click)="cancelStockAdjustment()"></button>
-          </div>
-
-          <div class="alert alert-danger validation-alert" *ngIf="stockAdjustmentError()">{{ stockAdjustmentError() }}</div>
-
-          <form class="row g-2" (ngSubmit)="submitStockAdjustment()">
-            <div class="col-12">
-              <label for="stockAdjustmentQuantity" class="form-label">Quantity</label>
-              <input
-                id="stockAdjustmentQuantity"
-                name="stockAdjustmentQuantity"
-                type="number"
-                class="form-control"
-                [value]="stockAdjustmentForm.quantity"
-                (input)="stockAdjustmentForm.quantity = inputNumberValue($event)"
-                min="1"
-                required>
-            </div>
-            <div class="col-12 d-flex gap-2 mt-3">
-              <button type="submit" class="btn btn-primary btn-sm" [disabled]="adjustingStock()">
-                {{ adjustingStock() ? 'Increasing...' : 'Increase stock' }}
-              </button>
-              <button type="button" class="btn btn-outline-secondary btn-sm" (click)="cancelStockAdjustment()" [disabled]="adjustingStock()">
-                Cancel
-              </button>
-            </div>
-          </form>
-        </div>
-      </div>
-
-      <ng-template #noItemSelected>
-        <div class="card-body text-center text-secondary py-5">
-          Select an inventory item to view details.
-        </div>
-      </ng-template>
-    </div>
+    <app-inventory-details
+      [item]="selectedItem()"
+      [showStockAdjustmentForm]="showStockAdjustmentForm()"
+      [adjustingStock]="adjustingStock()"
+      [stockAdjustmentError]="stockAdjustmentError()"
+      [stockAdjustmentForm]="stockAdjustmentForm"
+      (toggleStockAdjustment)="toggleStockAdjustmentForm()"
+      (submitStockAdjustment)="submitStockAdjustment()"
+      (cancelStockAdjustment)="cancelStockAdjustment()">
+    </app-inventory-details>
   </aside>
 </div>
 

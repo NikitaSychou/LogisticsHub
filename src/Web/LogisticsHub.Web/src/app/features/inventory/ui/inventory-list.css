@@ -1,0 +1,11 @@
+.empty-state {
+  min-height: 180px;
+}
+
+.inventory-row {
+  cursor: pointer;
+}
+
+.inventory-row.table-active {
+  --bs-table-bg-state: #eaf2ff;
+}

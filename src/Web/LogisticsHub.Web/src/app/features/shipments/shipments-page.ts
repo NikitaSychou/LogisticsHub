@@ -3,10 +3,13 @@ import { Component, Input, OnDestroy, inject, signal } from '@angular/core';
 import { AccountInfo } from '@azure/msal-browser';
 import { ShipmentApiService } from './shipment-api.service';
 import { CreateShipmentRequest, ShipmentItemFormRow, ShipmentRow } from './shipment.models';
+import { ShipmentCreateForm } from './ui/shipment-create-form';
+import { ShipmentDetails } from './ui/shipment-details';
+import { ShipmentReadById } from './ui/shipment-read-by-id';
 
 @Component({
   selector: 'app-shipments-page',
-  imports: [CommonModule],
+  imports: [CommonModule, ShipmentCreateForm, ShipmentDetails, ShipmentReadById],
   templateUrl: './shipments-page.html',
   styleUrl: './shipments-page.css',
 })
@@ -39,17 +42,6 @@ export class ShipmentsPage implements OnDestroy {
 
   ngOnDestroy(): void {
     this.stopAutoRefresh();
-  }
-
-  protected inputValue(event: Event): string {
-    return event.target instanceof HTMLInputElement
-      ? event.target.value
-      : '';
-  }
-
-  protected inputNumberValue(event: Event): number {
-    const value = this.inputValue(event);
-    return value === '' ? 0 : Number(value);
   }
 
   protected addItemRow(): void {
