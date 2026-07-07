@@ -1,6 +1,8 @@
 import { CommonModule } from '@angular/common';
 import { Component, Input, OnDestroy, inject, signal } from '@angular/core';
 import { AccountInfo } from '@azure/msal-browser';
+import { formatProblemError } from '../../core/http/problem-error.mapper';
+import { ErrorAlert } from '../../shared/ui/error-alert/error-alert';
 import { ShipmentApiService } from './shipment-api.service';
 import { CreateShipmentRequest, ShipmentItemFormRow, ShipmentRow } from './shipment.models';
 import { ShipmentCreateForm } from './ui/shipment-create-form';
@@ -9,7 +11,7 @@ import { ShipmentReadById } from './ui/shipment-read-by-id';
 
 @Component({
   selector: 'app-shipments-page',
-  imports: [CommonModule, ShipmentCreateForm, ShipmentDetails, ShipmentReadById],
+  imports: [CommonModule, ErrorAlert, ShipmentCreateForm, ShipmentDetails, ShipmentReadById],
   templateUrl: './shipments-page.html',
   styleUrl: './shipments-page.css',
 })
@@ -272,31 +274,7 @@ export class ShipmentsPage implements OnDestroy {
   }
 
   private formatError(error: unknown, fallback: string): string {
-    if (!(error instanceof Error)) {
-      return fallback;
-    }
-
-    const problem = this.tryExtractProblemDetails(error.message);
-    return problem ?? error.message;
-  }
-
-  private tryExtractProblemDetails(message: string): string | null {
-    const jsonStart = message.indexOf('{');
-    if (jsonStart < 0) {
-      return null;
-    }
-
-    const parsed = this.parseBody(message.substring(jsonStart));
-    const record = this.asRecord(parsed);
-    const errors = this.asRecord(record['errors']);
-    const details = Object.entries(errors)
-      .flatMap(([field, value]) =>
-        Array.isArray(value)
-          ? value.map((item) => `${field}: ${String(item)}`)
-          : []
-      );
-
-    return details.length > 0 ? details.join('\n') : null;
+    return formatProblemError(error, fallback);
   }
 
   private asRecord(value: unknown): Record<string, unknown> {

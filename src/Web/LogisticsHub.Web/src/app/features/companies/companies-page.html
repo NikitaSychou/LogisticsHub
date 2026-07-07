@@ -25,7 +25,10 @@
   </div>
 </div>
 
-<div class="alert alert-danger" *ngIf="apiError()">{{ apiError() }}</div>
+<app-error-alert
+  [message]="apiError()"
+  *ngIf="apiError()">
+</app-error-alert>
 
 <app-company-create-form
   *ngIf="showCreateCompanyForm()"
@@ -72,21 +75,16 @@
   aria-hidden="true">
 </div>
 
-<div class="d-flex flex-column align-items-center gap-2 py-3" *ngIf="hasLoadedCompanies() && companies().length > 0">
-  <button
-    type="button"
-    class="btn btn-outline-primary"
-    (click)="loadMoreCompanies()"
-    [disabled]="isCompaniesLoading()"
-    *ngIf="hasMoreCompanies()">
-    {{ loadingMore() ? 'Loading more...' : 'Load more' }}
-  </button>
-  <div class="small text-secondary" *ngIf="loadingMore()">Loading more...</div>
-  <div class="small text-secondary" *ngIf="!hasMoreCompanies()">All companies loaded.</div>
-  <div class="small text-secondary" *ngIf="currentCompaniesPage() > 0">
-    Page {{ currentCompaniesPage() }} loaded<span *ngIf="companiesPageSize() > 0">, {{ companiesPageSize() }} per page</span>.
-  </div>
-</div>
+<app-load-more-state
+  [visible]="hasLoadedCompanies() && companies().length > 0"
+  [hasMore]="hasMoreCompanies()"
+  [loadingMore]="loadingMore()"
+  [disabled]="isCompaniesLoading()"
+  [allLoadedMessage]="'All companies loaded.'"
+  [pageNumber]="currentCompaniesPage()"
+  [pageSize]="companiesPageSize()"
+  (loadMore)="loadMoreCompanies()">
+</app-load-more-state>
 
 <div class="card mt-3" *ngIf="apiResult()">
   <div class="card-header bg-white">Debug response</div>
