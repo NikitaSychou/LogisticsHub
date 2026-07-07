@@ -1,4 +1,4 @@
-import { Component, OnInit, computed, signal } from '@angular/core';
+import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import {
   AccountInfo,
   InteractionRequiredAuthError,
@@ -6,6 +6,7 @@ import {
 } from '@azure/msal-browser';
 import { environment } from '../environments/environment';
 import { loginRequest, msalConfig, tokenRequest } from './auth-config';
+import { ApiAuthContext } from './core/http/api-auth-context';
 import { AppShell } from './core/layout/app-shell';
 import { navigationItems } from './core/navigation/navigation-items';
 
@@ -17,6 +18,7 @@ import { navigationItems } from './core/navigation/navigation-items';
 })
 export class App implements OnInit {
   private readonly msal = new PublicClientApplication(msalConfig);
+  private readonly apiAuthContext = inject(ApiAuthContext);
 
   protected readonly account = signal<AccountInfo | null>(null);
   protected readonly loading = signal(true);
@@ -47,6 +49,7 @@ export class App implements OnInit {
     }
 
     this.account.set(activeAccount);
+    this.apiAuthContext.configure(activeAccount, this.getAccessToken);
     this.loading.set(false);
   }
 

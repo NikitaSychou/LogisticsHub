@@ -3,16 +3,13 @@ import {
   AfterViewInit,
   Component,
   ElementRef,
-  Input,
-  OnChanges,
   OnDestroy,
-  SimpleChanges,
   ViewChild,
   computed,
   inject,
   signal,
 } from '@angular/core';
-import { AccountInfo } from '@azure/msal-browser';
+import { ApiAuthContext } from '../../../../core/http/api-auth-context';
 import { formatProblemError } from '../../../../core/http/problem-error.mapper';
 import { PagedResponse } from '../../../../shared/models/paged-response';
 import { ErrorAlert } from '../../../../shared/ui/error-alert/error-alert';
@@ -34,16 +31,13 @@ import { CompanyList } from '../../ui/company-list/company-list';
   templateUrl: './companies-page.html',
   styleUrl: './companies-page.css',
 })
-export class CompaniesPage implements AfterViewInit, OnChanges, OnDestroy {
+export class CompaniesPage implements AfterViewInit, OnDestroy {
   private readonly companyApi = inject(CompanyApiService);
+  private readonly apiAuthContext = inject(ApiAuthContext);
   private observer?: IntersectionObserver;
   private sentinelElement?: HTMLElement;
   private viewReady = false;
   private addressLoadVersion = 0;
-
-  @Input({ required: true }) accessTokenFactory!: () => Promise<string>;
-  @Input({ required: true }) account!: AccountInfo | null;
-  @Input({ required: true }) active = false;
 
   @ViewChild('companiesScrollSentinel')
   private set companiesScrollSentinel(value: ElementRef<HTMLElement> | undefined) {
@@ -92,12 +86,6 @@ export class CompaniesPage implements AfterViewInit, OnChanges, OnDestroy {
     this.viewReady = true;
     this.initializeCompaniesObserver();
     void this.ensureCompaniesLoaded();
-  }
-
-  ngOnChanges(changes: SimpleChanges): void {
-    if (changes['active'] || changes['account']) {
-      void this.ensureCompaniesLoaded();
-    }
   }
 
   ngOnDestroy(): void {
@@ -158,7 +146,7 @@ export class CompaniesPage implements AfterViewInit, OnChanges, OnDestroy {
     this.createCompanyError.set('');
 
     try {
-      const body = await this.companyApi.createCompany(request, await this.accessTokenFactory());
+      const body = await this.companyApi.createCompany(request, await this.apiAuthContext.getAccessToken());
       const createdCompany = this.extractCompanies([this.parseBody(body)])[0] ?? null;
 
       this.showCreateCompanyForm.set(false);
@@ -207,7 +195,7 @@ export class CompaniesPage implements AfterViewInit, OnChanges, OnDestroy {
     this.createAddressError.set('');
 
     try {
-      await this.companyApi.createCompanyAddress(company.id, request, await this.accessTokenFactory());
+      await this.companyApi.createCompanyAddress(company.id, request, await this.apiAuthContext.getAccessToken());
       this.showCreateAddressForm.set(false);
       this.resetCreateAddressForm();
       await this.loadCompanyAddresses(company);
@@ -223,7 +211,7 @@ export class CompaniesPage implements AfterViewInit, OnChanges, OnDestroy {
       return;
     }
 
-    if (!this.account) {
+    if (!this.apiAuthContext.account()) {
       this.apiError.set('Sign in before calling the Gateway.');
       return;
     }
@@ -246,7 +234,7 @@ export class CompaniesPage implements AfterViewInit, OnChanges, OnDestroy {
     }
 
     try {
-      const body = await this.companyApi.getCompaniesPage(pageNumber, await this.accessTokenFactory());
+      const body = await this.companyApi.getCompaniesPage(pageNumber, await this.apiAuthContext.getAccessToken());
       const parsed = this.parseBody(body);
       const page = this.toPagedCompanies(parsed, pageNumber);
       this.companies.set(options.reset ? page.items : [...this.companies(), ...page.items]);
@@ -265,8 +253,7 @@ export class CompaniesPage implements AfterViewInit, OnChanges, OnDestroy {
 
   private async ensureCompaniesLoaded(): Promise<void> {
     if (
-      !this.active ||
-      !this.account ||
+      !this.apiAuthContext.account() ||
       this.hasLoadedCompanies() ||
       this.companies().length > 0 ||
       this.isCompaniesLoading()
@@ -278,7 +265,7 @@ export class CompaniesPage implements AfterViewInit, OnChanges, OnDestroy {
   }
 
   private async loadCompanyAddresses(company: CompanyRow): Promise<void> {
-    if (!this.account || !company.id) {
+    if (!this.apiAuthContext.account() || !company.id) {
       return;
     }
 
@@ -286,7 +273,7 @@ export class CompaniesPage implements AfterViewInit, OnChanges, OnDestroy {
     this.addressesLoading.set(true);
 
     try {
-      const body = await this.companyApi.getCompanyAddresses(company.id, await this.accessTokenFactory());
+      const body = await this.companyApi.getCompanyAddresses(company.id, await this.apiAuthContext.getAccessToken());
 
       if (requestVersion !== this.addressLoadVersion) {
         return;
@@ -465,7 +452,7 @@ export class CompaniesPage implements AfterViewInit, OnChanges, OnDestroy {
     this.observer = new IntersectionObserver(
       (entries) => {
         const isVisible = entries.some((entry) => entry.isIntersecting);
-        if (isVisible && this.active && this.hasLoadedCompanies() && this.hasMoreCompanies()) {
+        if (isVisible && this.hasLoadedCompanies() && this.hasMoreCompanies()) {
           void this.loadMoreCompanies();
         }
       },
