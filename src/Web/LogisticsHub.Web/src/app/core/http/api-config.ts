@@ -1,3 +1,5 @@
-import { environment } from '../../../environments/environment';
+import { runtimeConfig } from '../config/runtime-config';
 
-export const gatewayBaseUrl = environment.api.gatewayBaseUrl;
+export function gatewayBaseUrl(): string {
+  return runtimeConfig().api.gatewayBaseUrl;
+}

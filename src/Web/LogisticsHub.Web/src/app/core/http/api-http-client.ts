@@ -31,7 +31,7 @@ export class ApiHttpClient {
 
     try {
       const response = await firstValueFrom(
-        this.http.request(method, `${gatewayBaseUrl}${path}`, {
+        this.http.request(method, `${gatewayBaseUrl()}${path}`, {
           body,
           headers: new HttpHeaders({
             Authorization: `Bearer ${accessToken}`,
@@ -51,7 +51,7 @@ export class ApiHttpClient {
 
     try {
       return await firstValueFrom(
-        this.http.request<T>(method, `${gatewayBaseUrl}${path}`, {
+        this.http.request<T>(method, `${gatewayBaseUrl()}${path}`, {
           body,
           headers: new HttpHeaders({
             Authorization: `Bearer ${accessToken}`,

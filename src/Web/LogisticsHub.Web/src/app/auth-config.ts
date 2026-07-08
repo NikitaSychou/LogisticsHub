@@ -4,13 +4,15 @@ import {
   type RedirectRequest,
   type SilentRequest,
 } from '@azure/msal-browser';
-import { environment } from '../environments/environment';
+import { runtimeConfig } from './core/config/runtime-config';
+
+const config = runtimeConfig();
 
 export const msalConfig: Configuration = {
   auth: {
-    clientId: environment.msal.clientId,
-    authority: environment.msal.authority,
-    redirectUri: environment.msal.redirectUri,
+    clientId: config.msal.clientId,
+    authority: config.msal.authority,
+    redirectUri: config.msal.redirectUri,
   },
   cache: {
     cacheLocation: BrowserCacheLocation.LocalStorage,
@@ -18,10 +20,10 @@ export const msalConfig: Configuration = {
 };
 
 export const loginRequest: RedirectRequest = {
-  scopes: [environment.api.scope],
+  scopes: [config.api.scope],
 };
 
 export const tokenRequest = (account: SilentRequest['account']): SilentRequest => ({
   account,
-  scopes: [environment.api.scope],
+  scopes: [config.api.scope],
 });
