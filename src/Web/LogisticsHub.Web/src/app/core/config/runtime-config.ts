@@ -18,6 +18,15 @@ const defaultRuntimeConfig: RuntimeConfig = environment;
 
 let activeRuntimeConfig = defaultRuntimeConfig;
 
+type RuntimeConfigLoader = () => Promise<Response>;
+type RuntimeConfigWarningHandler = (reason: string) => void;
+
+interface RuntimeConfigLoadOptions {
+  loadResponse?: RuntimeConfigLoader;
+  fallback?: RuntimeConfig;
+  warn?: RuntimeConfigWarningHandler;
+}
+
 @Injectable({ providedIn: 'root' })
 export class RuntimeConfigService {
   get config(): RuntimeConfig {
@@ -26,32 +35,41 @@ export class RuntimeConfigService {
 }
 
 export async function loadRuntimeConfig(): Promise<void> {
+  activeRuntimeConfig = await resolveRuntimeConfig();
+}
+
+export async function resolveRuntimeConfig(options: RuntimeConfigLoadOptions = {}): Promise<RuntimeConfig> {
+  const loadResponse = options.loadResponse ?? (() => fetch(RUNTIME_CONFIG_PATH, { cache: 'no-store' }));
+  const fallback = options.fallback ?? defaultRuntimeConfig;
+  const warn = options.warn ?? warnFallback;
+
   try {
-    const response = await fetch(RUNTIME_CONFIG_PATH, { cache: 'no-store' });
+    const response = await loadResponse();
     if (!response.ok) {
       if (response.status !== 404) {
-        warnFallback(`Runtime config request failed with HTTP ${response.status}.`);
+        warn(`Runtime config request failed with HTTP ${response.status}.`);
       }
 
-      return;
+      return fallback;
     }
 
     const responseBody = await responseJson(response);
     if (!responseBody.ok) {
-      warnFallback('Runtime config JSON could not be parsed.');
-      return;
+      warn('Runtime config JSON could not be parsed.');
+      return fallback;
     }
 
     const runtimeConfig = toRuntimeConfig(responseBody.value);
     if (runtimeConfig) {
-      activeRuntimeConfig = runtimeConfig;
-      return;
+      return runtimeConfig;
     }
 
-    warnFallback('Runtime config has an invalid shape.');
+    warn('Runtime config has an invalid shape.');
   } catch {
-    warnFallback('Runtime config could not be loaded or parsed.');
+    warn('Runtime config could not be loaded or parsed.');
   }
+
+  return fallback;
 }
 
 export function runtimeConfig(): RuntimeConfig {
