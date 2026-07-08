@@ -10,7 +10,7 @@
 
     <div class="alert alert-danger validation-alert" *ngIf="error">{{ error }}</div>
 
-    <form class="row g-3" (ngSubmit)="submitForm.emit()">
+    <form class="row g-3" (ngSubmit)="submit()">
       <div class="col-12 col-lg-3">
         <label for="inventorySku" class="form-label">SKU</label>
         <input
@@ -45,8 +45,9 @@
           min="0"
           required>
       </div>
+      <div class="col-12 text-secondary small" *ngIf="validationMessage() as message">{{ message }}</div>
       <div class="col-12 d-flex gap-2">
-        <button type="submit" class="btn btn-primary" [disabled]="creating">
+        <button type="submit" class="btn btn-primary" [disabled]="creating || !isValid()">
           {{ creating ? 'Creating...' : 'Create item' }}
         </button>
         <button type="button" class="btn btn-outline-secondary" (click)="cancel.emit()" [disabled]="creating">

@@ -32,10 +32,10 @@
 
 <app-inventory-create-form
   *ngIf="showCreateItemForm()"
-  [form]="createItemForm"
   [creating]="creatingItem()"
   [error]="createItemError()"
-  (submitForm)="submitCreateItem()"
+  [resetKey]="createItemResetKey()"
+  (submitForm)="submitCreateItem($event)"
   (cancel)="cancelCreateItem()">
 </app-inventory-create-form>
 
@@ -57,9 +57,9 @@
       [showStockAdjustmentForm]="showStockAdjustmentForm()"
       [adjustingStock]="adjustingStock()"
       [stockAdjustmentError]="stockAdjustmentError()"
-      [stockAdjustmentForm]="stockAdjustmentForm"
+      [stockAdjustmentResetKey]="stockAdjustmentResetKey()"
       (toggleStockAdjustment)="toggleStockAdjustmentForm()"
-      (submitStockAdjustment)="submitStockAdjustment()"
+      (submitStockAdjustment)="submitStockAdjustment($event)"
       (cancelStockAdjustment)="cancelStockAdjustment()">
     </app-inventory-details>
   </aside>

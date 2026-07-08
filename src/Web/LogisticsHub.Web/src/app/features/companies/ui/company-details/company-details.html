@@ -32,10 +32,10 @@
 
     <app-address-create-form
       *ngIf="showCreateAddressForm"
-      [form]="createAddressForm"
       [creating]="creatingAddress"
       [error]="createAddressError"
-      (submitForm)="submitCreateAddress.emit()"
+      [resetKey]="createAddressResetKey"
+      (submitForm)="submitCreateAddress.emit($event)"
       (cancel)="cancelCreateAddress.emit()">
     </app-address-create-form>
 

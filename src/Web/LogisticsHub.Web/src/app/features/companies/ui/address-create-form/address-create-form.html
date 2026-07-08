@@ -9,7 +9,7 @@
 
   <div class="alert alert-danger validation-alert" *ngIf="error">{{ error }}</div>
 
-  <form class="row g-2" (ngSubmit)="submitForm.emit()">
+  <form class="row g-2" (ngSubmit)="submit()">
     <div class="col-12 col-md-6">
       <label for="addressType" class="form-label">Type</label>
       <select
@@ -83,8 +83,9 @@
         (input)="form.postalCode = inputValue($event)"
         maxlength="32">
     </div>
+    <div class="col-12 text-secondary small" *ngIf="validationMessage() as message">{{ message }}</div>
     <div class="col-12 d-flex gap-2 mt-3">
-      <button type="submit" class="btn btn-primary btn-sm" [disabled]="creating">
+      <button type="submit" class="btn btn-primary btn-sm" [disabled]="creating || !isValid()">
         {{ creating ? 'Adding...' : 'Add address' }}
       </button>
       <button type="button" class="btn btn-outline-secondary btn-sm" (click)="cancel.emit()" [disabled]="creating">

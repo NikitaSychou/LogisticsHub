@@ -8,12 +8,10 @@
 <div class="row g-3">
   <div class="col-12 col-xl-7">
     <app-shipment-create-form
-      [form]="createShipmentForm"
       [creating]="creatingShipment()"
       [error]="createShipmentError()"
-      (addItem)="addItemRow()"
-      (removeItem)="removeItemRow($event)"
-      (submitForm)="submitCreateShipment()">
+      [resetKey]="createShipmentResetKey()"
+      (submitForm)="submitCreateShipment($event)">
     </app-shipment-create-form>
 
     <app-shipment-read-by-id
