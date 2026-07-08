@@ -24,21 +24,12 @@
   </div>
 
   <aside class="col-12 col-xl-5">
-    <app-error-alert [message]="statusRefreshError()"></app-error-alert>
-
-    @if (activeShipment()) {
-    <app-shipment-details
+    <app-shipment-active-details
       [title]="activeShipmentTitle()"
       [shipment]="activeShipment()"
       [refreshing]="refreshingShipment()"
+      [statusRefreshError]="statusRefreshError()"
       (refreshStatus)="refreshActiveShipmentStatus()">
-    </app-shipment-details>
-    } @else {
-      <div class="card shadow-sm">
-        <div class="card-body text-center text-secondary py-5">
-          Create or load a shipment to view details.
-        </div>
-      </div>
-    }
+    </app-shipment-active-details>
   </aside>
 </div>

@@ -1,11 +1,9 @@
-import { CommonModule } from '@angular/common';
 import { Component, OnDestroy, inject, signal } from '@angular/core';
 import { formatProblemError } from '../../../../core/http/problem-error.mapper';
-import { ErrorAlert } from '../../../../shared/ui/error-alert/error-alert';
 import { ShipmentApiService } from '../../data-access/shipment-api.service';
 import { CreateShipmentRequest, ShipmentRow } from '../../models/shipment.models';
+import { ShipmentActiveDetails } from '../../ui/shipment-active-details/shipment-active-details';
 import { ShipmentCreateForm } from '../../ui/shipment-create-form/shipment-create-form';
-import { ShipmentDetails } from '../../ui/shipment-details/shipment-details';
 import { ShipmentReadById } from '../../ui/shipment-read-by-id/shipment-read-by-id';
 
 const RESERVATION_PENDING_STATUS = 'ReservationRequested';
@@ -14,7 +12,7 @@ const STATUS_AUTO_REFRESH_MAX_ATTEMPTS = 6;
 
 @Component({
   selector: 'app-shipments-page',
-  imports: [CommonModule, ErrorAlert, ShipmentCreateForm, ShipmentDetails, ShipmentReadById],
+  imports: [ShipmentActiveDetails, ShipmentCreateForm, ShipmentReadById],
   templateUrl: './shipments-page.html',
   styleUrl: './shipments-page.css',
 })
