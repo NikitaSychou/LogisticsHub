@@ -3,7 +3,9 @@
     <h2 class="h5 mb-1">Create shipment</h2>
     <p class="text-secondary small mb-3">Enter company/address IDs and one or more item lines.</p>
 
-    <div class="alert alert-danger validation-alert" *ngIf="error">{{ error }}</div>
+    @if (error) {
+      <div class="alert alert-danger validation-alert">{{ error }}</div>
+    }
 
     <form class="vstack gap-3" (ngSubmit)="submit()">
       <div class="row g-3">
@@ -61,7 +63,8 @@
           </button>
         </div>
 
-        <div class="row g-2 align-items-end mb-2" *ngFor="let item of form.items; let index = index">
+        @for (item of form.items; track $index; let index = $index) {
+        <div class="row g-2 align-items-end mb-2">
           <div class="col-12 col-md-7">
             <label class="form-label" [for]="'shipmentItemSku' + index">SKU</label>
             <input
@@ -94,10 +97,13 @@
             </button>
           </div>
         </div>
+        }
       </div>
 
       <div>
-        <div class="text-secondary small mb-2" *ngIf="validationMessage() as message">{{ message }}</div>
+        @if (validationMessage(); as message) {
+          <div class="text-secondary small mb-2">{{ message }}</div>
+        }
         <button type="submit" class="btn btn-primary" [disabled]="creating || !isValid()">
           {{ creating ? 'Creating...' : 'Create shipment' }}
         </button>

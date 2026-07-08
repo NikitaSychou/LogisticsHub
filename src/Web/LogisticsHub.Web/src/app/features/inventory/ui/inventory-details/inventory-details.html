@@ -1,5 +1,6 @@
 <div class="card shadow-sm details-panel">
-  <div class="card-body" *ngIf="item; else noItemSelected">
+  @if (item) {
+  <div class="card-body">
     <div class="d-flex justify-content-between align-items-start gap-3 mb-3">
       <div>
         <h2 class="h5 mb-1">{{ item.name || 'Unnamed item' }}</h2>
@@ -32,19 +33,19 @@
       </button>
     </div>
 
-    <app-stock-adjustment-form
-      *ngIf="showStockAdjustmentForm"
-      [adjusting]="adjustingStock"
-      [error]="stockAdjustmentError"
-      [resetKey]="stockAdjustmentResetKey"
-      (submitForm)="submitStockAdjustment.emit($event)"
-      (cancel)="cancelStockAdjustment.emit()">
-    </app-stock-adjustment-form>
+    @if (showStockAdjustmentForm) {
+      <app-stock-adjustment-form
+        [adjusting]="adjustingStock"
+        [error]="stockAdjustmentError"
+        [resetKey]="stockAdjustmentResetKey"
+        (submitForm)="submitStockAdjustment.emit($event)"
+        (cancel)="cancelStockAdjustment.emit()">
+      </app-stock-adjustment-form>
+    }
   </div>
-
-  <ng-template #noItemSelected>
+  } @else {
     <div class="card-body text-center text-secondary py-5">
       Select an inventory item to view details.
     </div>
-  </ng-template>
+  }
 </div>

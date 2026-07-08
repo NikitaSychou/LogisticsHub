@@ -1,4 +1,5 @@
-<div class="card shadow-sm" *ngIf="shipment">
+@if (shipment) {
+<div class="card shadow-sm">
   <div class="card-header bg-white d-flex justify-content-between align-items-center gap-3">
     <span>{{ title }}</span>
     <button
@@ -44,8 +45,11 @@
     <hr>
 
     <h4 class="h6 mb-3">Items</h4>
-    <div class="text-secondary small" *ngIf="shipment.items.length === 0">No item rows returned.</div>
-    <div class="table-responsive" *ngIf="shipment.items.length > 0">
+    @if (shipment.items.length === 0) {
+      <div class="text-secondary small">No item rows returned.</div>
+    }
+    @if (shipment.items.length > 0) {
+    <div class="table-responsive">
       <table class="table table-sm align-middle mb-0">
         <thead>
           <tr>
@@ -54,12 +58,16 @@
           </tr>
         </thead>
         <tbody>
-          <tr *ngFor="let item of shipment.items">
+          @for (item of shipment.items; track (item.sku || '-') + '-' + $index) {
+          <tr>
             <td><code>{{ item.sku || '-' }}</code></td>
             <td class="text-end">{{ item.quantity ?? '-' }}</td>
           </tr>
+          }
         </tbody>
       </table>
     </div>
+    }
   </div>
 </div>
+}

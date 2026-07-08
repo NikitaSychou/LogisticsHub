@@ -1,15 +1,24 @@
-<div class="d-flex flex-column align-items-center gap-2 py-3" *ngIf="visible">
+@if (visible) {
+<div class="d-flex flex-column align-items-center gap-2 py-3">
+  @if (hasMore) {
   <button
     type="button"
     class="btn btn-outline-primary"
     (click)="loadMore.emit()"
-    [disabled]="disabled"
-    *ngIf="hasMore">
+    [disabled]="disabled">
     {{ loadingMore ? 'Loading more...' : 'Load more' }}
   </button>
-  <div class="small text-secondary" *ngIf="loadingMore">Loading more...</div>
-  <div class="small text-secondary" *ngIf="!hasMore">{{ allLoadedMessage }}</div>
-  <div class="small text-secondary" *ngIf="pageNumber > 0">
-    Page {{ pageNumber }} loaded<span *ngIf="pageSize > 0">, {{ pageSize }} per page</span>.
+  }
+  @if (loadingMore) {
+    <div class="small text-secondary">Loading more...</div>
+  }
+  @if (!hasMore) {
+    <div class="small text-secondary">{{ allLoadedMessage }}</div>
+  }
+  @if (pageNumber > 0) {
+  <div class="small text-secondary">
+    Page {{ pageNumber }} loaded@if (pageSize > 0) {<span>, {{ pageSize }} per page</span>}.
   </div>
+  }
 </div>
+}
