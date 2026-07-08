@@ -9,7 +9,7 @@
     </div>
 
     @if (error) {
-      <div class="alert alert-danger validation-alert">{{ error }}</div>
+      <div class="alert alert-danger validation-alert" role="alert" aria-live="assertive">{{ error }}</div>
     }
 
     <form class="row g-3" (ngSubmit)="submit()">
@@ -48,7 +48,7 @@
           required>
       </div>
       @if (validationMessage(); as message) {
-        <div class="col-12 text-secondary small">{{ message }}</div>
+        <div class="col-12 text-secondary small" aria-live="polite">{{ message }}</div>
       }
       <div class="col-12 d-flex gap-2">
         <button type="submit" class="btn btn-primary" [disabled]="creating || !isValid()">

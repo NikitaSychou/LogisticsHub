@@ -4,7 +4,7 @@
     <p class="text-secondary small mb-3">Load a shipment by ID.</p>
 
     @if (error) {
-      <div class="alert alert-danger validation-alert">{{ error }}</div>
+      <div class="alert alert-danger validation-alert" role="alert" aria-live="assertive">{{ error }}</div>
     }
 
     <form class="row g-2 align-items-end" (ngSubmit)="loadShipment.emit()">
