@@ -9,8 +9,8 @@
 </app-shipment-details>
 } @else {
   <div class="card shadow-sm">
-    <div class="card-body text-center text-secondary py-5">
-      Create or load a shipment to view details.
+    <div class="card-body">
+      <app-empty-state message="Create or load a shipment to view details."></app-empty-state>
     </div>
   </div>
 }
