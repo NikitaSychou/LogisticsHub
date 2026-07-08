@@ -4,7 +4,7 @@ import { formatProblemError } from './problem-error.mapper';
 describe('formatProblemError', () => {
   it('formats validation errors from structured ApiHttpError body data', () => {
     const error = new ApiHttpError(
-      'Create company',
+      'Create resource',
       400,
       'Bad Request',
       {
@@ -22,9 +22,9 @@ describe('formatProblemError', () => {
   });
 
   it('uses the ApiHttpError message when the body is not ProblemDetails validation data', () => {
-    const error = new ApiHttpError('Load inventory', 500, 'Server Error', 'Plain failure', 'Plain failure');
+    const error = new ApiHttpError('Load data', 500, 'Server Error', 'Plain failure', 'Plain failure');
 
-    expect(formatProblemError(error, 'Load failed.')).toBe('Load inventory returned 500: Plain failure');
+    expect(formatProblemError(error, 'Load failed.')).toBe('Load data returned 500: Plain failure');
   });
 
   it('does not parse ProblemDetails JSON from a plain Error message', () => {

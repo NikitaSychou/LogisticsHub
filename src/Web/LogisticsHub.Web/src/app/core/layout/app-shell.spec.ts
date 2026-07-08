@@ -30,13 +30,13 @@ describe('AppShell', () => {
     fixture.componentRef.setInput('loading', false);
     fixture.componentRef.setInput('isSignedIn', true);
     fixture.componentRef.setInput('signedInName', 'Operations User');
-    fixture.componentRef.setInput('navigationItems', [{ label: 'Companies', path: '/companies' }]);
+    fixture.componentRef.setInput('navigationItems', [{ label: 'Operations', path: '/operations' }]);
 
     fixture.detectChanges();
 
     const element = fixture.nativeElement as HTMLElement;
     expect(element.textContent).toContain('Operations User');
-    expect(element.textContent).toContain('Companies');
+    expect(element.textContent).toContain('Operations');
     expect(element.textContent).toContain('Sign out');
   });
 });
