@@ -5,7 +5,7 @@
 
     <div class="alert alert-danger validation-alert" *ngIf="error">{{ error }}</div>
 
-    <form class="vstack gap-3" (ngSubmit)="submitForm.emit()">
+    <form class="vstack gap-3" (ngSubmit)="submit()">
       <div class="row g-3">
         <div class="col-12 col-lg-6">
           <label for="senderCompanyId" class="form-label">Sender company ID</label>
@@ -56,7 +56,7 @@
       <div class="border rounded p-3">
         <div class="d-flex justify-content-between align-items-center gap-3 mb-3">
           <h3 class="h6 mb-0">Items</h3>
-          <button type="button" class="btn btn-sm btn-outline-primary" (click)="addItem.emit()">
+          <button type="button" class="btn btn-sm btn-outline-primary" (click)="addItem()">
             Add item
           </button>
         </div>
@@ -89,7 +89,7 @@
             <button
               type="button"
               class="btn btn-outline-secondary w-100"
-              (click)="removeItem.emit(index)">
+              (click)="removeItem(index)">
               Remove
             </button>
           </div>
@@ -97,7 +97,8 @@
       </div>
 
       <div>
-        <button type="submit" class="btn btn-primary" [disabled]="creating">
+        <div class="text-secondary small mb-2" *ngIf="validationMessage() as message">{{ message }}</div>
+        <button type="submit" class="btn btn-primary" [disabled]="creating || !isValid()">
           {{ creating ? 'Creating...' : 'Create shipment' }}
         </button>
       </div>

@@ -32,10 +32,10 @@
 
 <app-company-create-form
   *ngIf="showCreateCompanyForm()"
-  [form]="createCompanyForm"
   [creating]="creatingCompany()"
   [error]="createCompanyError()"
-  (submitForm)="submitCreateCompany()"
+  [resetKey]="createCompanyResetKey()"
+  (submitForm)="submitCreateCompany($event)"
   (cancel)="cancelCreateCompany()">
 </app-company-create-form>
 
@@ -61,9 +61,9 @@
       [showCreateAddressForm]="showCreateAddressForm()"
       [creatingAddress]="creatingAddress()"
       [createAddressError]="createAddressError()"
-      [createAddressForm]="createAddressForm"
+      [createAddressResetKey]="createAddressResetKey()"
       (toggleCreateAddress)="toggleCreateAddressForm()"
-      (submitCreateAddress)="submitCreateAddress()"
+      (submitCreateAddress)="submitCreateAddress($event)"
       (cancelCreateAddress)="cancelCreateAddress()">
     </app-company-details>
   </aside>

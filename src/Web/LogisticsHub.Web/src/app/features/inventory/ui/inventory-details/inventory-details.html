@@ -34,10 +34,10 @@
 
     <app-stock-adjustment-form
       *ngIf="showStockAdjustmentForm"
-      [form]="stockAdjustmentForm"
       [adjusting]="adjustingStock"
       [error]="stockAdjustmentError"
-      (submitForm)="submitStockAdjustment.emit()"
+      [resetKey]="stockAdjustmentResetKey"
+      (submitForm)="submitStockAdjustment.emit($event)"
       (cancel)="cancelStockAdjustment.emit()">
     </app-stock-adjustment-form>
   </div>

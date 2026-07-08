@@ -10,7 +10,7 @@
 
     <div class="alert alert-danger validation-alert" *ngIf="error">{{ error }}</div>
 
-    <form class="row g-3" (ngSubmit)="submitForm.emit()">
+    <form class="row g-3" (ngSubmit)="submit()">
       <div class="col-12 col-lg-5">
         <label for="companyName" class="form-label">Name</label>
         <input
@@ -47,8 +47,9 @@
           <option value="Inactive">Inactive</option>
         </select>
       </div>
+      <div class="col-12 text-secondary small" *ngIf="validationMessage() as message">{{ message }}</div>
       <div class="col-12 d-flex gap-2">
-        <button type="submit" class="btn btn-primary" [disabled]="creating">
+        <button type="submit" class="btn btn-primary" [disabled]="creating || !isValid()">
           {{ creating ? 'Creating...' : 'Create company' }}
         </button>
         <button type="button" class="btn btn-outline-secondary" (click)="cancel.emit()" [disabled]="creating">

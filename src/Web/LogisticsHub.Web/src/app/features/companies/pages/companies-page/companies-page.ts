@@ -59,26 +59,13 @@ export class CompaniesPage implements AfterViewInit, OnDestroy {
   protected readonly showCreateAddressForm = signal(false);
   protected readonly creatingAddress = signal(false);
   protected readonly createAddressError = signal('');
+  protected readonly createCompanyResetKey = signal(0);
+  protected readonly createAddressResetKey = signal(0);
   protected readonly hasLoadedCompanies = signal(false);
   protected readonly currentCompaniesPage = signal(0);
   protected readonly companiesPageSize = signal(0);
   protected readonly hasMoreCompanies = signal(false);
   protected readonly isCompaniesLoading = computed(() => this.apiLoading() || this.loadingMore());
-
-  protected readonly createCompanyForm = {
-    name: '',
-    externalCode: '',
-    status: 'Active',
-  };
-
-  protected readonly createAddressForm = {
-    addressType: 'Shipping',
-    countryCode: '',
-    city: '',
-    postalCode: '',
-    line1: '',
-    line2: '',
-  };
 
   ngAfterViewInit(): void {
     this.viewReady = true;
@@ -130,13 +117,8 @@ export class CompaniesPage implements AfterViewInit, OnDestroy {
     this.resetCreateCompanyForm();
   }
 
-  protected async submitCreateCompany(): Promise<void> {
+  protected async submitCreateCompany(request: CreateCompanyRequest): Promise<void> {
     if (this.creatingCompany()) {
-      return;
-    }
-
-    const request = this.toCreateCompanyRequest();
-    if (!request) {
       return;
     }
 
@@ -172,7 +154,7 @@ export class CompaniesPage implements AfterViewInit, OnDestroy {
     this.resetCreateAddressForm();
   }
 
-  protected async submitCreateAddress(): Promise<void> {
+  protected async submitCreateAddress(request: CreateCompanyAddressRequest): Promise<void> {
     if (this.creatingAddress()) {
       return;
     }
@@ -180,11 +162,6 @@ export class CompaniesPage implements AfterViewInit, OnDestroy {
     const company = this.selectedCompany();
     if (!company?.id) {
       this.createAddressError.set('Select a company before adding an address.');
-      return;
-    }
-
-    const request = this.toCreateAddressRequest();
-    if (!request) {
       return;
     }
 
@@ -279,58 +256,12 @@ export class CompaniesPage implements AfterViewInit, OnDestroy {
     }
   }
 
-  private toCreateCompanyRequest(): CreateCompanyRequest | null {
-    if (!this.createCompanyForm.name.trim() || !this.createCompanyForm.status.trim()) {
-      this.createCompanyError.set('Name and status are required.');
-      return null;
-    }
-
-    return {
-      name: this.createCompanyForm.name.trim(),
-      externalCode: this.optionalTrimmed(this.createCompanyForm.externalCode),
-      status: this.createCompanyForm.status.trim(),
-    };
-  }
-
-  private toCreateAddressRequest(): CreateCompanyAddressRequest | null {
-    if (
-      !this.createAddressForm.addressType.trim() ||
-      !this.createAddressForm.countryCode.trim() ||
-      !this.createAddressForm.city.trim() ||
-      !this.createAddressForm.line1.trim()
-    ) {
-      this.createAddressError.set('Address type, country code, city, and line 1 are required.');
-      return null;
-    }
-
-    return {
-      addressType: this.createAddressForm.addressType.trim(),
-      countryCode: this.createAddressForm.countryCode.trim().toUpperCase(),
-      city: this.createAddressForm.city.trim(),
-      postalCode: this.optionalTrimmed(this.createAddressForm.postalCode),
-      line1: this.createAddressForm.line1.trim(),
-      line2: this.optionalTrimmed(this.createAddressForm.line2),
-    };
-  }
-
-  private optionalTrimmed(value: string): string | null {
-    const trimmed = value.trim();
-    return trimmed.length > 0 ? trimmed : null;
-  }
-
   private resetCreateCompanyForm(): void {
-    this.createCompanyForm.name = '';
-    this.createCompanyForm.externalCode = '';
-    this.createCompanyForm.status = 'Active';
+    this.createCompanyResetKey.update((value) => value + 1);
   }
 
   private resetCreateAddressForm(): void {
-    this.createAddressForm.addressType = 'Shipping';
-    this.createAddressForm.countryCode = '';
-    this.createAddressForm.city = '';
-    this.createAddressForm.postalCode = '';
-    this.createAddressForm.line1 = '';
-    this.createAddressForm.line2 = '';
+    this.createAddressResetKey.update((value) => value + 1);
   }
 
   private formatError(error: unknown, fallback: string): string {

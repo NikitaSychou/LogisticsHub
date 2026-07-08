@@ -3,7 +3,7 @@ import { Component, OnDestroy, inject, signal } from '@angular/core';
 import { formatProblemError } from '../../../../core/http/problem-error.mapper';
 import { ErrorAlert } from '../../../../shared/ui/error-alert/error-alert';
 import { ShipmentApiService } from '../../data-access/shipment-api.service';
-import { CreateShipmentRequest, ShipmentItemFormRow, ShipmentRow } from '../../models/shipment.models';
+import { CreateShipmentRequest, ShipmentRow } from '../../models/shipment.models';
 import { ShipmentCreateForm } from '../../ui/shipment-create-form/shipment-create-form';
 import { ShipmentDetails } from '../../ui/shipment-details/shipment-details';
 import { ShipmentReadById } from '../../ui/shipment-read-by-id/shipment-read-by-id';
@@ -27,14 +27,7 @@ export class ShipmentsPage implements OnDestroy {
   protected readonly statusRefreshError = signal('');
   protected readonly createdShipment = signal<ShipmentRow | null>(null);
   protected readonly loadedShipment = signal<ShipmentRow | null>(null);
-
-  protected readonly createShipmentForm = {
-    senderCompanyId: '',
-    senderAddressId: '',
-    receiverCompanyId: '',
-    receiverAddressId: '',
-    items: [{ sku: '', quantity: 1 }] as ShipmentItemFormRow[],
-  };
+  protected readonly createShipmentResetKey = signal(0);
 
   protected shipmentIdToLoad = '';
 
@@ -42,26 +35,8 @@ export class ShipmentsPage implements OnDestroy {
     this.stopAutoRefresh();
   }
 
-  protected addItemRow(): void {
-    this.createShipmentForm.items.push({ sku: '', quantity: 1 });
-  }
-
-  protected removeItemRow(index: number): void {
-    if (this.createShipmentForm.items.length === 1) {
-      this.createShipmentForm.items[0] = { sku: '', quantity: 1 };
-      return;
-    }
-
-    this.createShipmentForm.items.splice(index, 1);
-  }
-
-  protected async submitCreateShipment(): Promise<void> {
+  protected async submitCreateShipment(request: CreateShipmentRequest): Promise<void> {
     if (this.creatingShipment()) {
-      return;
-    }
-
-    const request = this.toCreateShipmentRequest();
-    if (!request) {
       return;
     }
 
@@ -150,57 +125,8 @@ export class ShipmentsPage implements OnDestroy {
     }
   }
 
-  private toCreateShipmentRequest(): CreateShipmentRequest | null {
-    const missingReferences = [
-      ['sender company ID', this.createShipmentForm.senderCompanyId],
-      ['sender address ID', this.createShipmentForm.senderAddressId],
-      ['receiver company ID', this.createShipmentForm.receiverCompanyId],
-      ['receiver address ID', this.createShipmentForm.receiverAddressId],
-    ].filter(([, value]) => !value.trim());
-
-    if (missingReferences.length > 0) {
-      this.createShipmentError.set(`Missing required fields: ${missingReferences.map(([name]) => name).join(', ')}.`);
-      return null;
-    }
-
-    if (this.createShipmentForm.items.length === 0) {
-      this.createShipmentError.set('At least one item is required.');
-      return null;
-    }
-
-    const items = [];
-    for (const [index, item] of this.createShipmentForm.items.entries()) {
-      if (!item.sku.trim()) {
-        this.createShipmentError.set(`Item ${index + 1}: SKU is required.`);
-        return null;
-      }
-
-      if (!Number.isFinite(item.quantity) || item.quantity <= 0) {
-        this.createShipmentError.set(`Item ${index + 1}: quantity must be greater than 0.`);
-        return null;
-      }
-
-      items.push({
-        sku: item.sku.trim(),
-        quantity: item.quantity,
-      });
-    }
-
-    return {
-      items,
-      senderCompanyId: this.createShipmentForm.senderCompanyId.trim(),
-      senderAddressId: this.createShipmentForm.senderAddressId.trim(),
-      receiverCompanyId: this.createShipmentForm.receiverCompanyId.trim(),
-      receiverAddressId: this.createShipmentForm.receiverAddressId.trim(),
-    };
-  }
-
   private resetCreateShipmentForm(): void {
-    this.createShipmentForm.senderCompanyId = '';
-    this.createShipmentForm.senderAddressId = '';
-    this.createShipmentForm.receiverCompanyId = '';
-    this.createShipmentForm.receiverAddressId = '';
-    this.createShipmentForm.items = [{ sku: '', quantity: 1 }];
+    this.createShipmentResetKey.update((value) => value + 1);
   }
 
   private startAutoRefreshIfNeeded(shipment: ShipmentRow): void {
