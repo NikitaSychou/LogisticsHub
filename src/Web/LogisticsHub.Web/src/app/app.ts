@@ -4,9 +4,9 @@ import {
   InteractionRequiredAuthError,
   PublicClientApplication,
 } from '@azure/msal-browser';
-import { environment } from '../environments/environment';
 import { loginRequest, msalConfig, tokenRequest } from './auth-config';
 import { AuthReturnUrlStore } from './core/auth/auth-return-url-store';
+import { RuntimeConfigService } from './core/config/runtime-config';
 import { ApiAuthContext } from './core/http/api-auth-context';
 import { AppShell } from './core/layout/app-shell';
 import { navigationItems } from './core/navigation/navigation-items';
@@ -22,6 +22,7 @@ export class App implements OnInit {
   private readonly msal = new PublicClientApplication(msalConfig);
   private readonly apiAuthContext = inject(ApiAuthContext);
   private readonly returnUrlStore = inject(AuthReturnUrlStore);
+  private readonly runtimeConfig = inject(RuntimeConfigService);
   private readonly router = inject(Router);
 
   protected readonly account = signal<AccountInfo | null>(null);
@@ -69,7 +70,7 @@ export class App implements OnInit {
   protected async logout(): Promise<void> {
     await this.msal.logoutRedirect({
       account: this.account(),
-      postLogoutRedirectUri: environment.msal.redirectUri,
+      postLogoutRedirectUri: this.runtimeConfig.config.msal.redirectUri,
     });
   }
 
