@@ -101,16 +101,23 @@ export class ShipmentsPage implements OnDestroy {
       return;
     }
 
+    const shipmentId = shipment.shipmentId;
     this.refreshingShipment.set(true);
     this.statusRefreshError.set('');
 
     try {
-      const refreshedShipment = await this.shipmentApi.getShipment(shipment.shipmentId);
+      const refreshedShipment = await this.shipmentApi.getShipment(shipmentId);
+      if (this.activeShipment()?.shipmentId !== shipmentId) {
+        return;
+      }
+
       this.activeShipment.set(refreshedShipment);
       this.restartStatusAutoRefreshIfNeeded(refreshedShipment);
     } catch (error) {
-      this.statusRefreshError.set(this.formatError(error, 'Shipment status refresh failed.'));
-      this.stopAutoRefresh();
+      if (this.activeShipment()?.shipmentId === shipmentId) {
+        this.statusRefreshError.set(this.formatError(error, 'Shipment status refresh failed.'));
+        this.stopAutoRefresh();
+      }
     } finally {
       this.refreshingShipment.set(false);
     }
