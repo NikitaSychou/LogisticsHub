@@ -1,4 +1,5 @@
 import { RuntimeConfig, resolveRuntimeConfig } from './runtime-config';
+import { environment } from '../../../environments/environment';
 
 describe('resolveRuntimeConfig', () => {
   const fallbackConfig: RuntimeConfig = {
@@ -38,6 +39,19 @@ describe('resolveRuntimeConfig', () => {
     expect(warnings).toEqual([]);
   });
 
+  it('accepts the current local fallback config shape', async () => {
+    const warnings: string[] = [];
+
+    const config = await resolveRuntimeConfig({
+      fallback: fallbackConfig,
+      loadResponse: async () => jsonResponse(environment),
+      warn: (reason) => warnings.push(reason),
+    });
+
+    expect(config).toEqual(environment);
+    expect(warnings).toEqual([]);
+  });
+
   it('falls back quietly when runtime config is missing', async () => {
     const warnings: string[] = [];
 
@@ -70,6 +84,71 @@ describe('resolveRuntimeConfig', () => {
     const config = await resolveRuntimeConfig({
       fallback: fallbackConfig,
       loadResponse: async () => jsonResponse({ api: validConfig.api }),
+      warn: (reason) => warnings.push(reason),
+    });
+
+    expect(config).toBe(fallbackConfig);
+    expect(warnings).toEqual(['Runtime config has an invalid shape.']);
+  });
+
+  it('falls back and warns when gateway base URL is malformed', async () => {
+    const warnings: string[] = [];
+
+    const config = await resolveRuntimeConfig({
+      fallback: fallbackConfig,
+      loadResponse: async () => jsonResponse({ ...validConfig, api: { ...validConfig.api, gatewayBaseUrl: 'localhost:5100' } }),
+      warn: (reason) => warnings.push(reason),
+    });
+
+    expect(config).toBe(fallbackConfig);
+    expect(warnings).toEqual(['Runtime config has an invalid shape.']);
+  });
+
+  it('falls back and warns when MSAL authority URL is malformed', async () => {
+    const warnings: string[] = [];
+
+    const config = await resolveRuntimeConfig({
+      fallback: fallbackConfig,
+      loadResponse: async () => jsonResponse({ ...validConfig, msal: { ...validConfig.msal, authority: 'https://login.microsoftonline.com' } }),
+      warn: (reason) => warnings.push(reason),
+    });
+
+    expect(config).toBe(fallbackConfig);
+    expect(warnings).toEqual(['Runtime config has an invalid shape.']);
+  });
+
+  it('falls back and warns when redirect URI is malformed', async () => {
+    const warnings: string[] = [];
+
+    const config = await resolveRuntimeConfig({
+      fallback: fallbackConfig,
+      loadResponse: async () => jsonResponse({ ...validConfig, msal: { ...validConfig.msal, redirectUri: '/auth/callback' } }),
+      warn: (reason) => warnings.push(reason),
+    });
+
+    expect(config).toBe(fallbackConfig);
+    expect(warnings).toEqual(['Runtime config has an invalid shape.']);
+  });
+
+  it('falls back and warns when API scope is malformed', async () => {
+    const warnings: string[] = [];
+
+    const config = await resolveRuntimeConfig({
+      fallback: fallbackConfig,
+      loadResponse: async () => jsonResponse({ ...validConfig, api: { ...validConfig.api, scope: 'api://runtime/access as user' } }),
+      warn: (reason) => warnings.push(reason),
+    });
+
+    expect(config).toBe(fallbackConfig);
+    expect(warnings).toEqual(['Runtime config has an invalid shape.']);
+  });
+
+  it('falls back and warns when API scope is empty', async () => {
+    const warnings: string[] = [];
+
+    const config = await resolveRuntimeConfig({
+      fallback: fallbackConfig,
+      loadResponse: async () => jsonResponse({ ...validConfig, api: { ...validConfig.api, scope: '' } }),
       warn: (reason) => warnings.push(reason),
     });
 

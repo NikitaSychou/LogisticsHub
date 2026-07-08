@@ -103,12 +103,12 @@ function toRuntimeConfig(value: unknown): RuntimeConfig | null {
 }
 
 function isCompleteRuntimeConfig(config: RuntimeConfig): boolean {
-  return Boolean(
-    config.api.gatewayBaseUrl &&
-      config.api.scope &&
-      config.msal.clientId &&
-      config.msal.authority &&
-      config.msal.redirectUri
+  return (
+    isHttpUrl(config.api.gatewayBaseUrl) &&
+    isSafeScalar(config.api.scope) &&
+    isSafeScalar(config.msal.clientId) &&
+    isTenantAuthorityUrl(config.msal.authority) &&
+    isHttpUrl(config.msal.redirectUri)
   );
 }
 
@@ -126,6 +126,32 @@ async function responseJson(response: Response): Promise<{ ok: true; value: unkn
 
 function stringValue(value: unknown): string {
   return typeof value === 'string' ? value.trim() : '';
+}
+
+function isHttpUrl(value: string): boolean {
+  if (!isSafeScalar(value)) {
+    return false;
+  }
+
+  try {
+    const url = new URL(value);
+    return url.protocol === 'http:' || url.protocol === 'https:';
+  } catch {
+    return false;
+  }
+}
+
+function isTenantAuthorityUrl(value: string): boolean {
+  if (!isHttpUrl(value)) {
+    return false;
+  }
+
+  const url = new URL(value);
+  return url.pathname.split('/').some((segment) => segment.length > 0);
+}
+
+function isSafeScalar(value: string): boolean {
+  return value.length > 0 && !/\s/.test(value);
 }
 
 function warnFallback(reason: string): void {
