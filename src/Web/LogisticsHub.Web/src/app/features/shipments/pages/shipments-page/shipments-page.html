@@ -26,20 +26,19 @@
   <aside class="col-12 col-xl-5">
     <app-error-alert [message]="statusRefreshError()"></app-error-alert>
 
+    @if (activeShipment()) {
     <app-shipment-details
-      *ngIf="activeShipment(); else noShipmentLoaded"
       [title]="activeShipmentTitle()"
       [shipment]="activeShipment()"
       [refreshing]="refreshingShipment()"
       (refreshStatus)="refreshActiveShipmentStatus()">
     </app-shipment-details>
-
-    <ng-template #noShipmentLoaded>
+    } @else {
       <div class="card shadow-sm">
         <div class="card-body text-center text-secondary py-5">
           Create or load a shipment to view details.
         </div>
       </div>
-    </ng-template>
+    }
   </aside>
 </div>

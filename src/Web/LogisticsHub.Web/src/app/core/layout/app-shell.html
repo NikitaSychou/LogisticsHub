@@ -1,8 +1,11 @@
-<main *ngIf="loading" class="min-vh-100 d-flex align-items-center justify-content-center bg-body-tertiary">
+@if (loading) {
+<main class="min-vh-100 d-flex align-items-center justify-content-center bg-body-tertiary">
   <div class="text-secondary">Checking sign-in state...</div>
 </main>
+}
 
-<main *ngIf="!loading && !isSignedIn" class="login-page bg-body-tertiary">
+@if (!loading && !isSignedIn) {
+<main class="login-page bg-body-tertiary">
   <section class="card login-card shadow-sm">
     <div class="card-body p-4 p-md-5">
       <p class="text-primary fw-semibold text-uppercase small mb-2">LogisticsHub</p>
@@ -12,8 +15,9 @@
     </div>
   </section>
 </main>
+}
 
-<ng-container *ngIf="!loading && isSignedIn">
+@if (!loading && isSignedIn) {
   <nav class="navbar navbar-expand border-bottom bg-white">
     <div class="container-fluid px-4">
       <span class="navbar-brand fw-semibold">LogisticsHub</span>
@@ -28,13 +32,14 @@
     <div class="row g-4">
       <aside class="col-12 col-lg-2">
         <div class="sidebar-nav nav nav-pills flex-lg-column gap-2">
+          @for (item of navigationItems; track item.path) {
           <a
-            *ngFor="let item of navigationItems"
             class="nav-link text-start"
             [routerLink]="item.path"
             routerLinkActive="active">
             {{ item.label }}
           </a>
+          }
         </div>
       </aside>
 
@@ -43,4 +48,4 @@
       </section>
     </div>
   </div>
-</ng-container>
+}

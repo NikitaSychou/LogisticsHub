@@ -1,6 +1,7 @@
 <div class="card shadow-sm">
   <div class="card-body">
-    <div class="table-responsive" *ngIf="items.length > 0; else emptyInventory">
+    @if (items.length > 0) {
+    <div class="table-responsive">
       <table class="table table-hover align-middle mb-0">
         <thead>
           <tr>
@@ -10,8 +11,8 @@
           </tr>
         </thead>
         <tbody>
+          @for (item of items; track item.sku || $index) {
           <tr
-            *ngFor="let item of items"
             class="inventory-row"
             [class.table-active]="isSelectedItem(item)"
             (click)="itemSelected.emit(item)">
@@ -19,15 +20,15 @@
             <td>{{ item.name || 'Unnamed item' }}</td>
             <td class="text-end">{{ item.quantityAvailable ?? '-' }}</td>
           </tr>
+          }
         </tbody>
       </table>
     </div>
-
-    <ng-template #emptyInventory>
+    } @else {
       <app-empty-state
         title="No inventory items loaded"
         [message]="emptyStateMessage">
       </app-empty-state>
-    </ng-template>
+    }
   </div>
 </div>

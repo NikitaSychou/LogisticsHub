@@ -1,13 +1,16 @@
-<div class="alert alert-danger" *ngIf="message">
+@if (message) {
+<div class="alert alert-danger">
   <div class="d-flex flex-wrap align-items-center justify-content-between gap-2">
     <span>{{ message }}</span>
+    @if (hasRetryAction) {
     <button
-      *ngIf="hasRetryAction"
       type="button"
       class="btn btn-sm btn-outline-primary"
       (click)="retry.emit()"
       [disabled]="retryDisabled">
       {{ retrying ? retryingLabel : retryLabel }}
     </button>
+    }
   </div>
 </div>
+}

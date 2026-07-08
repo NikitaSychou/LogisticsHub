@@ -3,7 +3,9 @@
     <h2 class="h5 mb-1">Read shipment</h2>
     <p class="text-secondary small mb-3">Load a shipment by ID.</p>
 
-    <div class="alert alert-danger validation-alert" *ngIf="error">{{ error }}</div>
+    @if (error) {
+      <div class="alert alert-danger validation-alert">{{ error }}</div>
+    }
 
     <form class="row g-2 align-items-end" (ngSubmit)="loadShipment.emit()">
       <div class="col-12 col-md-9">

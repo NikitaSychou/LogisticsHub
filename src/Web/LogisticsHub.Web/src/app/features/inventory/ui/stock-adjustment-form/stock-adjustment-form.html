@@ -7,7 +7,9 @@
     <button type="button" class="btn-close" aria-label="Close" (click)="cancel.emit()"></button>
   </div>
 
-  <div class="alert alert-danger validation-alert" *ngIf="error">{{ error }}</div>
+  @if (error) {
+    <div class="alert alert-danger validation-alert">{{ error }}</div>
+  }
 
   <form class="row g-2" (ngSubmit)="submit()">
     <div class="col-12">
@@ -22,7 +24,9 @@
         min="1"
         required>
     </div>
-    <div class="col-12 text-secondary small" *ngIf="validationMessage() as message">{{ message }}</div>
+    @if (validationMessage(); as message) {
+      <div class="col-12 text-secondary small">{{ message }}</div>
+    }
     <div class="col-12 d-flex gap-2 mt-3">
       <button type="submit" class="btn btn-primary btn-sm" [disabled]="adjusting || !isValid()">
         {{ adjusting ? 'Increasing...' : 'Increase stock' }}

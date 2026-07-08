@@ -1,6 +1,7 @@
 <div class="card shadow-sm">
   <div class="card-body">
-    <div class="table-responsive" *ngIf="companies.length > 0; else emptyCompanies">
+    @if (companies.length > 0) {
+    <div class="table-responsive">
       <table class="table table-hover align-middle mb-0">
         <thead>
           <tr>
@@ -11,8 +12,8 @@
           </tr>
         </thead>
         <tbody>
+          @for (company of companies; track company.id || company.externalCode || $index) {
           <tr
-            *ngFor="let company of companies"
             class="company-row"
             [class.table-active]="isSelectedCompany(company)"
             (click)="companySelected.emit(company)">
@@ -23,15 +24,15 @@
             </td>
             <td><code>{{ company.id || '-' }}</code></td>
           </tr>
+          }
         </tbody>
       </table>
     </div>
-
-    <ng-template #emptyCompanies>
+    } @else {
       <app-empty-state
         title="No companies loaded"
         [message]="emptyStateMessage">
       </app-empty-state>
-    </ng-template>
+    }
   </div>
 </div>

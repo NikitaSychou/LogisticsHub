@@ -1,5 +1,6 @@
 <div class="card shadow-sm details-panel">
-  <div class="card-body" *ngIf="company; else noCompanySelected">
+  @if (company) {
+  <div class="card-body">
     <div class="d-flex justify-content-between align-items-start gap-3 mb-3">
       <div>
         <h2 class="h5 mb-1">{{ company.name || 'Unnamed company' }}</h2>
@@ -30,40 +31,52 @@
       </button>
     </div>
 
-    <app-address-create-form
-      *ngIf="showCreateAddressForm"
-      [creating]="creatingAddress"
-      [error]="createAddressError"
-      [resetKey]="createAddressResetKey"
-      (submitForm)="submitCreateAddress.emit($event)"
-      (cancel)="cancelCreateAddress.emit()">
-    </app-address-create-form>
+    @if (showCreateAddressForm) {
+      <app-address-create-form
+        [creating]="creatingAddress"
+        [error]="createAddressError"
+        [resetKey]="createAddressResetKey"
+        (submitForm)="submitCreateAddress.emit($event)"
+        (cancel)="cancelCreateAddress.emit()">
+      </app-address-create-form>
+    }
 
-    <div class="text-secondary small" *ngIf="addressesLoading">Loading addresses...</div>
-    <div class="alert alert-warning py-2" *ngIf="addressError">{{ addressError }}</div>
+    @if (addressesLoading) {
+      <div class="text-secondary small">Loading addresses...</div>
+    }
+    @if (addressError) {
+      <div class="alert alert-warning py-2">{{ addressError }}</div>
+    }
 
-    <div *ngIf="!addressesLoading && addressesLoaded && addresses.length === 0" class="text-secondary small">
+    @if (!addressesLoading && addressesLoaded && addresses.length === 0) {
+    <div class="text-secondary small">
       No addresses found.
     </div>
+    }
 
-    <div class="vstack gap-2" *ngIf="addresses.length > 0">
-      <div class="border rounded p-3" *ngFor="let address of addresses">
+    @if (addresses.length > 0) {
+    <div class="vstack gap-2">
+      @for (address of addresses; track address.id || $index) {
+      <div class="border rounded p-3">
         <div class="d-flex justify-content-between gap-2">
           <strong>{{ address.addressType || 'Address' }}</strong>
           <span class="badge text-bg-light border">{{ address.countryCode || '-' }}</span>
         </div>
         <div>{{ address.line1 || '-' }}</div>
-        <div class="text-secondary small" *ngIf="address.line2">{{ address.line2 }}</div>
+        @if (address.line2) {
+          <div class="text-secondary small">{{ address.line2 }}</div>
+        }
         <div class="text-secondary small">
-          {{ address.city || '-' }}<span *ngIf="address.postalCode">, {{ address.postalCode }}</span>
+          {{ address.city || '-' }}@if (address.postalCode) {<span>, {{ address.postalCode }}</span>}
         </div>
       </div>
+      }
     </div>
+    }
   </div>
-
-  <ng-template #noCompanySelected>
+  } @else {
     <div class="card-body text-center text-secondary py-5">
       Select a company to view details.
     </div>
-  </ng-template>
+  }
 </div>
