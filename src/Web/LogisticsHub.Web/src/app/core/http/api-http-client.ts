@@ -10,40 +10,12 @@ export class ApiHttpClient {
   private readonly http = inject(HttpClient);
   private readonly authContext = inject(ApiAuthContext);
 
-  async get(path: string, label: string): Promise<string> {
-    return this.request('GET', path, label);
-  }
-
-  async post(path: string, body: unknown, label: string): Promise<string> {
-    return this.request('POST', path, label, body);
-  }
-
   async getJson<T>(path: string, label: string): Promise<T> {
     return this.requestJson<T>('GET', path, label);
   }
 
   async postJson<T>(path: string, body: unknown, label: string): Promise<T> {
     return this.requestJson<T>('POST', path, label, body);
-  }
-
-  private async request(method: 'GET' | 'POST', path: string, label: string, body?: unknown): Promise<string> {
-    const accessToken = await this.authContext.getAccessToken();
-
-    try {
-      const response = await firstValueFrom(
-        this.http.request(method, `${gatewayBaseUrl()}${path}`, {
-          body,
-          headers: new HttpHeaders({
-            Authorization: `Bearer ${accessToken}`,
-          }),
-          responseType: 'text',
-        })
-      );
-
-      return response ?? '';
-    } catch (error) {
-      throw this.toApiError(error, label);
-    }
   }
 
   private async requestJson<T>(method: 'GET' | 'POST', path: string, label: string, body?: unknown): Promise<T> {
