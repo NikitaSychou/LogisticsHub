@@ -22,7 +22,6 @@ export function toCompanyRow(payload: unknown): CompanyRow {
     status: stringValue(record, ['status']),
     createdAtUtc: stringValue(record, ['createdAtUtc']),
     updatedAtUtc: stringValue(record, ['updatedAtUtc']),
-    raw: payload,
   };
 }
 

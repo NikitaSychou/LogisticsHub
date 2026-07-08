@@ -37,5 +37,4 @@ export interface ShipmentRow {
   dispatchedAt?: string;
   cancelledAt?: string;
   items: ShipmentItemRow[];
-  raw: unknown;
 }
