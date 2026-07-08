@@ -8,6 +8,12 @@ import { ShipmentCreateForm } from '../../ui/shipment-create-form/shipment-creat
 import { ShipmentDetails } from '../../ui/shipment-details/shipment-details';
 import { ShipmentReadById } from '../../ui/shipment-read-by-id/shipment-read-by-id';
 
+const RESERVATION_PENDING_STATUS = 'ReservationRequested';
+const STATUS_AUTO_REFRESH_INTERVAL_MS = 2500;
+const STATUS_AUTO_REFRESH_MAX_ATTEMPTS = 6;
+
+type ShipmentRefreshTarget = 'created' | 'loaded';
+
 @Component({
   selector: 'app-shipments-page',
   imports: [CommonModule, ErrorAlert, ShipmentCreateForm, ShipmentDetails, ShipmentReadById],
@@ -17,6 +23,9 @@ import { ShipmentReadById } from '../../ui/shipment-read-by-id/shipment-read-by-
 export class ShipmentsPage implements OnDestroy {
   private readonly shipmentApi = inject(ShipmentApiService);
   private autoRefreshTimer?: number;
+  private autoRefreshAttempts = 0;
+  private autoRefreshInFlight = false;
+  private autoRefreshTarget: ShipmentRefreshTarget | null = null;
 
   protected readonly creatingShipment = signal(false);
   protected readonly createShipmentError = signal('');
@@ -49,7 +58,7 @@ export class ShipmentsPage implements OnDestroy {
       this.loadedShipment.set(null);
       this.statusRefreshError.set('');
       this.resetCreateShipmentForm();
-      this.startAutoRefreshIfNeeded(shipment);
+      this.startStatusAutoRefresh(shipment, 'created');
     } catch (error) {
       this.createShipmentError.set(this.formatError(error, 'Create shipment failed.'));
     } finally {
@@ -72,10 +81,13 @@ export class ShipmentsPage implements OnDestroy {
     this.loadShipmentError.set('');
 
     try {
-      this.loadedShipment.set(await this.shipmentApi.getShipment(shipmentId));
+      const shipment = await this.shipmentApi.getShipment(shipmentId);
+      this.loadedShipment.set(shipment);
       this.statusRefreshError.set('');
+      this.startStatusAutoRefresh(shipment, 'loaded');
     } catch (error) {
       this.loadShipmentError.set(this.formatError(error, 'Shipment load failed.'));
+      this.stopAutoRefresh();
     } finally {
       this.loadingShipment.set(false);
     }
@@ -89,7 +101,7 @@ export class ShipmentsPage implements OnDestroy {
     await this.refreshShipmentStatus('loaded');
   }
 
-  private async refreshShipmentStatus(target: 'created' | 'loaded'): Promise<void> {
+  private async refreshShipmentStatus(target: ShipmentRefreshTarget): Promise<void> {
     const shipment = target === 'created'
       ? this.createdShipment()
       : this.loadedShipment();
@@ -113,10 +125,11 @@ export class ShipmentsPage implements OnDestroy {
 
       if (target === 'created') {
         this.createdShipment.set(refreshedShipment);
-        this.startAutoRefreshIfNeeded(refreshedShipment);
       } else {
         this.loadedShipment.set(refreshedShipment);
       }
+
+      this.restartStatusAutoRefreshIfNeeded(refreshedShipment, target);
     } catch (error) {
       this.statusRefreshError.set(this.formatError(error, 'Shipment status refresh failed.'));
       this.stopAutoRefresh();
@@ -129,19 +142,87 @@ export class ShipmentsPage implements OnDestroy {
     this.createShipmentResetKey.update((value) => value + 1);
   }
 
-  private startAutoRefreshIfNeeded(shipment: ShipmentRow): void {
+  private startStatusAutoRefresh(shipment: ShipmentRow, target: ShipmentRefreshTarget): void {
     this.stopAutoRefresh();
+    this.autoRefreshAttempts = 0;
+    this.autoRefreshTarget = target;
+    this.scheduleNextStatusAutoRefresh(shipment, target);
+  }
 
-    if (shipment.status !== 'ReservationRequested' || !shipment.shipmentId) {
+  private restartStatusAutoRefreshIfNeeded(shipment: ShipmentRow, target: ShipmentRefreshTarget): void {
+    if (!this.shouldAutoRefresh(shipment)) {
+      this.stopAutoRefresh();
       return;
     }
 
+    this.autoRefreshTarget = target;
+    this.scheduleNextStatusAutoRefresh(shipment, target);
+  }
+
+  private scheduleNextStatusAutoRefresh(shipment: ShipmentRow, target: ShipmentRefreshTarget): void {
+    if (!this.shouldAutoRefresh(shipment) || this.autoRefreshAttempts >= STATUS_AUTO_REFRESH_MAX_ATTEMPTS) {
+      this.stopAutoRefresh();
+      return;
+    }
+
+    this.clearAutoRefreshTimer();
     this.autoRefreshTimer = window.setTimeout(() => {
-      void this.refreshCreatedShipmentStatus();
-    }, 2500);
+      this.autoRefreshTimer = undefined;
+      void this.refreshShipmentForAutoRefresh(target);
+    }, STATUS_AUTO_REFRESH_INTERVAL_MS);
+  }
+
+  private async refreshShipmentForAutoRefresh(target: ShipmentRefreshTarget): Promise<void> {
+    const refreshingSignal = target === 'created'
+      ? this.refreshingCreatedShipment
+      : this.refreshingLoadedShipment;
+    if (this.autoRefreshInFlight || refreshingSignal()) {
+      this.rescheduleAutoRefreshAfterSkippedAttempt(target);
+      return;
+    }
+
+    const shipment = target === 'created'
+      ? this.createdShipment()
+      : this.loadedShipment();
+    if (!this.shouldAutoRefresh(shipment) || this.autoRefreshTarget !== target) {
+      this.stopAutoRefresh();
+      return;
+    }
+
+    this.autoRefreshAttempts += 1;
+    this.autoRefreshInFlight = true;
+
+    try {
+      await this.refreshShipmentStatus(target);
+    } finally {
+      this.autoRefreshInFlight = false;
+    }
+  }
+
+  private rescheduleAutoRefreshAfterSkippedAttempt(target: ShipmentRefreshTarget): void {
+    const shipment = target === 'created'
+      ? this.createdShipment()
+      : this.loadedShipment();
+    if (!this.shouldAutoRefresh(shipment) || this.autoRefreshTarget !== target) {
+      this.stopAutoRefresh();
+      return;
+    }
+
+    this.scheduleNextStatusAutoRefresh(shipment, target);
+  }
+
+  private shouldAutoRefresh(shipment: ShipmentRow | null): shipment is ShipmentRow {
+    return shipment?.status === RESERVATION_PENDING_STATUS && !!shipment.shipmentId;
   }
 
   private stopAutoRefresh(): void {
+    this.clearAutoRefreshTimer();
+    this.autoRefreshAttempts = 0;
+    this.autoRefreshInFlight = false;
+    this.autoRefreshTarget = null;
+  }
+
+  private clearAutoRefreshTimer(): void {
     if (this.autoRefreshTimer === undefined) {
       return;
     }
