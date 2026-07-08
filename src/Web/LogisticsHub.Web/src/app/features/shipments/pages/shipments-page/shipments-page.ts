@@ -8,6 +8,12 @@ import { ShipmentCreateForm } from '../../ui/shipment-create-form/shipment-creat
 import { ShipmentDetails } from '../../ui/shipment-details/shipment-details';
 import { ShipmentReadById } from '../../ui/shipment-read-by-id/shipment-read-by-id';
 
+const RESERVATION_PENDING_STATUS = 'ReservationRequested';
+const STATUS_AUTO_REFRESH_INTERVAL_MS = 2500;
+const STATUS_AUTO_REFRESH_MAX_ATTEMPTS = 6;
+
+type ShipmentRefreshTarget = 'created' | 'loaded';
+
 @Component({
   selector: 'app-shipments-page',
   imports: [CommonModule, ErrorAlert, ShipmentCreateForm, ShipmentDetails, ShipmentReadById],
@@ -17,6 +23,8 @@ import { ShipmentReadById } from '../../ui/shipment-read-by-id/shipment-read-by-
 export class ShipmentsPage implements OnDestroy {
   private readonly shipmentApi = inject(ShipmentApiService);
   private autoRefreshTimer?: number;
+  private autoRefreshAttempts = 0;
+  private autoRefreshInFlight = false;
 
   protected readonly creatingShipment = signal(false);
   protected readonly createShipmentError = signal('');
@@ -49,7 +57,7 @@ export class ShipmentsPage implements OnDestroy {
       this.loadedShipment.set(null);
       this.statusRefreshError.set('');
       this.resetCreateShipmentForm();
-      this.startAutoRefreshIfNeeded(shipment);
+      this.startStatusAutoRefresh(shipment);
     } catch (error) {
       this.createShipmentError.set(this.formatError(error, 'Create shipment failed.'));
     } finally {
@@ -89,7 +97,7 @@ export class ShipmentsPage implements OnDestroy {
     await this.refreshShipmentStatus('loaded');
   }
 
-  private async refreshShipmentStatus(target: 'created' | 'loaded'): Promise<void> {
+  private async refreshShipmentStatus(target: ShipmentRefreshTarget): Promise<void> {
     const shipment = target === 'created'
       ? this.createdShipment()
       : this.loadedShipment();
@@ -113,7 +121,7 @@ export class ShipmentsPage implements OnDestroy {
 
       if (target === 'created') {
         this.createdShipment.set(refreshedShipment);
-        this.startAutoRefreshIfNeeded(refreshedShipment);
+        this.restartStatusAutoRefreshIfNeeded(refreshedShipment);
       } else {
         this.loadedShipment.set(refreshedShipment);
       }
@@ -129,19 +137,65 @@ export class ShipmentsPage implements OnDestroy {
     this.createShipmentResetKey.update((value) => value + 1);
   }
 
-  private startAutoRefreshIfNeeded(shipment: ShipmentRow): void {
+  private startStatusAutoRefresh(shipment: ShipmentRow): void {
     this.stopAutoRefresh();
+    this.autoRefreshAttempts = 0;
+    this.scheduleNextStatusAutoRefresh(shipment);
+  }
 
-    if (shipment.status !== 'ReservationRequested' || !shipment.shipmentId) {
+  private restartStatusAutoRefreshIfNeeded(shipment: ShipmentRow): void {
+    if (!this.shouldAutoRefresh(shipment)) {
+      this.stopAutoRefresh();
       return;
     }
 
+    this.scheduleNextStatusAutoRefresh(shipment);
+  }
+
+  private scheduleNextStatusAutoRefresh(shipment: ShipmentRow): void {
+    if (!this.shouldAutoRefresh(shipment) || this.autoRefreshAttempts >= STATUS_AUTO_REFRESH_MAX_ATTEMPTS) {
+      this.stopAutoRefresh();
+      return;
+    }
+
+    this.clearAutoRefreshTimer();
     this.autoRefreshTimer = window.setTimeout(() => {
-      void this.refreshCreatedShipmentStatus();
-    }, 2500);
+      void this.refreshCreatedShipmentForAutoRefresh();
+    }, STATUS_AUTO_REFRESH_INTERVAL_MS);
+  }
+
+  private async refreshCreatedShipmentForAutoRefresh(): Promise<void> {
+    if (this.autoRefreshInFlight || this.refreshingCreatedShipment()) {
+      return;
+    }
+
+    const shipment = this.createdShipment();
+    if (!this.shouldAutoRefresh(shipment)) {
+      this.stopAutoRefresh();
+      return;
+    }
+
+    this.autoRefreshAttempts += 1;
+    this.autoRefreshInFlight = true;
+
+    try {
+      await this.refreshCreatedShipmentStatus();
+    } finally {
+      this.autoRefreshInFlight = false;
+    }
+  }
+
+  private shouldAutoRefresh(shipment: ShipmentRow | null): shipment is ShipmentRow {
+    return shipment?.status === RESERVATION_PENDING_STATUS && !!shipment.shipmentId;
   }
 
   private stopAutoRefresh(): void {
+    this.clearAutoRefreshTimer();
+    this.autoRefreshAttempts = 0;
+    this.autoRefreshInFlight = false;
+  }
+
+  private clearAutoRefreshTimer(): void {
     if (this.autoRefreshTimer === undefined) {
       return;
     }
