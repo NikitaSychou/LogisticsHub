@@ -27,24 +27,15 @@
     <app-error-alert [message]="statusRefreshError()"></app-error-alert>
 
     <app-shipment-details
-      class="d-block mb-3"
-      *ngIf="createdShipment()"
-      title="Created shipment"
-      [shipment]="createdShipment()"
-      [refreshing]="refreshingCreatedShipment()"
-      (refreshStatus)="refreshCreatedShipmentStatus()">
-    </app-shipment-details>
-
-    <app-shipment-details
-      *ngIf="loadedShipment(); else noShipmentLoaded"
-      title="Loaded shipment"
-      [shipment]="loadedShipment()"
-      [refreshing]="refreshingLoadedShipment()"
-      (refreshStatus)="refreshLoadedShipmentStatus()">
+      *ngIf="activeShipment(); else noShipmentLoaded"
+      [title]="activeShipmentTitle()"
+      [shipment]="activeShipment()"
+      [refreshing]="refreshingShipment()"
+      (refreshStatus)="refreshActiveShipmentStatus()">
     </app-shipment-details>
 
     <ng-template #noShipmentLoaded>
-      <div class="card shadow-sm" *ngIf="!createdShipment()">
+      <div class="card shadow-sm">
         <div class="card-body text-center text-secondary py-5">
           Create or load a shipment to view details.
         </div>
