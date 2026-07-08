@@ -1,0 +1,16 @@
+<app-error-alert [message]="statusRefreshError"></app-error-alert>
+
+@if (shipment) {
+<app-shipment-details
+  [title]="title"
+  [shipment]="shipment"
+  [refreshing]="refreshing"
+  (refreshStatus)="refreshStatus.emit()">
+</app-shipment-details>
+} @else {
+  <div class="card shadow-sm">
+    <div class="card-body text-center text-secondary py-5">
+      Create or load a shipment to view details.
+    </div>
+  </div>
+}
