@@ -25,6 +25,7 @@ export class ShipmentsPage implements OnDestroy {
   private autoRefreshTimer?: number;
   private autoRefreshAttempts = 0;
   private autoRefreshInFlight = false;
+  private autoRefreshTarget: ShipmentRefreshTarget | null = null;
 
   protected readonly creatingShipment = signal(false);
   protected readonly createShipmentError = signal('');
@@ -57,7 +58,7 @@ export class ShipmentsPage implements OnDestroy {
       this.loadedShipment.set(null);
       this.statusRefreshError.set('');
       this.resetCreateShipmentForm();
-      this.startStatusAutoRefresh(shipment);
+      this.startStatusAutoRefresh(shipment, 'created');
     } catch (error) {
       this.createShipmentError.set(this.formatError(error, 'Create shipment failed.'));
     } finally {
@@ -124,7 +125,6 @@ export class ShipmentsPage implements OnDestroy {
 
       if (target === 'created') {
         this.createdShipment.set(refreshedShipment);
-        this.restartStatusAutoRefreshIfNeeded(refreshedShipment);
       } else {
         this.loadedShipment.set(refreshedShipment);
       }
@@ -142,22 +142,24 @@ export class ShipmentsPage implements OnDestroy {
     this.createShipmentResetKey.update((value) => value + 1);
   }
 
-  private startStatusAutoRefresh(shipment: ShipmentRow): void {
+  private startStatusAutoRefresh(shipment: ShipmentRow, target: ShipmentRefreshTarget): void {
     this.stopAutoRefresh();
     this.autoRefreshAttempts = 0;
-    this.scheduleNextStatusAutoRefresh(shipment);
+    this.autoRefreshTarget = target;
+    this.scheduleNextStatusAutoRefresh(shipment, target);
   }
 
-  private restartStatusAutoRefreshIfNeeded(shipment: ShipmentRow): void {
+  private restartStatusAutoRefreshIfNeeded(shipment: ShipmentRow, target: ShipmentRefreshTarget): void {
     if (!this.shouldAutoRefresh(shipment)) {
       this.stopAutoRefresh();
       return;
     }
 
-    this.scheduleNextStatusAutoRefresh(shipment);
+    this.autoRefreshTarget = target;
+    this.scheduleNextStatusAutoRefresh(shipment, target);
   }
 
-  private scheduleNextStatusAutoRefresh(shipment: ShipmentRow): void {
+  private scheduleNextStatusAutoRefresh(shipment: ShipmentRow, target: ShipmentRefreshTarget): void {
     if (!this.shouldAutoRefresh(shipment) || this.autoRefreshAttempts >= STATUS_AUTO_REFRESH_MAX_ATTEMPTS) {
       this.stopAutoRefresh();
       return;
@@ -165,17 +167,24 @@ export class ShipmentsPage implements OnDestroy {
 
     this.clearAutoRefreshTimer();
     this.autoRefreshTimer = window.setTimeout(() => {
-      void this.refreshCreatedShipmentForAutoRefresh();
+      this.autoRefreshTimer = undefined;
+      void this.refreshShipmentForAutoRefresh(target);
     }, STATUS_AUTO_REFRESH_INTERVAL_MS);
   }
 
-  private async refreshCreatedShipmentForAutoRefresh(): Promise<void> {
-    if (this.autoRefreshInFlight || this.refreshingCreatedShipment()) {
+  private async refreshShipmentForAutoRefresh(target: ShipmentRefreshTarget): Promise<void> {
+    const refreshingSignal = target === 'created'
+      ? this.refreshingCreatedShipment
+      : this.refreshingLoadedShipment;
+    if (this.autoRefreshInFlight || refreshingSignal()) {
+      this.rescheduleAutoRefreshAfterSkippedAttempt(target);
       return;
     }
 
-    const shipment = this.createdShipment();
-    if (!this.shouldAutoRefresh(shipment)) {
+    const shipment = target === 'created'
+      ? this.createdShipment()
+      : this.loadedShipment();
+    if (!this.shouldAutoRefresh(shipment) || this.autoRefreshTarget !== target) {
       this.stopAutoRefresh();
       return;
     }
@@ -184,10 +193,22 @@ export class ShipmentsPage implements OnDestroy {
     this.autoRefreshInFlight = true;
 
     try {
-      await this.refreshCreatedShipmentStatus();
+      await this.refreshShipmentStatus(target);
     } finally {
       this.autoRefreshInFlight = false;
     }
+  }
+
+  private rescheduleAutoRefreshAfterSkippedAttempt(target: ShipmentRefreshTarget): void {
+    const shipment = target === 'created'
+      ? this.createdShipment()
+      : this.loadedShipment();
+    if (!this.shouldAutoRefresh(shipment) || this.autoRefreshTarget !== target) {
+      this.stopAutoRefresh();
+      return;
+    }
+
+    this.scheduleNextStatusAutoRefresh(shipment, target);
   }
 
   private shouldAutoRefresh(shipment: ShipmentRow | null): shipment is ShipmentRow {
@@ -198,6 +219,7 @@ export class ShipmentsPage implements OnDestroy {
     this.clearAutoRefreshTimer();
     this.autoRefreshAttempts = 0;
     this.autoRefreshInFlight = false;
+    this.autoRefreshTarget = null;
   }
 
   private clearAutoRefreshTimer(): void {
