@@ -6,9 +6,11 @@ import {
 } from '@azure/msal-browser';
 import { environment } from '../environments/environment';
 import { loginRequest, msalConfig, tokenRequest } from './auth-config';
+import { AuthReturnUrlStore } from './core/auth/auth-return-url-store';
 import { ApiAuthContext } from './core/http/api-auth-context';
 import { AppShell } from './core/layout/app-shell';
 import { navigationItems } from './core/navigation/navigation-items';
+import { Router } from '@angular/router';
 
 @Component({
   selector: 'app-root',
@@ -19,6 +21,8 @@ import { navigationItems } from './core/navigation/navigation-items';
 export class App implements OnInit {
   private readonly msal = new PublicClientApplication(msalConfig);
   private readonly apiAuthContext = inject(ApiAuthContext);
+  private readonly returnUrlStore = inject(AuthReturnUrlStore);
+  private readonly router = inject(Router);
 
   protected readonly account = signal<AccountInfo | null>(null);
   protected readonly loading = signal(true);
@@ -51,9 +55,14 @@ export class App implements OnInit {
     this.account.set(activeAccount);
     this.apiAuthContext.configure(activeAccount, this.getAccessToken);
     this.loading.set(false);
+
+    if (activeAccount) {
+      await this.navigateToStoredReturnUrl();
+    }
   }
 
   protected async login(): Promise<void> {
+    this.storeReturnUrlForLogin();
     await this.msal.loginRedirect(loginRequest);
   }
 
@@ -76,5 +85,21 @@ export class App implements OnInit {
 
       throw error;
     }
+  }
+
+  private storeReturnUrlForLogin(): void {
+    const returnUrl = this.router.parseUrl(this.router.url).queryParams['returnUrl'];
+    if (!this.returnUrlStore.store(returnUrl)) {
+      this.returnUrlStore.clear();
+    }
+  }
+
+  private async navigateToStoredReturnUrl(): Promise<void> {
+    const returnUrl = this.returnUrlStore.consume();
+    if (!returnUrl || this.router.url === returnUrl) {
+      return;
+    }
+
+    await this.router.navigateByUrl(returnUrl);
   }
 }
