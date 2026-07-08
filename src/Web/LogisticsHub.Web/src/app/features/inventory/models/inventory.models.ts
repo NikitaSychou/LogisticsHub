@@ -4,7 +4,6 @@ export interface InventoryItemRow {
   sku?: string;
   name?: string;
   quantityAvailable?: number;
-  raw: unknown;
 }
 
 export interface InventoryItemsPageResult extends PagedResponse<InventoryItemRow> {}

@@ -7,7 +7,6 @@ export interface CompanyRow {
   status?: string;
   createdAtUtc?: string;
   updatedAtUtc?: string;
-  raw: unknown;
 }
 
 export interface CompanyPageResult extends PagedResponse<CompanyRow> {}

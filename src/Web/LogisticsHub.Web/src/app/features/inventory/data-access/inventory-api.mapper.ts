@@ -19,7 +19,6 @@ export function toInventoryItemRow(payload: unknown): InventoryItemRow {
     sku: stringValue(record, ['sku']),
     name: stringValue(record, ['name']),
     quantityAvailable: numberValue(record, 'quantityAvailable'),
-    raw: payload,
   };
 }
 

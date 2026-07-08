@@ -26,7 +26,6 @@ export function toShipmentRow(payload: unknown): ShipmentRow {
         quantity: numberValue(itemRecord, 'quantity'),
       };
     }),
-    raw: payload,
   };
 }
 
