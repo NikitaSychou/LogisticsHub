@@ -15,9 +15,16 @@
           @for (company of companies; track company.id || company.externalCode || $index) {
           <tr
             class="company-row"
-            [class.table-active]="isSelectedCompany(company)"
-            (click)="companySelected.emit(company)">
-            <td class="fw-semibold">{{ company.name || 'Unnamed company' }}</td>
+            [class.table-active]="isSelectedCompany(company)">
+            <td class="fw-semibold">
+              <button
+                type="button"
+                class="btn btn-link company-select-button p-0 fw-semibold text-start"
+                [attr.aria-label]="'Select company ' + (company.name || company.externalCode || company.id || 'row')"
+                (click)="companySelected.emit(company)">
+                {{ company.name || 'Unnamed company' }}
+              </button>
+            </td>
             <td>{{ company.externalCode || '-' }}</td>
             <td>
               <span class="badge text-bg-light border">{{ company.status || 'Unknown' }}</span>

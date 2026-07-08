@@ -2,10 +2,18 @@
   min-height: 180px;
 }
 
-.company-row {
-  cursor: pointer;
-}
-
 .company-row.table-active {
   --bs-table-bg-state: #eaf2ff;
+}
+
+.company-select-button {
+  --bs-btn-color: inherit;
+  --bs-btn-hover-color: inherit;
+  --bs-btn-active-color: inherit;
+  text-decoration: none;
+}
+
+.company-select-button:hover,
+.company-select-button:focus-visible {
+  text-decoration: underline;
 }

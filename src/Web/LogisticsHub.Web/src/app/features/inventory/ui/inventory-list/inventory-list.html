@@ -14,9 +14,16 @@
           @for (item of items; track item.sku || $index) {
           <tr
             class="inventory-row"
-            [class.table-active]="isSelectedItem(item)"
-            (click)="itemSelected.emit(item)">
-            <td class="fw-semibold"><code>{{ item.sku || '-' }}</code></td>
+            [class.table-active]="isSelectedItem(item)">
+            <td class="fw-semibold">
+              <button
+                type="button"
+                class="btn btn-link inventory-select-button p-0 fw-semibold text-start"
+                [attr.aria-label]="'Select inventory item ' + (item.sku || item.name || 'row')"
+                (click)="itemSelected.emit(item)">
+                <code>{{ item.sku || '-' }}</code>
+              </button>
+            </td>
             <td>{{ item.name || 'Unnamed item' }}</td>
             <td class="text-end">{{ item.quantityAvailable ?? '-' }}</td>
           </tr>
