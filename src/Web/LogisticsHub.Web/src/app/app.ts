@@ -9,7 +9,7 @@ import { AuthReturnUrlStore } from './core/auth/auth-return-url-store';
 import { RuntimeConfigService } from './core/config/runtime-config';
 import { ApiAuthContext } from './core/http/api-auth-context';
 import { AppShell } from './core/layout/app-shell';
-import { navigationItems } from './core/navigation/navigation-items';
+import { navigationItems } from './app-navigation';
 import { Router } from '@angular/router';
 
 @Component({

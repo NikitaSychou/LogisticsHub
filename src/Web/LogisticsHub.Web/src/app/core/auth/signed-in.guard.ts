@@ -31,5 +31,5 @@ export const signedOutGuard: CanActivateFn = async (route) => {
     return true;
   }
 
-  return router.parseUrl(returnUrlStore.sanitize(route.queryParamMap.get('returnUrl')) ?? '/companies');
+  return router.parseUrl(returnUrlStore.sanitize(route.queryParamMap.get('returnUrl')) ?? returnUrlStore.defaultReturnUrl);
 };

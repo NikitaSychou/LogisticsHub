@@ -1,11 +1,38 @@
-import { Injectable } from '@angular/core';
+import { Inject, Injectable, InjectionToken, Provider } from '@angular/core';
 
 const RETURN_URL_STORAGE_KEY = 'logisticshub.auth.returnUrl';
-const ALLOWED_PROTECTED_PATHS = ['/companies', '/inventory', '/shipments'];
 const MAX_RETURN_URL_LENGTH = 2048;
+
+export interface AuthReturnUrlPolicy {
+  readonly allowedProtectedPaths: readonly string[];
+  readonly defaultProtectedPath: string;
+}
+
+const DEFAULT_RETURN_URL_POLICY: AuthReturnUrlPolicy = {
+  allowedProtectedPaths: [],
+  defaultProtectedPath: '/',
+};
+
+const AUTH_RETURN_URL_POLICY = new InjectionToken<AuthReturnUrlPolicy>('Auth return URL policy', {
+  providedIn: 'root',
+  factory: () => DEFAULT_RETURN_URL_POLICY,
+});
+
+export function provideAuthReturnUrlPolicy(policy: AuthReturnUrlPolicy): Provider {
+  return {
+    provide: AUTH_RETURN_URL_POLICY,
+    useValue: policy,
+  };
+}
 
 @Injectable({ providedIn: 'root' })
 export class AuthReturnUrlStore {
+  constructor(@Inject(AUTH_RETURN_URL_POLICY) private readonly policy: AuthReturnUrlPolicy) {}
+
+  get defaultReturnUrl(): string {
+    return this.policy.defaultProtectedPath;
+  }
+
   sanitize(value: unknown): string | null {
     if (typeof value !== 'string') {
       return null;
@@ -23,7 +50,7 @@ export class AuthReturnUrlStore {
     }
 
     const path = candidate.split(/[?#]/, 1)[0];
-    return ALLOWED_PROTECTED_PATHS.some((allowedPath) => path === allowedPath || path.startsWith(`${allowedPath}/`))
+    return this.policy.allowedProtectedPaths.some((allowedPath) => path === allowedPath || path.startsWith(`${allowedPath}/`))
       ? candidate
       : null;
   }
