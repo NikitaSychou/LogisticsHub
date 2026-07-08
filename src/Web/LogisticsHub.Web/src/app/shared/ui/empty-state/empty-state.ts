@@ -5,6 +5,6 @@ import { Component, Input } from '@angular/core';
   templateUrl: './empty-state.html',
 })
 export class EmptyState {
-  @Input({ required: true }) title = '';
+  @Input() title = '';
   @Input({ required: true }) message = '';
 }

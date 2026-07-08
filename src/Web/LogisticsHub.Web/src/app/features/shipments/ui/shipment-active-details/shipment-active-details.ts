@@ -1,11 +1,12 @@
 import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { ErrorAlert } from '../../../../shared/ui/error-alert/error-alert';
+import { EmptyState } from '../../../../shared/ui/empty-state/empty-state';
 import { ShipmentRow } from '../../models/shipment.models';
 import { ShipmentDetails } from '../shipment-details/shipment-details';
 
 @Component({
   selector: 'app-shipment-active-details',
-  imports: [ErrorAlert, ShipmentDetails],
+  imports: [EmptyState, ErrorAlert, ShipmentDetails],
   templateUrl: './shipment-active-details.html',
 })
 export class ShipmentActiveDetails {
