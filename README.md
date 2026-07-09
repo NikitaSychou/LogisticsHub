@@ -88,6 +88,8 @@ Docker Compose does not start SQL Server and does not create database schema aut
 - `INVENTORYSERVICE_DB_PASSWORD`
 - `SHIPMENTSERVICE_DB_PASSWORD`
 
+Create the local `.env` file by copying `.env.example` to `.env` and replacing the placeholder values with local-only passwords. `.env` is ignored by Git and must not be committed.
+
 The current business smoke-test path uses all three databases because ShipmentService validates required sender/receiver references through CompanyService.
 
 The current local SQL Express schema can be exported with `export-local-db-schema.ps1`; see [Database schema](docs/database-schema.md).
