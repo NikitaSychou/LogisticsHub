@@ -30,3 +30,7 @@ MSAL settings are centralized in `src/environments/environment.ts`. The checked-
 ```powershell
 npm run build
 ```
+
+## Azure Static Hosting
+
+For the production static hosting checklist, including Azure Storage Static Website, Front Door/CDN, and `runtime-config.json` handling, see [Angular Azure Static Hosting](../../../docs/frontend-azure-static-hosting.md).
