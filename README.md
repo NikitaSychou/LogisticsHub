@@ -96,6 +96,8 @@ The current local SQL Express schema can be exported with `export-local-db-schem
 
 For the smallest full local workflow through the Gateway, see [Manual smoke test](docs/manual-smoke-test.md).
 
+For backend container and future AKS assumptions, see [Backend container and Kubernetes readiness](docs/backend-container-k8s-readiness.md).
+
 ## Tests
 
 Test projects live under `tests/`. Most tests are in-memory application-level tests and do not require manually started RabbitMQ or SQL Server. The RabbitMQ integration tests use Testcontainers, so running the full solution test suite requires Docker to be available.
