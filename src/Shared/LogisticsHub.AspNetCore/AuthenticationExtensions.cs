@@ -13,6 +13,7 @@ public static class AuthenticationExtensions
 {
     private const string BearerSchemeName = "Bearer";
     private const string OAuthSchemeName = "OAuth2";
+    private const string ApiScopePolicyName = "LogisticsHub.ApiScope";
 
     public static IServiceCollection AddApiAuthentication(
         this IServiceCollection services,
@@ -33,7 +34,15 @@ public static class AuthenticationExtensions
                     ValidAudience = azureAdOptions.Audience
                 };
             });
-        services.AddAuthorization();
+        services.AddAuthorization(options =>
+        {
+            options.AddPolicy(ApiScopePolicyName, policy =>
+            {
+                policy.RequireAuthenticatedUser();
+                policy.RequireAssertion(context =>
+                    ApiScopeAuthorization.HasRequiredScope(context.User, azureAdOptions.RequiredScope));
+            });
+        });
 
         return services;
     }
@@ -137,7 +146,7 @@ public static class AuthenticationExtensions
     public static TBuilder RequireApiAuthentication<TBuilder>(this TBuilder builder)
         where TBuilder : IEndpointConventionBuilder
     {
-        return builder.RequireAuthorization();
+        return builder.RequireAuthorization(ApiScopePolicyName);
     }
 
     private static OpenApiSecurityRequirement CreateSecurityRequirement(
@@ -162,7 +171,8 @@ public static class AuthenticationExtensions
         string Instance,
         string TenantId,
         string ClientId,
-        string Audience)
+        string Audience,
+        string RequiredScope)
     {
         public string Authority => $"{Instance.TrimEnd('/')}/{TenantId}/v2.0";
 
@@ -172,12 +182,25 @@ public static class AuthenticationExtensions
             var instance = Required(section, "Instance");
             var tenantId = Required(section, "TenantId");
             var clientId = Required(section, "ClientId");
+            var requiredScope = section["RequiredScope"];
+
+            if (string.IsNullOrWhiteSpace(requiredScope))
+            {
+                requiredScope = configuration.GetSection("SwaggerOAuth")["Scope"];
+            }
+
+            if (string.IsNullOrWhiteSpace(requiredScope))
+            {
+                throw new InvalidOperationException(
+                    "AzureAd:RequiredScope or SwaggerOAuth:Scope must be configured for API authorization.");
+            }
 
             return new AzureAdAuthenticationOptions(
                 instance,
                 tenantId,
                 clientId,
-                Required(section, "Audience"));
+                Required(section, "Audience"),
+                requiredScope);
         }
 
         private static string Required(IConfiguration section, string key)
