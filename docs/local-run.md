@@ -37,6 +37,7 @@ The checked-in `AzureAd` appsettings values are intentionally empty. For `dotnet
 - `AzureAd:TenantId` = `<tenant-id>`
 - `AzureAd:ClientId` = `<api-app-client-id>`
 - `AzureAd:Audience` = `<api-app-client-id>`
+- `AzureAd:RequiredScope` = `api://<api-app-client-id>/access_as_user`
 
 For the current Microsoft Entra ID v2 token setup, `AzureAd:Audience` and `AZUREAD_AUDIENCE` must be the API application client ID without the `api://` prefix. Do not use the full scope as the audience. Request tokens with this scope:
 
@@ -46,7 +47,7 @@ api://<api-app-client-id>/access_as_user
 
 The API app registration manifest must set `api.requestedAccessTokenVersion` to `2` so access tokens use the v2 issuer expected by the backend.
 
-Docker Compose reads the same auth settings from `AZUREAD_INSTANCE`, `AZUREAD_TENANT_ID`, `AZUREAD_CLIENT_ID`, and `AZUREAD_AUDIENCE` in the local `.env` file.
+Docker Compose reads the same auth settings from `AZUREAD_INSTANCE`, `AZUREAD_TENANT_ID`, `AZUREAD_CLIENT_ID`, and `AZUREAD_AUDIENCE` in the local `.env` file. The backend scope policy uses `AzureAd:RequiredScope`; for current local Compose compatibility, it falls back to `SwaggerOAuth:Scope` when `AzureAd:RequiredScope` is not set.
 
 Swagger UI OAuth uses authorization code with PKCE. Set `SwaggerOAuth:ClientId` to the Entra client app registration ID used by Swagger/local frontend, not the API app registration ID. Set `SwaggerOAuth:Scope` to:
 
