@@ -1,0 +1,78 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: gateway
+  labels:
+    app.kubernetes.io/name: gateway
+    app.kubernetes.io/part-of: logisticshub
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: gateway
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: gateway
+        app.kubernetes.io/part-of: logisticshub
+    spec:
+      containers:
+        - name: gateway
+          image: logisticshub/gateway:placeholder
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 8080
+          envFrom:
+            - configMapRef:
+                name: logisticshub-backend-config
+          env:
+            - name: AzureAd__Instance
+              valueFrom:
+                secretKeyRef:
+                  name: logisticshub-backend-secrets
+                  key: AzureAdInstance
+            - name: AzureAd__TenantId
+              valueFrom:
+                secretKeyRef:
+                  name: logisticshub-backend-secrets
+                  key: AzureAdTenantId
+            - name: AzureAd__ClientId
+              valueFrom:
+                secretKeyRef:
+                  name: logisticshub-backend-secrets
+                  key: AzureAdClientId
+            - name: AzureAd__Audience
+              valueFrom:
+                secretKeyRef:
+                  name: logisticshub-backend-secrets
+                  key: AzureAdAudience
+            - name: AzureAd__RequiredScope
+              valueFrom:
+                secretKeyRef:
+                  name: logisticshub-backend-secrets
+                  key: AzureAdRequiredScope
+          livenessProbe:
+            httpGet:
+              path: /health/live
+              port: http
+          readinessProbe:
+            httpGet:
+              path: /health/ready
+              port: http
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: gateway
+  labels:
+    app.kubernetes.io/name: gateway
+    app.kubernetes.io/part-of: logisticshub
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: gateway
+  ports:
+    - name: http
+      port: 8080
+      targetPort: http

@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: logisticshub-backend-config
+data:
+  ASPNETCORE_ENVIRONMENT: "Production"
+  DOTNET_ENVIRONMENT: "Production"
+  ReverseProxy__Clusters__shipment-cluster__Destinations__shipment-destination__Address: "http://shipmentservice:8080/"
+  ReverseProxy__Clusters__inventory-cluster__Destinations__inventory-destination__Address: "http://inventoryservice:8080/"
+  ReverseProxy__Clusters__company-cluster__Destinations__company-destination__Address: "http://companyservice:8080/"
+  CompanyService__BaseUrl: "http://companyservice:8080"
+  RabbitMq__ExchangeName: "logisticshub.events"
+  CompanyService__Resilience__TimeoutSeconds: "3"
+  CompanyService__Resilience__RetryCount: "1"
+  CompanyService__Resilience__RetryDelayMilliseconds: "150"
+  CompanyService__Resilience__CircuitBreakerFailureThreshold: "3"
+  CompanyService__Resilience__CircuitBreakerDurationSeconds: "5"
