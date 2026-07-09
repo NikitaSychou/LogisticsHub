@@ -53,12 +53,15 @@ public static class InfrastructureServiceCollectionExtensions
 
         options.Resilience.Validate("CompanyService:Resilience");
         services.AddSingleton(options);
+        services.AddHttpContextAccessor();
+        services.AddTransient<ForwardUserBearerTokenHandler>();
 
         services.AddHttpClient<ICompanyAddressReferenceClient, CompanyServiceClient>(client =>
         {
             client.BaseAddress = baseUri;
             client.Timeout = options.Resilience.Timeout;
         })
+        .AddHttpMessageHandler<ForwardUserBearerTokenHandler>()
         .AddOutboundHttpResilience(options.Resilience);
 
         return services;
