@@ -2,6 +2,7 @@ using System.Net;
 using LogisticsHub.Http.Resilience;
 using LogisticsHub.ShipmentService.Application.Companies;
 using LogisticsHub.ShipmentService.Infrastructure.Companies;
+using Microsoft.AspNetCore.Http;
 using Xunit;
 
 namespace LogisticsHub.ShipmentService.Application.Tests.Companies;
@@ -118,6 +119,36 @@ public sealed class CompanyServiceClientTests
         Assert.Equal(2, innerHandler.RequestCount);
     }
 
+    [Fact]
+    public async Task ForwardUserBearerTokenHandler_ForwardsInboundBearerToken()
+    {
+        var innerHandler = new CaptureAuthorizationHandler(HttpStatusCode.OK);
+        var handler = CreateBearerForwardingHandler("Bearer inbound-token", innerHandler);
+        using var httpClient = CreateHttpClient(handler);
+        var client = new CompanyServiceClient(httpClient);
+
+        var result = await client.ValidateAddressAsync(Guid.NewGuid(), Guid.NewGuid(), CancellationToken.None);
+
+        Assert.Equal(CompanyAddressReferenceValidationStatus.Found, result.Status);
+        Assert.Equal("Bearer", innerHandler.AuthorizationScheme);
+        Assert.Equal("inbound-token", innerHandler.AuthorizationParameter);
+        Assert.Equal(1, innerHandler.RequestCount);
+    }
+
+    [Fact]
+    public async Task ForwardUserBearerTokenHandler_WhenInboundBearerTokenIsMissing_ReturnsDependencyUnavailableWithoutCallingCompanyService()
+    {
+        var innerHandler = new CaptureAuthorizationHandler(HttpStatusCode.OK);
+        var handler = CreateBearerForwardingHandler(null, innerHandler);
+        using var httpClient = CreateHttpClient(handler);
+        var client = new CompanyServiceClient(httpClient);
+
+        var result = await client.ValidateAddressAsync(Guid.NewGuid(), Guid.NewGuid(), CancellationToken.None);
+
+        Assert.Equal(CompanyAddressReferenceValidationStatus.DependencyUnavailable, result.Status);
+        Assert.Equal(0, innerHandler.RequestCount);
+    }
+
     private static OutboundHttpRetryHandler CreateRetryHandler(HttpMessageHandler innerHandler)
     {
         return new OutboundHttpRetryHandler(
@@ -136,6 +167,26 @@ public sealed class CompanyServiceClientTests
         return new HttpClient(handler)
         {
             BaseAddress = new Uri("http://companyservice.test/")
+        };
+    }
+
+    private static ForwardUserBearerTokenHandler CreateBearerForwardingHandler(
+        string? authorizationHeader,
+        HttpMessageHandler innerHandler)
+    {
+        var context = new DefaultHttpContext();
+
+        if (!string.IsNullOrWhiteSpace(authorizationHeader))
+        {
+            context.Request.Headers.Authorization = authorizationHeader;
+        }
+
+        return new ForwardUserBearerTokenHandler(new HttpContextAccessor
+        {
+            HttpContext = context
+        })
+        {
+            InnerHandler = innerHandler
         };
     }
 
@@ -174,6 +225,30 @@ public sealed class CompanyServiceClientTests
                 : HttpStatusCode.OK;
 
             return Task.FromResult(new HttpResponseMessage(statusCode));
+        }
+    }
+
+    private sealed class CaptureAuthorizationHandler : CountingHandler
+    {
+        private readonly HttpStatusCode _statusCode;
+
+        public CaptureAuthorizationHandler(HttpStatusCode statusCode)
+        {
+            _statusCode = statusCode;
+        }
+
+        public string? AuthorizationScheme { get; private set; }
+
+        public string? AuthorizationParameter { get; private set; }
+
+        protected override Task<HttpResponseMessage> SendCoreAsync(
+            HttpRequestMessage request,
+            CancellationToken cancellationToken)
+        {
+            AuthorizationScheme = request.Headers.Authorization?.Scheme;
+            AuthorizationParameter = request.Headers.Authorization?.Parameter;
+
+            return Task.FromResult(new HttpResponseMessage(_statusCode));
         }
     }
 
