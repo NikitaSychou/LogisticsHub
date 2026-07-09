@@ -1,0 +1,29 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: logisticshub
+
+resources:
+  - namespace.yaml
+  - configmap.yaml
+  - gateway.yaml
+  - companyservice.yaml
+  - inventoryservice.yaml
+  - shipmentservice.yaml
+  - cacheworker.yaml
+
+images:
+  - name: logisticshub/gateway
+    newName: replace-with-acr-login-server/logisticshub-gateway
+    newTag: replace-with-image-tag
+  - name: logisticshub/companyservice
+    newName: replace-with-acr-login-server/logisticshub-companyservice
+    newTag: replace-with-image-tag
+  - name: logisticshub/inventoryservice
+    newName: replace-with-acr-login-server/logisticshub-inventoryservice
+    newTag: replace-with-image-tag
+  - name: logisticshub/shipmentservice
+    newName: replace-with-acr-login-server/logisticshub-shipmentservice
+    newTag: replace-with-image-tag
+  - name: logisticshub/cacheworker
+    newName: replace-with-acr-login-server/logisticshub-cacheworker
+    newTag: replace-with-image-tag

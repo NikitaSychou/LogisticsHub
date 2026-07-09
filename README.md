@@ -98,6 +98,8 @@ For the smallest full local workflow through the Gateway, see [Manual smoke test
 
 For backend container and future AKS assumptions, see [Backend container and Kubernetes readiness](docs/backend-container-k8s-readiness.md).
 
+An initial AKS backend deployment skeleton is available under [`deploy/aks`](deploy/aks/README.md). It contains placeholder manifests only and is not a complete production deployment.
+
 ## Tests
 
 Test projects live under `tests/`. Most tests are in-memory application-level tests and do not require manually started RabbitMQ or SQL Server. The RabbitMQ integration tests use Testcontainers, so running the full solution test suite requires Docker to be available.

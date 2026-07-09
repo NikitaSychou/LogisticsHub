@@ -1,0 +1,103 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: inventoryservice
+  labels:
+    app.kubernetes.io/name: inventoryservice
+    app.kubernetes.io/part-of: logisticshub
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: inventoryservice
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: inventoryservice
+        app.kubernetes.io/part-of: logisticshub
+    spec:
+      containers:
+        - name: inventoryservice
+          image: logisticshub/inventoryservice:placeholder
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 8080
+          envFrom:
+            - configMapRef:
+                name: logisticshub-backend-config
+          env:
+            - name: ConnectionStrings__InventoryDb
+              valueFrom:
+                secretKeyRef:
+                  name: logisticshub-backend-secrets
+                  key: InventoryDbConnectionString
+            - name: RabbitMq__HostName
+              valueFrom:
+                secretKeyRef:
+                  name: logisticshub-backend-secrets
+                  key: RabbitMqHostName
+            - name: RabbitMq__Port
+              valueFrom:
+                secretKeyRef:
+                  name: logisticshub-backend-secrets
+                  key: RabbitMqPort
+            - name: RabbitMq__UserName
+              valueFrom:
+                secretKeyRef:
+                  name: logisticshub-backend-secrets
+                  key: RabbitMqUserName
+            - name: RabbitMq__Password
+              valueFrom:
+                secretKeyRef:
+                  name: logisticshub-backend-secrets
+                  key: RabbitMqPassword
+            - name: AzureAd__Instance
+              valueFrom:
+                secretKeyRef:
+                  name: logisticshub-backend-secrets
+                  key: AzureAdInstance
+            - name: AzureAd__TenantId
+              valueFrom:
+                secretKeyRef:
+                  name: logisticshub-backend-secrets
+                  key: AzureAdTenantId
+            - name: AzureAd__ClientId
+              valueFrom:
+                secretKeyRef:
+                  name: logisticshub-backend-secrets
+                  key: AzureAdClientId
+            - name: AzureAd__Audience
+              valueFrom:
+                secretKeyRef:
+                  name: logisticshub-backend-secrets
+                  key: AzureAdAudience
+            - name: AzureAd__RequiredScope
+              valueFrom:
+                secretKeyRef:
+                  name: logisticshub-backend-secrets
+                  key: AzureAdRequiredScope
+          livenessProbe:
+            httpGet:
+              path: /health/live
+              port: http
+          readinessProbe:
+            httpGet:
+              path: /health/ready
+              port: http
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: inventoryservice
+  labels:
+    app.kubernetes.io/name: inventoryservice
+    app.kubernetes.io/part-of: logisticshub
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: inventoryservice
+  ports:
+    - name: http
+      port: 8080
+      targetPort: http

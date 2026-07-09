@@ -1,0 +1,36 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cacheworker
+  labels:
+    app.kubernetes.io/name: cacheworker
+    app.kubernetes.io/part-of: logisticshub
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: cacheworker
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: cacheworker
+        app.kubernetes.io/part-of: logisticshub
+    spec:
+      containers:
+        - name: cacheworker
+          image: logisticshub/cacheworker:placeholder
+          imagePullPolicy: IfNotPresent
+          envFrom:
+            - configMapRef:
+                name: logisticshub-backend-config
+          env:
+            - name: ConnectionStrings__CompanyDb
+              valueFrom:
+                secretKeyRef:
+                  name: logisticshub-backend-secrets
+                  key: CompanyDbConnectionString
+            - name: ConnectionStrings__Redis
+              valueFrom:
+                secretKeyRef:
+                  name: logisticshub-backend-secrets
+                  key: RedisConnectionString
