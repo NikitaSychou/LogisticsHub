@@ -100,6 +100,8 @@ For the smallest full local workflow through the Gateway, see [Manual smoke test
 
 For backend container and future AKS assumptions, see [Backend container and Kubernetes readiness](docs/backend-container-k8s-readiness.md).
 
+The Azure Terraform foundation is documented under [`infra/terraform`](infra/terraform/README.md). It is not applied automatically and contains placeholders only.
+
 An initial AKS backend deployment skeleton is available under [`deploy/aks`](deploy/aks/README.md). It contains placeholder manifests only and is not a complete production deployment.
 
 The planned AKS secret management approach is documented in [AKS Key Vault and secrets strategy](docs/aks-key-vault-secrets-strategy.md).

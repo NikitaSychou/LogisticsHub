@@ -1,0 +1,4 @@
+location             = "westeurope"
+resource_group_name  = "rg-logisticshub-tfstate-dev"
+storage_account_name = "stloghubtfstate<unique>"
+container_name       = "tfstate"

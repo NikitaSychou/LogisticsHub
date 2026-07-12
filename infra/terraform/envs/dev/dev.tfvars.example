@@ -1,0 +1,25 @@
+location = "westeurope"
+
+resource_group_name = "rg-logisticshub-dev"
+
+acr_name = "acrlghubdev<unique>"
+aks_name = "aks-logisticshub-dev"
+aks_dns_prefix = "logisticshub-dev"
+aks_node_vm_size = "Standard_B2s"
+aks_node_count = 1
+
+log_analytics_workspace_name = "log-logisticshub-dev"
+
+sql_server_name = "sql-logisticshub-dev-<unique>"
+sql_admin_login = "sqladminuser"
+# Supply sql_admin_password through TF_VAR_sql_admin_password or an uncommitted local tfvars file.
+sql_database_sku_name = "Basic"
+
+redis_name = "redis-logisticshub-dev-<unique>"
+redis_capacity = 0
+redis_family = "C"
+redis_sku_name = "Basic"
+
+key_vault_name = "kv-lghub-dev-<unique>"
+
+frontend_storage_account_name = "stlghubwebdev<unique>"
