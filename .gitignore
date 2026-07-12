@@ -8,6 +8,22 @@
 .env.*
 !.env.example
 
+# Terraform local state and plans
+**/.terraform/*
+*.tfstate
+*.tfstate.*
+*.tfplan
+*.tfvars
+!*.tfvars.example
+infra/terraform/**/backend.tf
+!infra/terraform/**/backend.tf.example
+crash.log
+crash.*.log
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+
 # User-specific files
 *.rsuser
 *.suo
