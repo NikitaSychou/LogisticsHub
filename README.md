@@ -102,6 +102,8 @@ For backend container and future AKS assumptions, see [Backend container and Kub
 
 An initial AKS backend deployment skeleton is available under [`deploy/aks`](deploy/aks/README.md). It contains placeholder manifests only and is not a complete production deployment.
 
+The planned AKS secret management approach is documented in [AKS Key Vault and secrets strategy](docs/aks-key-vault-secrets-strategy.md).
+
 The planned RabbitMQ approach for AKS is documented in [RabbitMQ AKS production strategy](docs/rabbitmq-aks-production-strategy.md).
 
 ## Tests

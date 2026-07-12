@@ -12,12 +12,13 @@ This folder is a minimal Kubernetes skeleton for the LogisticsHub backend. It is
 - RabbitMQ production setup is a separate follow-up; the manifests only reserve configuration keys for it.
 
 See [RabbitMQ AKS production strategy](../../docs/rabbitmq-aks-production-strategy.md) for the planned broker approach.
+See [AKS Key Vault and secrets strategy](../../docs/aks-key-vault-secrets-strategy.md) for the planned production secret-management approach.
 
 ## Before Real Deployment
 
 Replace placeholder image names in `kustomization.yaml` with ACR image names and immutable tags.
 
-Create the referenced secret outside source control. Do not commit real secret values.
+Create or wire the referenced secret outside source control. Do not commit real secret values. For production, prefer Key Vault-backed secret delivery rather than hand-authored Kubernetes Secret manifests.
 
 ```powershell
 kubectl create secret generic logisticshub-backend-secrets `
@@ -37,6 +38,8 @@ kubectl create secret generic logisticshub-backend-secrets `
 ```
 
 Review `configmap.yaml` before deployment. It contains non-secret service discovery values and can be adjusted for the final Kubernetes service names.
+
+The command above is a placeholder for local skeleton validation and early environment setup. Final production wiring should classify non-secret values into ConfigMaps and sensitive values into Key Vault-backed secrets.
 
 ## Ingress
 
