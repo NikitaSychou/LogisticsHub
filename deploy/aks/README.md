@@ -11,6 +11,8 @@ This folder is a minimal Kubernetes skeleton for the LogisticsHub backend. It is
 - Azure SQL Database and Azure Cache for Redis are managed Azure services.
 - RabbitMQ production setup is a separate follow-up; the manifests only reserve configuration keys for it.
 
+See [RabbitMQ AKS production strategy](../../docs/rabbitmq-aks-production-strategy.md) for the planned broker approach.
+
 ## Before Real Deployment
 
 Replace placeholder image names in `kustomization.yaml` with ACR image names and immutable tags.
