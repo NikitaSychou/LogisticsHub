@@ -24,6 +24,8 @@ The export helper is schema-only. It does not script table data and does not mod
 
 EF Core migrations are intentionally not used in this repository. Database schema changes should be made with manual SQL. Re-export existing local SQL Express schemas with the helper script where applicable, and review any manual snapshots directly.
 
+For Azure SQL Database deployment steps, see [Azure SQL manual deployment runbook](azure-sql-manual-deploy-runbook.md).
+
 ## InventoryDb
 
 The code expects these mapped tables:

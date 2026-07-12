@@ -94,6 +94,8 @@ The current business smoke-test path uses all three databases because ShipmentSe
 
 The current local SQL Express schema can be exported with `export-local-db-schema.ps1`; see [Database schema](docs/database-schema.md).
 
+For Azure SQL production-style schema deployment, see [Azure SQL manual deployment runbook](docs/azure-sql-manual-deploy-runbook.md).
+
 For the smallest full local workflow through the Gateway, see [Manual smoke test](docs/manual-smoke-test.md).
 
 For backend container and future AKS assumptions, see [Backend container and Kubernetes readiness](docs/backend-container-k8s-readiness.md).
