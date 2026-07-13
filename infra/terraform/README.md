@@ -27,6 +27,23 @@ Do not hardcode a region in resource definitions; pass it through variables.
 
 Codex must not run `terraform apply` or create Azure resources.
 
+## Azure Resource Providers
+
+LogisticsHub registers required Azure Resource Providers manually before Terraform plan/apply. AzureRM automatic Resource Provider registration is intentionally disabled with `resource_provider_registrations = "none"` so Terraform does not try to register unrelated providers.
+
+Required providers for this foundation are:
+
+- `Microsoft.ContainerService`
+- `Microsoft.ContainerRegistry`
+- `Microsoft.Sql`
+- `Microsoft.Cache`
+- `Microsoft.KeyVault`
+- `Microsoft.Storage`
+- `Microsoft.OperationalInsights`
+- `Microsoft.Compute`
+- `Microsoft.Network`
+- `Microsoft.ManagedIdentity`
+
 ## Relation To Existing Deployment Work
 
 - `deploy/aks` contains placeholder Kubernetes manifests that can later target the AKS cluster from this Terraform.
@@ -51,4 +68,4 @@ Do not commit:
 
 The root `.gitignore` excludes Terraform state, plans, crash logs, and local tfvars while keeping `*.tfvars.example` files trackable.
 
-Terraform provider lock files are not generated in this PR because Terraform is not executed. If `.terraform.lock.hcl` is generated later by `terraform init`, review it and commit it only after the selected provider versions are accepted.
+Terraform provider lock files should be reviewed when provider versions change. Commit `.terraform.lock.hcl` only after the selected provider versions are accepted.
