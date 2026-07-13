@@ -23,6 +23,8 @@ Do not commit `backend.tf`; it is ignored because it contains environment-specif
 
 The backend example uses Microsoft Entra ID / Azure AD-backed storage authentication with `use_azuread_auth = true`. Do not use access keys or SAS tokens for new remote state setup unless a reviewed exception is required. The Terraform operator or automation principal needs least-privilege blob data access to the state container, such as Storage Blob Data Contributor scoped to the container where feasible.
 
+The AzureRM provider also uses Azure AD for Storage data-plane operations with `storage_use_azuread = true`. If Terraform cannot create or read blob containers because of an Azure AD authorization error, review the Terraform principal's Storage Blob Data permissions.
+
 Terraform state and plan files can contain sensitive values, including sensitive inputs such as `sql_admin_password`. Treat remote state as sensitive infrastructure.
 
 ## Required Local Values

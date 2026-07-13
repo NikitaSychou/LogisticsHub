@@ -10,6 +10,8 @@ This layer creates the Azure Storage backend used by the dev Terraform environme
 
 The state storage account disables shared key access and is intended for Microsoft Entra ID / Azure AD and Azure RBAC-backed Terraform backend access. Blob public access is disabled at the account level, and the state container is private.
 
+The AzureRM provider uses Azure AD for Storage data-plane operations with `storage_use_azuread = true`. If state container creation fails with an Azure AD authorization error, grant the Terraform operator or automation principal appropriate least-privilege blob data permissions on the state container or storage account.
+
 ## Usage
 
 1. Copy `terraform.tfvars.example` to a local `.tfvars` file.
