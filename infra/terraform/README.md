@@ -60,6 +60,8 @@ Terraform state and plan files can contain sensitive values, including values pa
 
 Use Microsoft Entra ID / Azure AD and Azure RBAC for the Azure Storage backend where feasible. Access keys and SAS tokens are not the preferred approach for new workloads. The Terraform operator or automation principal should receive only the minimum blob data permissions needed for the state container, such as Storage Blob Data Contributor scoped to that container where feasible.
 
+The AzureRM provider is configured with `storage_use_azuread = true` so Storage data-plane operations use Azure AD instead of storage account keys. This is required for the Terraform state storage account because shared key access is disabled.
+
 Do not commit:
 
 - Azure subscription IDs, tenant IDs, object IDs, client IDs, or production URLs;
