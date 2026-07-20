@@ -3,6 +3,31 @@ output "resource_group_name" {
   value       = azurerm_resource_group.main.name
 }
 
+output "virtual_network_id" {
+  description = "Dev virtual network resource ID."
+  value       = azurerm_virtual_network.main.id
+}
+
+output "virtual_network_name" {
+  description = "Dev virtual network name."
+  value       = azurerm_virtual_network.main.name
+}
+
+output "aks_subnet_id" {
+  description = "Dedicated AKS subnet resource ID."
+  value       = azurerm_subnet.aks.id
+}
+
+output "aks_subnet_name" {
+  description = "Dedicated AKS subnet name."
+  value       = azurerm_subnet.aks.name
+}
+
+output "aks_network_security_group_id" {
+  description = "AKS subnet network security group resource ID."
+  value       = azurerm_network_security_group.aks.id
+}
+
 output "acr_login_server" {
   description = "ACR login server for future backend images."
   value       = azurerm_container_registry.main.login_server
