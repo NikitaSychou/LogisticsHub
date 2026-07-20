@@ -5,6 +5,7 @@ This environment defines the initial Azure foundation for future LogisticsHub AK
 ## Resources
 
 - Resource group for the dev foundation.
+- Explicit virtual network, dedicated AKS subnet, and AKS subnet network security group.
 - Azure Container Registry for future backend Docker images.
 - AKS cluster with one cost-conscious system node pool.
 - Log Analytics Workspace for AKS monitoring.
@@ -13,7 +14,7 @@ This environment defines the initial Azure foundation for future LogisticsHub AK
 - Azure Key Vault for future secret storage.
 - Storage Account with static website hosting enabled for future Angular hosting.
 
-This environment does not deploy Gateway, backend services, RabbitMQ, Key Vault CSI Driver, Workload Identity, Front Door, Application Gateway, Kubernetes resources, database schema, or Angular assets.
+This environment does not deploy Gateway, backend services, RabbitMQ, Key Vault CSI Driver, Workload Identity, Front Door, Application Gateway, Kubernetes resources, database schema, Angular assets, private endpoints, Private DNS zones, NAT Gateway, Azure Firewall, ingress, or custom route tables.
 
 ## Remote State
 
@@ -30,6 +31,27 @@ The backend uses Microsoft Entra ID / Azure AD-backed storage authentication wit
 The AzureRM provider also uses Azure AD for Storage data-plane operations with `storage_use_azuread = true`. If Terraform cannot create or read blob containers because of an Azure AD authorization error, review the Terraform principal's Storage Blob Data permissions.
 
 Terraform state and plan files can contain sensitive values, including sensitive inputs such as `sql_admin_password`. Treat remote state as sensitive infrastructure.
+
+## Networking
+
+The dev AKS cluster uses a Terraform-managed VNet and dedicated AKS subnet before the first apply. The default CIDR plan is:
+
+- VNet: `10.20.0.0/16`
+- AKS subnet: `10.20.0.0/22`
+- Reserved future private-endpoint subnet range: `10.20.4.0/24`
+- AKS service CIDR: `10.30.0.0/16`
+- AKS DNS service IP: `10.30.0.10`
+- AKS pod CIDR: `10.40.0.0/16`
+
+The private-endpoint range is reserved through variables and documentation only; this PR does not create a private-endpoint subnet, private endpoints, or Private DNS zones.
+
+AKS uses Azure CNI Overlay with Azure network policy and load balancer outbound egress. The AKS default node pool is placed in the dedicated AKS subnet, where Azure default outbound access is explicitly disabled so egress uses the AKS Standard Load Balancer outbound path.
+
+The AKS subnet has an explicit NSG association. No custom inbound NSG rules are added because the current AKS model does not require broad inbound access, unrestricted SSH, or custom Kubernetes API access rules. Azure platform defaults and AKS-managed load balancer behavior are sufficient for this foundation.
+
+No custom route table is created. Azure CNI Overlay with `outbound_type = "loadBalancer"` does not require a custom UDR for this dev foundation. Add a route table later only if the architecture adopts Azure Firewall, NAT Gateway with explicit routing requirements, forced tunnelling, an NVA, or another custom egress design.
+
+Terraform validates CIDR syntax and the DNS service IP convention. Terraform 1.6-compatible configuration does not include a simple built-in CIDR-overlap predicate, so review any changed CIDRs manually and keep the VNet, AKS service CIDR, and AKS pod CIDR non-overlapping. No repository-documented local development CIDR currently conflicts with the default plan.
 
 ## Required Local Values
 
@@ -48,19 +70,22 @@ terraform validate
 terraform plan -var-file=<local-file>.tfvars
 ```
 
+For this networking PR, stop after review and `terraform plan`; do not run `terraform apply`.
+
 Run `terraform apply` only after reviewing the plan and confirming the selected region and cost assumptions.
 
 ## Region And Cost Review
 
-The example uses `westeurope` as the default candidate. Before applying, compare `westeurope` and `northeurope` in the Azure Pricing Calculator for:
+The dev example currently uses `northeurope` for the selected resource set. Before applying, compare `northeurope` and `westeurope` in the Azure Pricing Calculator for:
 
 - AKS node VM size and node count;
 - Azure SQL database SKU;
 - Redis SKU;
 - Storage Account settings;
-- Log Analytics ingestion expectations.
+- Log Analytics ingestion expectations;
+- VNet, subnet, and NSG settings.
 
-Use `northeurope` if it is cheaper for the selected resource set.
+Use `northeurope` for the current selected resource set unless a future review changes the region decision.
 
 AKS nodes, Azure SQL, Redis, ACR, Storage, Log Analytics, and Key Vault may incur cost.
 

@@ -1,11 +1,59 @@
 variable "location" {
-  description = "Azure region. Default candidate is westeurope; compare westeurope and northeurope costs before applying."
+  description = "Azure region. The dev environment currently uses northeurope after cost review; compare northeurope and westeurope before applying."
   type        = string
-  default     = "westeurope"
+  default     = "northeurope"
 }
 
 variable "resource_group_name" {
   description = "Resource group for the LogisticsHub dev foundation."
+  type        = string
+}
+
+variable "virtual_network_name" {
+  description = "Virtual network name for the LogisticsHub dev environment."
+  type        = string
+}
+
+variable "virtual_network_address_space" {
+  description = "Address space for the dev virtual network. Keep it non-overlapping with AKS service and pod CIDRs."
+  type        = list(string)
+  default     = ["10.20.0.0/16"]
+
+  validation {
+    condition     = length(var.virtual_network_address_space) == 1 && alltrue([for cidr in var.virtual_network_address_space : can(cidrnetmask(cidr))])
+    error_message = "virtual_network_address_space must contain exactly one valid IPv4 CIDR block."
+  }
+}
+
+variable "aks_subnet_name" {
+  description = "Dedicated AKS subnet name."
+  type        = string
+}
+
+variable "aks_subnet_address_prefix" {
+  description = "Address prefix for the dedicated AKS subnet. Keep it inside virtual_network_address_space."
+  type        = string
+  default     = "10.20.0.0/22"
+
+  validation {
+    condition     = can(cidrnetmask(var.aks_subnet_address_prefix))
+    error_message = "aks_subnet_address_prefix must be a valid IPv4 CIDR block."
+  }
+}
+
+variable "reserved_private_endpoint_subnet_address_prefix" {
+  description = "Reserved future private-endpoint subnet prefix. This PR documents the reservation but does not create the subnet."
+  type        = string
+  default     = "10.20.4.0/24"
+
+  validation {
+    condition     = can(cidrnetmask(var.reserved_private_endpoint_subnet_address_prefix))
+    error_message = "reserved_private_endpoint_subnet_address_prefix must be a valid IPv4 CIDR block."
+  }
+}
+
+variable "aks_network_security_group_name" {
+  description = "Network security group name associated with the AKS subnet."
   type        = string
 }
 
@@ -45,6 +93,39 @@ variable "aks_node_count" {
   description = "Dev AKS system node count."
   type        = number
   default     = 1
+}
+
+variable "aks_service_cidr" {
+  description = "AKS service CIDR. Keep it non-overlapping with the VNet and pod CIDR."
+  type        = string
+  default     = "10.30.0.0/16"
+
+  validation {
+    condition     = can(cidrnetmask(var.aks_service_cidr))
+    error_message = "aks_service_cidr must be a valid IPv4 CIDR block."
+  }
+}
+
+variable "aks_dns_service_ip" {
+  description = "AKS DNS service IP. It must be the 10th host address in aks_service_cidr."
+  type        = string
+  default     = "10.30.0.10"
+
+  validation {
+    condition     = can(cidrnetmask("${var.aks_dns_service_ip}/32"))
+    error_message = "aks_dns_service_ip must be a valid IPv4 address."
+  }
+}
+
+variable "aks_pod_cidr" {
+  description = "AKS pod CIDR for Azure CNI Overlay. Keep it non-overlapping with the VNet and service CIDR."
+  type        = string
+  default     = "10.40.0.0/16"
+
+  validation {
+    condition     = can(cidrnetmask(var.aks_pod_cidr))
+    error_message = "aks_pod_cidr must be a valid IPv4 CIDR block."
+  }
 }
 
 variable "log_analytics_workspace_name" {

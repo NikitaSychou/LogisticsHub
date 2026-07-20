@@ -14,6 +14,34 @@ resource "azurerm_resource_group" "main" {
   tags     = var.tags
 }
 
+resource "azurerm_virtual_network" "main" {
+  name                = var.virtual_network_name
+  resource_group_name = azurerm_resource_group.main.name
+  location            = azurerm_resource_group.main.location
+  address_space       = var.virtual_network_address_space
+  tags                = var.tags
+}
+
+resource "azurerm_subnet" "aks" {
+  name                            = var.aks_subnet_name
+  resource_group_name             = azurerm_resource_group.main.name
+  virtual_network_name            = azurerm_virtual_network.main.name
+  address_prefixes                = [var.aks_subnet_address_prefix]
+  default_outbound_access_enabled = false
+}
+
+resource "azurerm_network_security_group" "aks" {
+  name                = var.aks_network_security_group_name
+  resource_group_name = azurerm_resource_group.main.name
+  location            = azurerm_resource_group.main.location
+  tags                = var.tags
+}
+
+resource "azurerm_subnet_network_security_group_association" "aks" {
+  subnet_id                 = azurerm_subnet.aks.id
+  network_security_group_id = azurerm_network_security_group.aks.id
+}
+
 resource "azurerm_log_analytics_workspace" "main" {
   name                = var.log_analytics_workspace_name
   resource_group_name = azurerm_resource_group.main.name
@@ -40,13 +68,24 @@ resource "azurerm_kubernetes_cluster" "main" {
   kubernetes_version  = var.aks_kubernetes_version
 
   default_node_pool {
-    name       = "system"
-    node_count = var.aks_node_count
-    vm_size    = var.aks_node_vm_size
+    name           = "system"
+    node_count     = var.aks_node_count
+    vm_size        = var.aks_node_vm_size
+    vnet_subnet_id = azurerm_subnet.aks.id
   }
 
   identity {
     type = "SystemAssigned"
+  }
+
+  network_profile {
+    network_plugin      = "azure"
+    network_plugin_mode = "overlay"
+    network_policy      = "azure"
+    outbound_type       = "loadBalancer"
+    service_cidr        = var.aks_service_cidr
+    dns_service_ip      = var.aks_dns_service_ip
+    pod_cidr            = var.aks_pod_cidr
   }
 
   oms_agent {
@@ -56,6 +95,13 @@ resource "azurerm_kubernetes_cluster" "main" {
   role_based_access_control_enabled = true
   local_account_disabled            = false
   tags                              = var.tags
+
+  lifecycle {
+    precondition {
+      condition     = can(cidrhost(var.aks_service_cidr, 10)) ? var.aks_dns_service_ip == cidrhost(var.aks_service_cidr, 10) : false
+      error_message = "aks_dns_service_ip must be the 10th host address in aks_service_cidr, for example 10.30.0.10 for 10.30.0.0/16."
+    }
+  }
 }
 
 resource "azurerm_mssql_server" "main" {

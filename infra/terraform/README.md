@@ -12,20 +12,29 @@ infra/terraform/
 
 ## Region Decision
 
-Terraform uses a `location` variable. The dev examples default to `westeurope` as the candidate region.
+Terraform uses a `location` variable. The dev example currently uses `northeurope` for the selected resource set.
 
-Before any real `terraform apply`, compare `westeurope` and `northeurope` in the Azure Pricing Calculator for the selected AKS VM size, Azure SQL SKU, Redis SKU, and Storage Account settings. Use `northeurope` if it is cheaper for the final selected resource set.
+Before any real `terraform apply`, compare `northeurope` and `westeurope` in the Azure Pricing Calculator for the selected AKS VM size, Azure SQL SKU, Redis SKU, Storage Account settings, and network design. Use `northeurope` for the current selected resource set unless a future review changes the region decision.
 
 Do not hardcode a region in resource definitions; pass it through variables.
 
 ## Deployment Flow
 
 1. Review and run the bootstrap layer manually to create remote Terraform state storage.
-2. Copy `envs/dev/backend.tf.example` to `envs/dev/backend.tf` and fill in the bootstrap outputs.
-3. Copy `envs/dev/dev.tfvars.example` to a local `.tfvars` file and fill in environment-specific values.
-4. Run `terraform init`, `terraform plan`, and only then a reviewed manual `terraform apply`.
+2. Copy `envs/dev/backend.tf.example` to `envs/dev/backend.hcl` and fill in the bootstrap outputs.
+3. From `envs/dev`, run `terraform init -reconfigure -backend-config="backend.hcl"`.
+4. Copy `envs/dev/dev.tfvars.example` to a local `.tfvars` file and fill in environment-specific values.
+5. Run `terraform plan`, and only then a reviewed manual `terraform apply`.
 
 Codex must not run `terraform apply` or create Azure resources.
+
+## Dev Networking
+
+The dev environment creates an explicit customer-managed VNet, a dedicated AKS subnet, and an NSG associated with that subnet before the first apply. AKS uses Azure CNI Overlay with Azure network policy and load balancer outbound egress. Azure default outbound access is explicitly disabled on the AKS subnet so egress uses the AKS Standard Load Balancer outbound path.
+
+The default dev CIDR plan is `10.20.0.0/16` for the VNet, `10.20.0.0/22` for the AKS subnet, `10.30.0.0/16` for AKS services, and `10.40.0.0/16` for overlay pods. `10.20.4.0/24` is reserved for future private endpoints but is not created as a subnet in this PR.
+
+No custom route table is created for the current Azure CNI Overlay plus load balancer outbound model. Add one later only for a reviewed custom egress design such as Azure Firewall, forced tunnelling, NAT Gateway routing requirements, or an NVA.
 
 ## Azure Resource Providers
 
