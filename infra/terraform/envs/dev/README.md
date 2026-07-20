@@ -17,11 +17,15 @@ This environment does not deploy Gateway, backend services, RabbitMQ, Key Vault 
 
 ## Remote State
 
-Run the bootstrap layer first. Then copy `backend.tf.example` to `backend.tf` and fill in the remote state resource group, storage account, and container values from bootstrap outputs.
+`backend.tf` is tracked and contains only the partial `azurerm` backend declaration. Keep environment-specific backend settings in a local `backend.hcl` file, which is ignored by Git.
 
-Do not commit `backend.tf`; it is ignored because it contains environment-specific remote state settings. Keep `backend.tf.example` as the reviewed template.
+Run the bootstrap layer first. Then copy `backend.tf.example` to `backend.hcl` and fill in the remote state resource group, storage account, and container values from bootstrap outputs.
 
-The backend example uses Microsoft Entra ID / Azure AD-backed storage authentication with `use_azuread_auth = true`. Do not use access keys or SAS tokens for new remote state setup unless a reviewed exception is required. The Terraform operator or automation principal needs least-privilege blob data access to the state container, such as Storage Blob Data Contributor scoped to the container where feasible.
+Do not commit `backend.hcl`; it contains environment-specific remote state settings. Keep `backend.tf.example` as the reviewed template for local backend configuration.
+
+Initialize the backend with `terraform init -reconfigure -backend-config="backend.hcl"`. Backend initialization does not require `terraform apply`.
+
+The backend uses Microsoft Entra ID / Azure AD-backed storage authentication with `use_azuread_auth = true`. Do not use access keys or SAS tokens for new remote state setup unless a reviewed exception is required. The Terraform operator or automation principal needs least-privilege blob data access to the state container, such as Storage Blob Data Contributor scoped to the container where feasible.
 
 The AzureRM provider also uses Azure AD for Storage data-plane operations with `storage_use_azuread = true`. If Terraform cannot create or read blob containers because of an Azure AD authorization error, review the Terraform principal's Storage Blob Data permissions.
 
@@ -39,7 +43,7 @@ Before planning changes, run:
 
 ```powershell
 terraform fmt -check -recursive ..\..
-terraform init
+terraform init -reconfigure -backend-config="backend.hcl"
 terraform validate
 terraform plan -var-file=<local-file>.tfvars
 ```
