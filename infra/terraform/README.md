@@ -36,7 +36,7 @@ The default dev CIDR plan is `10.20.0.0/16` for the VNet, `10.20.0.0/22` for the
 
 No custom route table is created for the current Azure CNI Overlay plus load balancer outbound model. Add one later only for a reviewed custom egress design such as Azure Firewall, forced tunnelling, NAT Gateway routing requirements, or an NVA.
 
-AKS has its OIDC issuer and Microsoft Entra Workload Identity enabled at the cluster level. This prepares future workloads to authenticate to Azure without long-lived client secrets, but workload-specific managed identities, federated identity credentials, Kubernetes service accounts, and Azure role assignments are intentionally deferred.
+AKS has its OIDC issuer and Microsoft Entra Workload Identity enabled at the cluster level. This prepares future workloads to authenticate to Azure without long-lived client secrets. The AKS kubelet identity receives only AcrPull access to the environment ACR so nodes can pull images without ACR admin credentials or image pull secrets; workload-specific managed identities, federated identity credentials, Kubernetes service accounts, and Azure role assignments are intentionally deferred.
 
 ## Azure Resource Providers
 

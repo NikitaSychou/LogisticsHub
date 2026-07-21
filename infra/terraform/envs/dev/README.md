@@ -53,7 +53,7 @@ No custom route table is created. Azure CNI Overlay with `outbound_type = "loadB
 
 Terraform validates CIDR syntax and the DNS service IP convention. Terraform 1.6-compatible configuration does not include a simple built-in CIDR-overlap predicate, so review any changed CIDRs manually and keep the VNet, AKS service CIDR, and AKS pod CIDR non-overlapping. No repository-documented local development CIDR currently conflicts with the default plan.
 
-AKS has its OIDC issuer and Microsoft Entra Workload Identity enabled at the cluster level. This lets future Kubernetes workloads authenticate to Azure without storing long-lived client secrets, but does not grant Azure resource access by itself. Workload-specific managed identities, federated identity credentials, Kubernetes service accounts, and Azure role assignments are intentionally deferred.
+AKS has its OIDC issuer and Microsoft Entra Workload Identity enabled at the cluster level. This lets future Kubernetes workloads authenticate to Azure without storing long-lived client secrets, but does not grant Azure resource access by itself. The AKS kubelet identity receives only AcrPull access to this environment's ACR so nodes can pull images without ACR admin credentials or image pull secrets. Workload-specific managed identities, federated identity credentials, Kubernetes service accounts, and Azure role assignments are intentionally deferred.
 
 ## Required Local Values
 
