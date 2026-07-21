@@ -61,11 +61,13 @@ resource "azurerm_container_registry" "main" {
 }
 
 resource "azurerm_kubernetes_cluster" "main" {
-  name                = var.aks_name
-  resource_group_name = azurerm_resource_group.main.name
-  location            = azurerm_resource_group.main.location
-  dns_prefix          = var.aks_dns_prefix
-  kubernetes_version  = var.aks_kubernetes_version
+  name                      = var.aks_name
+  resource_group_name       = azurerm_resource_group.main.name
+  location                  = azurerm_resource_group.main.location
+  dns_prefix                = var.aks_dns_prefix
+  kubernetes_version        = var.aks_kubernetes_version
+  oidc_issuer_enabled       = true
+  workload_identity_enabled = true
 
   default_node_pool {
     name           = "system"

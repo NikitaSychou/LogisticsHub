@@ -38,6 +38,11 @@ output "aks_cluster_name" {
   value       = azurerm_kubernetes_cluster.main.name
 }
 
+output "aks_oidc_issuer_url" {
+  description = "OIDC issuer URL used for AKS workload identity."
+  value       = azurerm_kubernetes_cluster.main.oidc_issuer_url
+}
+
 output "aks_kubelet_identity_object_id" {
   description = "AKS kubelet identity object ID for future ACR pull role assignment hardening."
   value       = azurerm_kubernetes_cluster.main.kubelet_identity[0].object_id

@@ -14,7 +14,7 @@ This environment defines the initial Azure foundation for future LogisticsHub AK
 - Azure Key Vault for future secret storage.
 - Storage Account with static website hosting enabled for future Angular hosting.
 
-This environment does not deploy Gateway, backend services, RabbitMQ, Key Vault CSI Driver, Workload Identity, Front Door, Application Gateway, Kubernetes resources, database schema, Angular assets, private endpoints, Private DNS zones, NAT Gateway, Azure Firewall, ingress, or custom route tables.
+This environment does not deploy Gateway, backend services, RabbitMQ, Key Vault CSI Driver, Front Door, Application Gateway, Kubernetes resources, database schema, Angular assets, private endpoints, Private DNS zones, NAT Gateway, Azure Firewall, ingress, custom route tables, or workload-specific Azure identity resources.
 
 ## Remote State
 
@@ -53,6 +53,8 @@ No custom route table is created. Azure CNI Overlay with `outbound_type = "loadB
 
 Terraform validates CIDR syntax and the DNS service IP convention. Terraform 1.6-compatible configuration does not include a simple built-in CIDR-overlap predicate, so review any changed CIDRs manually and keep the VNet, AKS service CIDR, and AKS pod CIDR non-overlapping. No repository-documented local development CIDR currently conflicts with the default plan.
 
+AKS has its OIDC issuer and Microsoft Entra Workload Identity enabled at the cluster level. This lets future Kubernetes workloads authenticate to Azure without storing long-lived client secrets, but does not grant Azure resource access by itself. Workload-specific managed identities, federated identity credentials, Kubernetes service accounts, and Azure role assignments are intentionally deferred.
+
 ## Required Local Values
 
 Copy `dev.tfvars.example` to an uncommitted `.tfvars` file and replace all `<unique>` placeholders. Supply `sql_admin_password` through `TF_VAR_sql_admin_password` or an uncommitted local tfvars file.
@@ -70,7 +72,7 @@ terraform validate
 terraform plan -var-file=<local-file>.tfvars
 ```
 
-For this networking PR, stop after review and `terraform plan`; do not run `terraform apply`.
+For focused Terraform PRs, stop after review and `terraform plan`; do not run `terraform apply`.
 
 Run `terraform apply` only after reviewing the plan and confirming the selected region and cost assumptions.
 
@@ -94,7 +96,7 @@ AKS nodes, Azure SQL, Redis, ACR, Storage, Log Analytics, and Key Vault may incu
 - Replace password-based SQL admin with reviewed Microsoft Entra administration/passwordless access if appropriate.
 - Add private networking and firewall rules for Azure SQL, Redis, and Key Vault.
 - Attach AKS to ACR with least privilege.
-- Add AKS Workload Identity and Key Vault CSI wiring.
+- Add workload-specific managed identities, federated identity credentials, Kubernetes service accounts, Azure role assignments, and Key Vault CSI wiring.
 - Add RabbitMQ Cluster Operator deployment.
 - Add Front Door/CDN and Gateway ingress/TLS.
 - Add CI/CD plan/apply workflows with approval gates.
