@@ -7,14 +7,14 @@ This environment defines the initial Azure foundation for future LogisticsHub AK
 - Resource group for the dev foundation.
 - Explicit virtual network, dedicated AKS subnet, and AKS subnet network security group.
 - Azure Container Registry for future backend Docker images.
-- AKS cluster with one cost-conscious system node pool.
+- AKS cluster with one cost-conscious system node pool and Secrets Store CSI Driver support for Azure Key Vault.
 - Log Analytics Workspace for AKS monitoring.
 - Azure SQL logical server and three databases: `CompanyDb`, `InventoryDb`, and `ShipmentDb`.
 - Azure Cache for Redis using a dev-appropriate Basic SKU by default.
 - Azure Key Vault for future secret storage.
 - Storage Account with static website hosting enabled for future Angular hosting.
 
-This environment does not deploy Gateway, backend services, RabbitMQ, Key Vault CSI Driver, Front Door, Application Gateway, Kubernetes resources, database schema, Angular assets, private endpoints, Private DNS zones, NAT Gateway, Azure Firewall, ingress, custom route tables, or workload-specific Azure identity resources.
+This environment does not deploy Gateway, backend services, RabbitMQ, Front Door, Application Gateway, Kubernetes resources, database schema, Angular assets, private endpoints, Private DNS zones, NAT Gateway, Azure Firewall, ingress, custom route tables, SecretProviderClass resources, secret volume mounts, Kubernetes Secret synchronization, or workload-specific Azure identity resources.
 
 ## Remote State
 
@@ -53,7 +53,7 @@ No custom route table is created. Azure CNI Overlay with `outbound_type = "loadB
 
 Terraform validates CIDR syntax and the DNS service IP convention. Terraform 1.6-compatible configuration does not include a simple built-in CIDR-overlap predicate, so review any changed CIDRs manually and keep the VNet, AKS service CIDR, and AKS pod CIDR non-overlapping. No repository-documented local development CIDR currently conflicts with the default plan.
 
-AKS has its OIDC issuer and Microsoft Entra Workload Identity enabled at the cluster level. This lets future Kubernetes workloads authenticate to Azure without storing long-lived client secrets, but does not grant Azure resource access by itself. The AKS kubelet identity receives only AcrPull access to this environment's ACR so nodes can pull images without ACR admin credentials or image pull secrets. Workload-specific managed identities, federated identity credentials, Kubernetes service accounts, and Azure role assignments are intentionally deferred.
+AKS has its OIDC issuer and Microsoft Entra Workload Identity enabled at the cluster level. Secrets Store CSI Driver support with the Azure Key Vault provider and mounted secret rotation is also enabled at the cluster level. These settings let future Kubernetes workloads authenticate to Azure and mount Key Vault content without storing long-lived client secrets, but they do not grant Azure resource access by themselves. The AKS kubelet identity receives only AcrPull access to this environment's ACR so nodes can pull images without ACR admin credentials or image pull secrets. Workload-specific managed identities, federated identity credentials, Kubernetes service accounts, Key Vault roles, SecretProviderClass resources, and workload secret mounts are intentionally deferred. No real secret values are stored in Terraform or Git.
 
 ## Required Local Values
 
@@ -96,7 +96,7 @@ AKS nodes, Azure SQL, Redis, ACR, Storage, Log Analytics, and Key Vault may incu
 - Replace password-based SQL admin with reviewed Microsoft Entra administration/passwordless access if appropriate.
 - Add private networking and firewall rules for Azure SQL, Redis, and Key Vault.
 - Attach AKS to ACR with least privilege.
-- Add workload-specific managed identities, federated identity credentials, Kubernetes service accounts, Azure role assignments, and Key Vault CSI wiring.
+- Add workload-specific managed identities, federated identity credentials, Kubernetes service accounts, Key Vault role assignments, SecretProviderClass resources, and secret volume mounts.
 - Add RabbitMQ Cluster Operator deployment.
 - Add Front Door/CDN and Gateway ingress/TLS.
 - Add CI/CD plan/apply workflows with approval gates.

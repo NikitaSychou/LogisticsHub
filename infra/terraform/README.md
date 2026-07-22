@@ -36,7 +36,7 @@ The default dev CIDR plan is `10.20.0.0/16` for the VNet, `10.20.0.0/22` for the
 
 No custom route table is created for the current Azure CNI Overlay plus load balancer outbound model. Add one later only for a reviewed custom egress design such as Azure Firewall, forced tunnelling, NAT Gateway routing requirements, or an NVA.
 
-AKS has its OIDC issuer and Microsoft Entra Workload Identity enabled at the cluster level. This prepares future workloads to authenticate to Azure without long-lived client secrets. The AKS kubelet identity receives only AcrPull access to the environment ACR so nodes can pull images without ACR admin credentials or image pull secrets; workload-specific managed identities, federated identity credentials, Kubernetes service accounts, and Azure role assignments are intentionally deferred.
+AKS has its OIDC issuer and Microsoft Entra Workload Identity enabled at the cluster level. Secrets Store CSI Driver support with the Azure Key Vault provider and mounted secret rotation is also enabled at the cluster level. This prepares future workloads to authenticate to Azure and mount Key Vault content without long-lived client secrets. The AKS kubelet identity receives only AcrPull access to the environment ACR so nodes can pull images without ACR admin credentials or image pull secrets; workload-specific managed identities, federated identity credentials, Kubernetes service accounts, Key Vault roles, SecretProviderClass resources, and workload secret mounts are intentionally deferred.
 
 ## Azure Resource Providers
 
@@ -59,7 +59,7 @@ Required providers for this foundation are:
 
 - `deploy/aks` contains placeholder Kubernetes manifests that can later target the AKS cluster from this Terraform.
 - [Azure SQL manual deployment runbook](../../docs/azure-sql-manual-deploy-runbook.md) remains the database schema process. EF migrations are not used.
-- [AKS Key Vault and secrets strategy](../../docs/aks-key-vault-secrets-strategy.md) describes future Key Vault and Secrets Store CSI Driver wiring. This Terraform enables cluster-level Workload Identity only; it does not install CSI, add workload-specific identity resources, or create real secrets.
+- [AKS Key Vault and secrets strategy](../../docs/aks-key-vault-secrets-strategy.md) describes future workload-specific Key Vault wiring. This Terraform enables cluster-level Workload Identity and Secrets Store CSI Driver support only; it does not add workload-specific identity resources, Key Vault permissions, SecretProviderClass resources, or real secrets.
 - [RabbitMQ AKS production strategy](../../docs/rabbitmq-aks-production-strategy.md) remains a follow-up. This Terraform does not install RabbitMQ or the RabbitMQ Cluster Operator.
 - [Angular Azure Static Hosting](../../docs/frontend-azure-static-hosting.md) documents the frontend model. This Terraform creates only a storage account suitable for future static website hosting; Front Door/CDN is a separate follow-up.
 
