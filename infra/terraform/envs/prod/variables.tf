@@ -1,5 +1,5 @@
 variable "location" {
-  description = "Azure region. The dev environment currently uses northeurope after cost review; compare northeurope and westeurope before applying."
+  description = "Azure region. The production target requires final paid-subscription region review before apply."
   type        = string
   default     = "northeurope"
 }
@@ -10,7 +10,7 @@ variable "resource_group_name" {
 }
 
 variable "virtual_network_name" {
-  description = "Virtual network name for the LogisticsHub dev environment."
+  description = "Virtual network name for the LogisticsHub production environment."
   type        = string
 }
 
@@ -204,7 +204,7 @@ variable "tags" {
   type        = map(string)
   default = {
     application = "logisticshub"
-    environment = "dev"
+    environment = "prod"
     managed_by  = "terraform"
   }
 }

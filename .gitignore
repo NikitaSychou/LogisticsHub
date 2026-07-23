@@ -15,7 +15,7 @@
 *.tfplan
 *.tfvars
 !*.tfvars.example
-infra/terraform/envs/dev/backend.hcl
+infra/terraform/envs/*/backend.hcl
 crash.log
 crash.*.log
 override.tf

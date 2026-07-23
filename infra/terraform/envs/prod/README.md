@@ -1,16 +1,18 @@
-# LogisticsHub Dev Terraform Environment
+# LogisticsHub Production Terraform Environment
 
-This environment defines the initial Azure foundation for future LogisticsHub AKS deployment work.
+This environment preserves the full AKS-based production target. It was moved from the original `envs/dev` root without weakening the production architecture.
+
+This root is not currently apply-ready. Before any production apply, complete focused remediation for the final paid-subscription Azure region, production AKS node sizing and quota, and migration from the retired Azure Cache for Redis deployment model to Azure Managed Redis.
 
 ## Resources
 
-- Resource group for the dev foundation.
+- Resource group for the production foundation.
 - Explicit virtual network, dedicated AKS subnet, and AKS subnet network security group.
-- Azure Container Registry for future backend Docker images.
-- AKS cluster with one cost-conscious system node pool and Secrets Store CSI Driver support for Azure Key Vault.
+- Azure Container Registry for backend Docker images.
+- AKS cluster with one inherited system node pool and Secrets Store CSI Driver support for Azure Key Vault.
 - Log Analytics Workspace for AKS monitoring.
 - Azure SQL logical server and three databases: `CompanyDb`, `InventoryDb`, and `ShipmentDb`.
-- Azure Cache for Redis using a dev-appropriate Basic SKU by default.
+- Legacy Azure Cache for Redis resource retained for later remediation to Azure Managed Redis.
 - Azure Key Vault for future secret storage.
 - Storage Account with static website hosting enabled for future Angular hosting.
 
@@ -34,7 +36,7 @@ Terraform state and plan files can contain sensitive values, including sensitive
 
 ## Networking
 
-The dev AKS cluster uses a Terraform-managed VNet and dedicated AKS subnet before the first apply. The default CIDR plan is:
+The production AKS cluster uses a Terraform-managed VNet and dedicated AKS subnet before the first apply. The inherited CIDR plan is:
 
 - VNet: `10.20.0.0/16`
 - AKS subnet: `10.20.0.0/22`
@@ -43,21 +45,21 @@ The dev AKS cluster uses a Terraform-managed VNet and dedicated AKS subnet befor
 - AKS DNS service IP: `10.30.0.10`
 - AKS pod CIDR: `10.40.0.0/16`
 
-The private-endpoint range is reserved through variables and documentation only; this PR does not create a private-endpoint subnet, private endpoints, or Private DNS zones.
+The private-endpoint range is reserved through variables and documentation only; this root does not create a private-endpoint subnet, private endpoints, or Private DNS zones.
 
 AKS uses Azure CNI Overlay with Azure network policy and load balancer outbound egress. The AKS default node pool is placed in the dedicated AKS subnet, where Azure default outbound access is explicitly disabled so egress uses the AKS Standard Load Balancer outbound path.
 
 The AKS subnet has an explicit NSG association. No custom inbound NSG rules are added because the current AKS model does not require broad inbound access, unrestricted SSH, or custom Kubernetes API access rules. Azure platform defaults and AKS-managed load balancer behavior are sufficient for this foundation.
 
-No custom route table is created. Azure CNI Overlay with `outbound_type = "loadBalancer"` does not require a custom UDR for this dev foundation. Add a route table later only if the architecture adopts Azure Firewall, NAT Gateway with explicit routing requirements, forced tunnelling, an NVA, or another custom egress design.
+No custom route table is created. Azure CNI Overlay with `outbound_type = "loadBalancer"` does not require a custom UDR for this foundation. Add a route table later only if the architecture adopts Azure Firewall, NAT Gateway with explicit routing requirements, forced tunnelling, an NVA, or another custom egress design.
 
-Terraform validates CIDR syntax and the DNS service IP convention. Terraform 1.6-compatible configuration does not include a simple built-in CIDR-overlap predicate, so review any changed CIDRs manually and keep the VNet, AKS service CIDR, and AKS pod CIDR non-overlapping. No repository-documented local development CIDR currently conflicts with the default plan.
+Terraform validates CIDR syntax and the DNS service IP convention. Terraform 1.6-compatible configuration does not include a simple built-in CIDR-overlap predicate, so review any changed CIDRs manually and keep the VNet, AKS service CIDR, and AKS pod CIDR non-overlapping.
 
 AKS has its OIDC issuer and Microsoft Entra Workload Identity enabled at the cluster level. Secrets Store CSI Driver support with the Azure Key Vault provider and mounted secret rotation is also enabled at the cluster level. These settings let future Kubernetes workloads authenticate to Azure and mount Key Vault content without storing long-lived client secrets, but they do not grant Azure resource access by themselves. The AKS kubelet identity receives only AcrPull access to this environment's ACR so nodes can pull images without ACR admin credentials or image pull secrets. Workload-specific managed identities, federated identity credentials, Kubernetes service accounts, Key Vault roles, SecretProviderClass resources, and workload secret mounts are intentionally deferred. No real secret values are stored in Terraform or Git.
 
 ## Required Local Values
 
-Copy `dev.tfvars.example` to an uncommitted `.tfvars` file and replace all `<unique>` placeholders. Supply `sql_admin_password` through `TF_VAR_sql_admin_password` or an uncommitted local tfvars file.
+Copy `prod.tfvars.example` to an uncommitted `.tfvars` file and replace all `<unique>` placeholders. Supply `sql_admin_password` through `TF_VAR_sql_admin_password` or an uncommitted local tfvars file.
 
 Do not commit passwords, tenant-specific identifiers, subscription IDs, connection strings, Redis keys, or production URLs.
 
@@ -74,28 +76,28 @@ terraform plan -var-file=<local-file>.tfvars
 
 For focused Terraform PRs, stop after review and `terraform plan`; do not run `terraform apply`.
 
-Run `terraform apply` only after reviewing the plan and confirming the selected region and cost assumptions.
+Run `terraform apply` only after reviewing the plan, completing the production remediation above, and confirming the selected region and cost assumptions.
 
 ## Region And Cost Review
 
-The dev example currently uses `northeurope` for the selected resource set. Before applying, compare `northeurope` and `westeurope` in the Azure Pricing Calculator for:
+The current examples still use `northeurope` from the inherited foundation. Before applying production, choose the final paid-subscription region and compare costs in the Azure Pricing Calculator for:
 
-- AKS node VM size and node count;
+- AKS node VM size, node count, and quota;
 - Azure SQL database SKU;
-- Redis SKU;
+- Azure Managed Redis replacement;
 - Storage Account settings;
 - Log Analytics ingestion expectations;
 - VNet, subnet, and NSG settings.
 
-Use `northeurope` for the current selected resource set unless a future review changes the region decision.
-
 AKS nodes, Azure SQL, Redis, ACR, Storage, Log Analytics, and Key Vault may incur cost.
 
-## Future Hardening
+## Future Remediation
 
+- Select the final paid-subscription Azure region.
+- Set production AKS node sizing and confirm subscription quota.
+- Replace the retired Azure Cache for Redis deployment model with Azure Managed Redis.
 - Replace password-based SQL admin with reviewed Microsoft Entra administration/passwordless access if appropriate.
 - Add private networking and firewall rules for Azure SQL, Redis, and Key Vault.
-- Attach AKS to ACR with least privilege.
 - Add workload-specific managed identities, federated identity credentials, Kubernetes service accounts, Key Vault role assignments, SecretProviderClass resources, and secret volume mounts.
 - Add RabbitMQ Cluster Operator deployment.
 - Add Front Door/CDN and Gateway ingress/TLS.
