@@ -29,6 +29,7 @@ resource "azurerm_container_app" "rabbitmq" {
   name                         = var.rabbitmq_container_app_name
   container_app_environment_id = azurerm_container_app_environment.main.id
   resource_group_name          = azurerm_resource_group.main.name
+  workload_profile_name        = "Consumption"
   revision_mode                = "Single"
   tags                         = var.tags
 
@@ -103,6 +104,7 @@ resource "azurerm_container_app" "redis" {
   name                         = var.redis_container_app_name
   container_app_environment_id = azurerm_container_app_environment.main.id
   resource_group_name          = azurerm_resource_group.main.name
+  workload_profile_name        = "Consumption"
   revision_mode                = "Single"
   tags                         = var.tags
 
