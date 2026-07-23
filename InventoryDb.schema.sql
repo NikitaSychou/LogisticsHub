@@ -194,13 +194,6 @@ GO
 ALTER TABLE [dbo].[stock_reservation_items] CHECK CONSTRAINT [FK_stock_reservation_items_items]
 GO
 
-ALTER TABLE [dbo].[stock_reservation_items]  WITH CHECK ADD  CONSTRAINT [FK_stock_reservation_items_stock_reservations] FOREIGN KEY([reservation_id])
-REFERENCES [dbo].[stock_reservations] ([id])
-GO
-
-ALTER TABLE [dbo].[stock_reservation_items] CHECK CONSTRAINT [FK_stock_reservation_items_stock_reservations]
-GO
-
 ALTER TABLE [dbo].[stock_reservation_items]  WITH CHECK ADD  CONSTRAINT [CK_stock_reservation_items_quantity_positive] CHECK  (([quantity]>(0)))
 GO
 
@@ -246,3 +239,9 @@ GO
 ALTER TABLE [dbo].[stock_reservations] CHECK CONSTRAINT [CK_stock_reservations_status]
 GO
 
+ALTER TABLE [dbo].[stock_reservation_items]  WITH CHECK ADD  CONSTRAINT [FK_stock_reservation_items_stock_reservations] FOREIGN KEY([reservation_id])
+REFERENCES [dbo].[stock_reservations] ([id])
+GO
+
+ALTER TABLE [dbo].[stock_reservation_items] CHECK CONSTRAINT [FK_stock_reservation_items_stock_reservations]
+GO

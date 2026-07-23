@@ -63,13 +63,6 @@ CREATE NONCLUSTERED INDEX [IX_shipment_items_sku] ON [dbo].[shipment_items]
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF)
 GO
 
-ALTER TABLE [dbo].[shipment_items]  WITH CHECK ADD  CONSTRAINT [FK_shipment_items_shipments] FOREIGN KEY([shipment_id])
-REFERENCES [dbo].[shipments] ([id])
-GO
-
-ALTER TABLE [dbo].[shipment_items] CHECK CONSTRAINT [FK_shipment_items_shipments]
-GO
-
 ALTER TABLE [dbo].[shipment_items]  WITH CHECK ADD  CONSTRAINT [CK_shipment_items_quantity_positive] CHECK  (([quantity]>(0)))
 GO
 
@@ -152,13 +145,6 @@ GO
 ALTER TABLE [dbo].[shipment_status_history] ADD  CONSTRAINT [DF_shipment_status_history_changed_at]  DEFAULT (sysutcdatetime()) FOR [changed_at]
 GO
 
-ALTER TABLE [dbo].[shipment_status_history]  WITH CHECK ADD  CONSTRAINT [FK_shipment_status_history_shipments] FOREIGN KEY([shipment_id])
-REFERENCES [dbo].[shipments] ([id])
-GO
-
-ALTER TABLE [dbo].[shipment_status_history] CHECK CONSTRAINT [FK_shipment_status_history_shipments]
-GO
-
 SET ANSI_NULLS ON
 GO
 
@@ -213,4 +199,18 @@ ALTER TABLE [dbo].[shipments]  WITH CHECK ADD  CONSTRAINT [CK_shipments_status] 
 GO
 
 ALTER TABLE [dbo].[shipments] CHECK CONSTRAINT [CK_shipments_status]
+GO
+
+ALTER TABLE [dbo].[shipment_items]  WITH CHECK ADD  CONSTRAINT [FK_shipment_items_shipments] FOREIGN KEY([shipment_id])
+REFERENCES [dbo].[shipments] ([id])
+GO
+
+ALTER TABLE [dbo].[shipment_items] CHECK CONSTRAINT [FK_shipment_items_shipments]
+GO
+
+ALTER TABLE [dbo].[shipment_status_history]  WITH CHECK ADD  CONSTRAINT [FK_shipment_status_history_shipments] FOREIGN KEY([shipment_id])
+REFERENCES [dbo].[shipments] ([id])
+GO
+
+ALTER TABLE [dbo].[shipment_status_history] CHECK CONSTRAINT [FK_shipment_status_history_shipments]
 GO
