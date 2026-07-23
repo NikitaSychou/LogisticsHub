@@ -3,6 +3,10 @@ location = "swedencentral"
 resource_group_name            = "rg-logisticshub-dev-free"
 container_app_environment_name = "cae-logisticshub-dev-free"
 
+sql_server_name                   = "sql-logisticshub-dev-free-600544"
+sql_administrator_login          = "logisticshubadmin"
+sql_administrator_login_password = "<sql-administrator-password>"
+
 rabbitmq_container_app_name = "ca-rmq-logisticshub-dev-free"
 rabbitmq_username           = "logisticshub"
 rabbitmq_password           = "<rabbitmq-password>"
