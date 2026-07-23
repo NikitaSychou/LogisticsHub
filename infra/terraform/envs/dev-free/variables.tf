@@ -16,6 +16,39 @@ variable "container_app_environment_name" {
   default     = "cae-logisticshub-dev-free"
 }
 
+variable "sql_server_name" {
+  description = "Globally unique Azure SQL logical server name for dev-free."
+  type        = string
+  default     = "sql-logisticshub-dev-free-600544"
+
+  validation {
+    condition     = length(var.sql_server_name) <= 63 && can(regex("^[a-z0-9]([a-z0-9-]*[a-z0-9])?$", var.sql_server_name)) && !strcontains(var.sql_server_name, "--")
+    error_message = "sql_server_name must be no more than 63 characters, use only lowercase letters, digits, and hyphens, start and end with a letter or digit, and not contain consecutive hyphens."
+  }
+}
+
+variable "sql_administrator_login" {
+  description = "Azure SQL administrator login name for dev-free."
+  type        = string
+  default     = "logisticshubadmin"
+
+  validation {
+    condition     = length(trimspace(var.sql_administrator_login)) >= 3 && can(regex("^[A-Za-z][A-Za-z0-9_-]{2,127}$", var.sql_administrator_login)) && !contains(["admin", "administrator", "guest", "public", "root", "sa"], lower(var.sql_administrator_login))
+    error_message = "sql_administrator_login must be 3-128 characters, start with a letter, use only letters, digits, underscores, or hyphens, and must not be a reserved administrator name."
+  }
+}
+
+variable "sql_administrator_login_password" {
+  description = "Azure SQL administrator password for dev-free."
+  type        = string
+  sensitive   = true
+  nullable    = false
+
+  validation {
+    condition     = length(trimspace(var.sql_administrator_login_password)) > 0
+    error_message = "sql_administrator_login_password must be non-empty."
+  }
+}
 variable "rabbitmq_container_app_name" {
   description = "Name of the dev-free RabbitMQ Container App."
   type        = string

@@ -23,6 +23,13 @@ locals {
   rabbitmq_port  = 5672
   redis_image    = "docker.io/library/redis:8.2.1-alpine@sha256:987c376c727652f99625c7d205a1cba3cb2c53b92b0b62aade2bd48ee1593232"
   redis_port     = 6379
+
+  sql_database_max_size_bytes = 34359738368
+  sql_database_names = {
+    company   = "CompanyDb"
+    inventory = "InventoryDb"
+    shipment  = "ShipmentDb"
+  }
 }
 
 resource "azurerm_container_app" "rabbitmq" {
@@ -172,6 +179,52 @@ resource "azurerm_container_app" "redis" {
   }
 }
 
+resource "azurerm_mssql_server" "main" {
+  name                          = var.sql_server_name
+  resource_group_name           = azurerm_resource_group.main.name
+  location                      = azurerm_resource_group.main.location
+  version                       = "12.0"
+  administrator_login           = var.sql_administrator_login
+  administrator_login_password  = var.sql_administrator_login_password
+  minimum_tls_version           = "1.2"
+  public_network_access_enabled = true
+  tags                          = var.tags
+}
+
+resource "azurerm_mssql_firewall_rule" "allow_azure_services" {
+  name             = "AllowAzureServices"
+  server_id        = azurerm_mssql_server.main.id
+  start_ip_address = "0.0.0.0"
+  end_ip_address   = "0.0.0.0"
+}
+
+resource "azapi_resource" "sql_database" {
+  for_each  = local.sql_database_names
+  type      = "Microsoft.Sql/servers/databases@2023-08-01"
+  name      = each.value
+  parent_id = azurerm_mssql_server.main.id
+  location  = azurerm_resource_group.main.location
+  tags      = var.tags
+
+  body = {
+    sku = {
+      name     = "GP_S_Gen5_2"
+      tier     = "GeneralPurpose"
+      family   = "Gen5"
+      capacity = 2
+    }
+
+    properties = {
+      collation                        = "SQL_Latin1_General_CP1_CI_AS"
+      maxSizeBytes                     = local.sql_database_max_size_bytes
+      autoPauseDelay                   = 60
+      minCapacity                      = 0.5
+      requestedBackupStorageRedundancy = "Local"
+      useFreeLimit                     = true
+      freeLimitExhaustionBehavior      = "AutoPause"
+    }
+  }
+}
 resource "azurerm_storage_account" "frontend" {
   name                            = var.frontend_storage_account_name
   resource_group_name             = azurerm_resource_group.main.name

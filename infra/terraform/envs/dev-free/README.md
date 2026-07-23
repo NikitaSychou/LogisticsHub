@@ -11,8 +11,17 @@ This root defines the simplified low-cost Azure foundation for the dev-free targ
 - Storage Account for future Angular static website hosting.
 - Storage Static Website configuration with `index.html` as both the index and error document.
 
-This root does not deploy application containers, Gateway, backend services, CacheWorker, Azure SQL, ACR, Key Vault, managed identities, role assignments, custom domains, Front Door, CDN, GitHub Actions, Dockerfiles, Kubernetes manifests, or application configuration.
+This root does not deploy application containers, Gateway, backend services, CacheWorker, SQL schemas, seed data, ACR, Key Vault, managed identities, role assignments, custom domains, Front Door, CDN, GitHub Actions, Dockerfiles, Kubernetes manifests, or application configuration.
 
+## Azure SQL Databases
+
+The dev-free SQL foundation creates one shared logical Azure SQL server in Sweden Central and three empty database-per-service databases: CompanyService owns `CompanyDb`, InventoryService owns `InventoryDb`, and ShipmentService owns `ShipmentDb`. CacheWorker also requires `CompanyDb` access for cache warmup; Gateway has no direct SQL access.
+
+The databases use the Azure SQL free offer with `AutoPause` exhaustion behavior. If the monthly free allowance is exhausted, a database can become unavailable until the allowance resets. Schemas and seed data remain manual SQL only; EF migrations remain prohibited.
+
+Because the current Container Apps environment has no VNet integration, SQL public network access and the `0.0.0.0` Azure-services firewall rule are explicit dev-free-only compromises. Authentication is the main security boundary. Local SQL deployment should use a temporary operator firewall rule created and removed outside this Terraform PR; production networking and private endpoint strategy remain unchanged.
+
+SQL administrator passwords come from ignored local variables and are stored in protected Terraform remote state when applied. Connection strings and passwords are not exposed through Terraform outputs.
 ## Cost And Logging
 
 The Container Apps environment is configured for the default Consumption model. No dedicated workload profile, custom VNet, infrastructure subnet, internal load balancer, private endpoint, zone redundancy, Log Analytics workspace, or Application Insights resource is created.

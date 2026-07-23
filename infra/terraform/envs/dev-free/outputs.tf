@@ -18,6 +18,25 @@ output "container_app_environment_default_domain" {
   value       = azurerm_container_app_environment.main.default_domain
 }
 
+output "sql_server_name" {
+  description = "Azure SQL logical server name."
+  value       = azurerm_mssql_server.main.name
+}
+
+output "sql_server_fqdn" {
+  description = "Azure SQL logical server fully qualified domain name."
+  value       = azurerm_mssql_server.main.fully_qualified_domain_name
+}
+
+output "sql_database_names" {
+  description = "Azure SQL database names for dev-free services."
+  value       = local.sql_database_names
+}
+
+output "sql_database_ids" {
+  description = "Azure SQL database resource IDs."
+  value       = { for key, database in azapi_resource.sql_database : key => database.id }
+}
 output "rabbitmq_container_app_name" {
   description = "Name of the dev-free RabbitMQ Container App."
   value       = azurerm_container_app.rabbitmq.name
