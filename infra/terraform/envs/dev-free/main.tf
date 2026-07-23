@@ -208,7 +208,7 @@ resource "azapi_resource" "sql_database" {
 
   body = {
     sku = {
-      name     = "GP_S_Gen5_2"
+      name     = "GP_S_Gen5"
       tier     = "GeneralPurpose"
       family   = "Gen5"
       capacity = 2
