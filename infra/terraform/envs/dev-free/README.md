@@ -1,15 +1,21 @@
 # LogisticsHub Dev-Free Terraform Environment
 
-This root is reserved for the simplified low-cost Azure development target. It is intentionally empty in this PR: no Azure resources are declared yet.
+This root defines the first simplified low-cost Azure foundation for the dev-free target. No Azure resources exist until `terraform apply` is run manually after review. The production root under `envs/prod` remains unchanged.
 
-## Planned Direction
+## Resources
 
-- Azure Container Apps Consumption will replace AKS for the simplified dev path.
-- RabbitMQ and Redis are planned as temporary development containers rather than managed Azure services.
-- Azure SQL free-offer databases will be evaluated separately before any resources are added.
-- Storage Static Website remains the planned frontend hosting target.
+- Resource group for the dev-free foundation.
+- Azure Container Apps managed environment using the default Consumption workload profile.
+- Storage Account for future Angular static website hosting.
+- Storage Static Website configuration with `index.html` as both the index and error document.
 
-Do not add Kubernetes, AKS, route tables, private endpoints, RabbitMQ, Redis, SQL, Container Apps, or application deployment resources in this root until a focused follow-up PR implements them.
+This PR does not deploy Container Apps applications, application containers, Gateway, backend services, CacheWorker, RabbitMQ, Redis, Azure SQL, ACR, Key Vault, managed identities, role assignments, secrets, custom domains, Front Door, CDN, GitHub Actions, Dockerfiles, Kubernetes manifests, or application configuration.
+
+## Cost And Logging
+
+The Container Apps environment is configured for the default Consumption model. No dedicated workload profile, custom VNet, infrastructure subnet, internal load balancer, private endpoint, zone redundancy, Log Analytics workspace, or Application Insights resource is created.
+
+`logs_destination` is intentionally omitted so the environment does not require a Log Analytics workspace in this foundation. This keeps the initial footprint small, but the design targets free-tier or trial-credit usage rather than guaranteeing zero consumption under all workloads.
 
 ## Remote State
 
@@ -27,11 +33,20 @@ terraform init -reconfigure -backend-config="backend.hcl"
 
 Backend initialization does not require `terraform apply`.
 
+## Required Local Values
+
+Copy `dev-free.tfvars.example` to an uncommitted `.tfvars` file and replace the `<unique>` placeholder in the Storage Account name.
+
+Do not commit subscription IDs, tenant IDs, credentials, access keys, SAS tokens, passwords, connection strings, or local operator values.
+
 ## Validation
 
-This empty root should remain valid with:
+Run local validation with:
 
 ```powershell
+terraform fmt -check
 terraform init -backend=false -input=false
 terraform validate
 ```
+
+Do not run `terraform apply` until a focused plan has been reviewed.
