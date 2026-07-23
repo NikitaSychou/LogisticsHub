@@ -8,7 +8,7 @@ This folder contains Terraform for LogisticsHub Azure infrastructure. Do not run
 infra/terraform/
   bootstrap/      # creates the shared remote-state resource group, storage account, and blob container
   envs/prod/      # full AKS-based paid production target, preserved from the original root
-  envs/dev-free/  # simplified low-cost/free development target, intentionally empty in this PR
+  envs/dev-free/  # simplified low-cost/free foundation for Container Apps Consumption
 ```
 
 ## Environment Matrix
@@ -16,7 +16,7 @@ infra/terraform/
 | Environment | Purpose | State key | Current status |
 | --- | --- | --- | --- |
 | `prod` | Full paid production target with AKS, ACR, Azure SQL, Key Vault, Storage, observability, Workload Identity, AcrPull, and Key Vault CSI support. | `logisticshub/prod.tfstate` | Preserved but not currently apply-ready until remediation is complete. |
-| `dev-free` | Simplified low-cost/free target. Azure Container Apps Consumption is planned instead of AKS; temporary RabbitMQ and Redis containers are planned; Azure SQL free-offer databases will be evaluated separately; Storage Static Website remains planned for frontend hosting. | `logisticshub/dev-free.tfstate` | Root exists but declares no Azure resources yet. |
+| `dev-free` | Simplified low-cost/free target using Azure Container Apps Consumption instead of AKS. Temporary RabbitMQ and Redis containers and Azure SQL free-offer databases remain deferred. Storage Static Website is the frontend hosting target. | `logisticshub/dev-free.tfstate` | Foundation root declares a resource group, Container Apps environment, and frontend static website storage. |
 
 Use separate root directories and separate backend state keys. Do not use Terraform CLI workspaces to switch LogisticsHub environments.
 
@@ -57,9 +57,9 @@ The production root is intentionally not made apply-ready in this PR. Before any
 
 ## Dev-Free Target
 
-`envs/dev-free` is a separate simplified development root. This PR creates only the empty Terraform root and backend example. Later PRs can add Azure Container Apps Consumption, Storage Static Website, SQL free-offer evaluation, and temporary RabbitMQ/Redis container wiring.
+`envs/dev-free` is a separate simplified development root. This PR creates only the resource group, Azure Container Apps Consumption environment, and frontend static website storage foundation. Log Analytics is intentionally omitted to minimize cost. Later PRs can add application containers, temporary RabbitMQ and Redis containers, and Azure SQL free-offer evaluation.
 
-The dev-free root must not duplicate the production AKS configuration, use conditional AKS flags, or share Terraform state with production.
+The dev-free root does not duplicate the production AKS configuration, use conditional AKS flags, or share Terraform state with production. No Azure resources exist until `terraform apply` is run manually after review, and the free-tier/trial-credit design does not guarantee zero consumption under all workloads.
 
 ## Relation To Existing Deployment Work
 

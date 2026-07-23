@@ -1,0 +1,5 @@
+location = "swedencentral"
+
+resource_group_name             = "rg-logisticshub-dev-free"
+container_app_environment_name  = "cae-logisticshub-dev-free"
+frontend_storage_account_name   = "stlghubdevfree<unique>"
