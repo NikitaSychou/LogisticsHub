@@ -76,6 +76,20 @@ dotnet build .\LogisticsHub.sln
 dotnet test .\LogisticsHub.sln
 ```
 
+## Container Images
+
+Build the production-style .NET images from the repository root:
+
+~~~powershell
+docker build -f .\src\Gateway\LogisticsHub.Gateway\Dockerfile -t logisticshub-gateway:local .
+docker build -f .\src\CompanyService\LogisticsHub.CompanyService\Dockerfile -t logisticshub-companyservice:local .
+docker build -f .\src\InventoryService\LogisticsHub.InventoryService\Dockerfile -t logisticshub-inventoryservice:local .
+docker build -f .\src\ShipmentService\LogisticsHub.ShipmentService\Dockerfile -t logisticshub-shipmentservice:local .
+docker build -f .\src\LogisticsHub.Workers.CacheWorker\Dockerfile -t logisticshub-cacheworker:local .
+~~~
+
+The API images listen on port 8080. CacheWorker does not expose an HTTP port. The Gateway image publishes only the Gateway .NET project; Angular frontend assets are built and deployed separately.
+
 ## Docker Compose
 
 ```powershell
