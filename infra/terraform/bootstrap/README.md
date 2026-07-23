@@ -1,6 +1,6 @@
 # Terraform Remote State Bootstrap
 
-This layer creates the Azure Storage backend used by the dev Terraform environment.
+This layer creates the shared Azure Storage backend used by the Terraform environment roots.
 
 ## Resources
 
@@ -24,6 +24,6 @@ Do not commit local `.tfvars`, `.tfstate`, `.tfplan`, crash logs, or `.terraform
 
 Terraform state and plan files can contain sensitive values. Protect state access with least privilege; the operator or automation principal needs blob data access to the state container, for example Storage Blob Data Contributor scoped to the container where feasible.
 
-After bootstrap, copy the outputs into `../envs/dev/backend.tf` from `backend.tf.example`.
+After bootstrap, copy the outputs into each environment's local ignored `backend.hcl` from that environment's `backend.tf.example`. Use separate state keys such as `logisticshub/prod.tfstate` and `logisticshub/dev-free.tfstate`.
 
 Private endpoints, network firewall rules, customer-managed keys, and production-grade state storage monitoring are future hardening items and are intentionally not added in this foundation PR.
