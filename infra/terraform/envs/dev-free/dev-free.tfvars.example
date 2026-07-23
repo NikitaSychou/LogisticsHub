@@ -1,5 +1,13 @@
 location = "swedencentral"
 
-resource_group_name             = "rg-logisticshub-dev-free"
-container_app_environment_name  = "cae-logisticshub-dev-free"
-frontend_storage_account_name   = "stlghubdevfree<unique>"
+resource_group_name            = "rg-logisticshub-dev-free"
+container_app_environment_name = "cae-logisticshub-dev-free"
+
+rabbitmq_container_app_name = "ca-rmq-logisticshub-dev-free"
+rabbitmq_username           = "logisticshub"
+rabbitmq_password           = "<rabbitmq-password>"
+
+redis_container_app_name = "ca-redis-logisticshub-dev-free"
+redis_password           = "<redis-password>"
+
+frontend_storage_account_name = "stlghubdevfree<unique>"
