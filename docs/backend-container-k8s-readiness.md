@@ -15,6 +15,13 @@ This checklist captures the current backend container assumptions before adding 
 - CacheWorker should run as a worker workload, scheduled job, or deployment without ingress.
 - Angular is hosted separately as static files; it should not be served from the Gateway container.
 
+
+## GHCR Publishing
+
+The `Container Images` GitHub Actions workflow builds all five backend images on pull requests without logging in to GHCR or pushing images. Pushes to `master` and manual `workflow_dispatch` runs publish commit-SHA tags to `ghcr.io/<github-owner-lowercase>/logisticshub-gateway`, `ghcr.io/<github-owner-lowercase>/logisticshub-companyservice`, `ghcr.io/<github-owner-lowercase>/logisticshub-inventoryservice`, `ghcr.io/<github-owner-lowercase>/logisticshub-shipmentservice`, and `ghcr.io/<github-owner-lowercase>/logisticshub-cacheworker`; `latest` is published only from the default branch.
+
+After the first publish, change the five GHCR packages to Public in GitHub Packages so the simplified dev-free Azure Container Apps deployment can pull them without registry credentials. Production ACR publishing remains a separate future target.
+
 ## Runtime Configuration
 
 Local appsettings and Docker Compose contain development defaults such as `localhost`, `host.docker.internal`, local SQL Server, local Redis, and local RabbitMQ service names. Keep those for local development.
