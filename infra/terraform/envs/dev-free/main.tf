@@ -19,10 +19,51 @@ resource "azurerm_container_app_environment" "main" {
 }
 
 locals {
+  container_app_http_port  = 8080
+  container_image_owner    = "nikitasychou"
+  container_image_registry = "ghcr.io"
+  container_images = {
+    cacheworker      = "${local.container_image_registry}/${local.container_image_owner}/logisticshub-cacheworker:${var.container_image_tag}"
+    companyservice   = "${local.container_image_registry}/${local.container_image_owner}/logisticshub-companyservice:${var.container_image_tag}"
+    inventoryservice = "${local.container_image_registry}/${local.container_image_owner}/logisticshub-inventoryservice:${var.container_image_tag}"
+    shipmentservice  = "${local.container_image_registry}/${local.container_image_owner}/logisticshub-shipmentservice:${var.container_image_tag}"
+  }
+
+  common_container_environment = {
+    ASPNETCORE_ENVIRONMENT = "Production"
+    DOTNET_ENVIRONMENT     = "Production"
+  }
+
+  azure_ad_environment = {
+    AzureAd__Instance      = var.azure_ad_instance
+    AzureAd__TenantId      = var.azure_ad_tenant_id
+    AzureAd__ClientId      = var.azure_ad_client_id
+    AzureAd__Audience      = var.azure_ad_audience
+    AzureAd__RequiredScope = var.azure_ad_required_scope
+  }
+
+  company_service_resilience_environment = {
+    CompanyService__Resilience__TimeoutSeconds                 = "3"
+    CompanyService__Resilience__RetryCount                     = "1"
+    CompanyService__Resilience__RetryDelayMilliseconds         = "150"
+    CompanyService__Resilience__CircuitBreakerFailureThreshold = "3"
+    CompanyService__Resilience__CircuitBreakerDurationSeconds  = "5"
+  }
+
   rabbitmq_image = "docker.io/library/rabbitmq:4.1.4-alpine@sha256:b736d649308e1b3e1a116c3f36986b605ee3d03e88f10166be2900083d2e63f2"
   rabbitmq_port  = 5672
   redis_image    = "docker.io/library/redis:8.2.1-alpine@sha256:987c376c727652f99625c7d205a1cba3cb2c53b92b0b62aade2bd48ee1593232"
   redis_port     = 6379
+
+  rabbitmq_environment = {
+    RabbitMq__HostName              = azurerm_container_app.rabbitmq.ingress[0].fqdn
+    RabbitMq__Port                  = tostring(local.rabbitmq_port)
+    RabbitMq__UserName              = var.rabbitmq_username
+    RabbitMq__ExchangeName          = "logisticshub.events"
+    RabbitMq__ConsumerPrefetchCount = "1"
+  }
+
+  redis_connection_string = "${azurerm_container_app.redis.ingress[0].fqdn}:${local.redis_port},password=${var.redis_password},ssl=False,abortConnect=False,connectRetry=5,connectTimeout=10000,syncTimeout=10000"
 
   sql_database_max_size_bytes = 34359738368
   sql_database_names = {
@@ -30,8 +71,12 @@ locals {
     inventory = "InventoryDb"
     shipment  = "ShipmentDb"
   }
+  sql_connection_strings = {
+    company   = "Server=tcp:${azurerm_mssql_server.main.fully_qualified_domain_name},1433;Database=${azapi_resource.sql_database["company"].name};User ID=${var.sql_administrator_login};Password=${var.sql_administrator_login_password};Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;"
+    inventory = "Server=tcp:${azurerm_mssql_server.main.fully_qualified_domain_name},1433;Database=${azapi_resource.sql_database["inventory"].name};User ID=${var.sql_administrator_login};Password=${var.sql_administrator_login_password};Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;"
+    shipment  = "Server=tcp:${azurerm_mssql_server.main.fully_qualified_domain_name},1433;Database=${azapi_resource.sql_database["shipment"].name};User ID=${var.sql_administrator_login};Password=${var.sql_administrator_login_password};Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;"
+  }
 }
-
 resource "azurerm_container_app" "rabbitmq" {
   name                         = var.rabbitmq_container_app_name
   container_app_environment_id = azurerm_container_app_environment.main.id
@@ -222,6 +267,370 @@ resource "azapi_resource" "sql_database" {
       requestedBackupStorageRedundancy = "Local"
       useFreeLimit                     = true
       freeLimitExhaustionBehavior      = "AutoPause"
+    }
+  }
+}
+
+resource "azurerm_container_app" "companyservice" {
+  name                         = var.companyservice_container_app_name
+  container_app_environment_id = azurerm_container_app_environment.main.id
+  resource_group_name          = azurerm_resource_group.main.name
+  workload_profile_name        = "Consumption"
+  revision_mode                = "Single"
+  tags                         = var.tags
+
+  secret {
+    name  = "companydb-connection-string"
+    value = local.sql_connection_strings.company
+  }
+
+  secret {
+    name  = "redis-connection-string"
+    value = local.redis_connection_string
+  }
+
+  ingress {
+    external_enabled = false
+    target_port      = local.container_app_http_port
+    transport        = "http"
+
+    traffic_weight {
+      latest_revision = true
+      percentage      = 100
+    }
+  }
+
+  template {
+    min_replicas = 1
+    max_replicas = 1
+
+    container {
+      name   = "companyservice"
+      image  = local.container_images.companyservice
+      cpu    = 0.25
+      memory = "0.5Gi"
+
+      dynamic "env" {
+        for_each = merge(local.common_container_environment, local.azure_ad_environment)
+        iterator = plain_env
+
+        content {
+          name  = plain_env.key
+          value = plain_env.value
+        }
+      }
+
+      dynamic "env" {
+        for_each = {
+          ConnectionStrings__CompanyDb = "companydb-connection-string"
+          ConnectionStrings__Redis     = "redis-connection-string"
+        }
+        iterator = secret_env
+
+        content {
+          name        = secret_env.key
+          secret_name = secret_env.value
+        }
+      }
+
+      startup_probe {
+        transport               = "HTTP"
+        path                    = "/health/live"
+        port                    = local.container_app_http_port
+        initial_delay           = 15
+        interval_seconds        = 10
+        timeout                 = 5
+        failure_count_threshold = 18
+      }
+
+      readiness_probe {
+        transport               = "HTTP"
+        path                    = "/health/ready"
+        port                    = local.container_app_http_port
+        interval_seconds        = 10
+        timeout                 = 5
+        failure_count_threshold = 6
+        success_count_threshold = 1
+      }
+
+      liveness_probe {
+        transport               = "HTTP"
+        path                    = "/health/live"
+        port                    = local.container_app_http_port
+        initial_delay           = 30
+        interval_seconds        = 30
+        timeout                 = 5
+        failure_count_threshold = 3
+      }
+    }
+  }
+}
+
+resource "azurerm_container_app" "inventoryservice" {
+  name                         = var.inventoryservice_container_app_name
+  container_app_environment_id = azurerm_container_app_environment.main.id
+  resource_group_name          = azurerm_resource_group.main.name
+  workload_profile_name        = "Consumption"
+  revision_mode                = "Single"
+  tags                         = var.tags
+
+  secret {
+    name  = "inventorydb-connection-string"
+    value = local.sql_connection_strings.inventory
+  }
+
+  secret {
+    name  = "rabbitmq-password"
+    value = var.rabbitmq_password
+  }
+
+  ingress {
+    external_enabled = false
+    target_port      = local.container_app_http_port
+    transport        = "http"
+
+    traffic_weight {
+      latest_revision = true
+      percentage      = 100
+    }
+  }
+
+  template {
+    min_replicas = 1
+    max_replicas = 1
+
+    container {
+      name   = "inventoryservice"
+      image  = local.container_images.inventoryservice
+      cpu    = 0.5
+      memory = "1Gi"
+
+      dynamic "env" {
+        for_each = merge(local.common_container_environment, local.azure_ad_environment, local.rabbitmq_environment)
+        iterator = plain_env
+
+        content {
+          name  = plain_env.key
+          value = plain_env.value
+        }
+      }
+
+      dynamic "env" {
+        for_each = {
+          ConnectionStrings__InventoryDb = "inventorydb-connection-string"
+          RabbitMq__Password             = "rabbitmq-password"
+        }
+        iterator = secret_env
+
+        content {
+          name        = secret_env.key
+          secret_name = secret_env.value
+        }
+      }
+
+      startup_probe {
+        transport               = "HTTP"
+        path                    = "/health/live"
+        port                    = local.container_app_http_port
+        initial_delay           = 15
+        interval_seconds        = 10
+        timeout                 = 5
+        failure_count_threshold = 18
+      }
+
+      readiness_probe {
+        transport               = "HTTP"
+        path                    = "/health/ready"
+        port                    = local.container_app_http_port
+        interval_seconds        = 10
+        timeout                 = 5
+        failure_count_threshold = 6
+        success_count_threshold = 1
+      }
+
+      liveness_probe {
+        transport               = "HTTP"
+        path                    = "/health/live"
+        port                    = local.container_app_http_port
+        initial_delay           = 30
+        interval_seconds        = 30
+        timeout                 = 5
+        failure_count_threshold = 3
+      }
+    }
+  }
+}
+
+resource "azurerm_container_app" "shipmentservice" {
+  name                         = var.shipmentservice_container_app_name
+  container_app_environment_id = azurerm_container_app_environment.main.id
+  resource_group_name          = azurerm_resource_group.main.name
+  workload_profile_name        = "Consumption"
+  revision_mode                = "Single"
+  tags                         = var.tags
+
+  secret {
+    name  = "shipmentdb-connection-string"
+    value = local.sql_connection_strings.shipment
+  }
+
+  secret {
+    name  = "rabbitmq-password"
+    value = var.rabbitmq_password
+  }
+
+  ingress {
+    external_enabled = false
+    target_port      = local.container_app_http_port
+    transport        = "http"
+
+    traffic_weight {
+      latest_revision = true
+      percentage      = 100
+    }
+  }
+
+  template {
+    min_replicas = 1
+    max_replicas = 1
+
+    container {
+      name   = "shipmentservice"
+      image  = local.container_images.shipmentservice
+      cpu    = 0.5
+      memory = "1Gi"
+
+      dynamic "env" {
+        for_each = merge(
+          local.common_container_environment,
+          local.azure_ad_environment,
+          local.rabbitmq_environment,
+          local.company_service_resilience_environment,
+          {
+            CompanyService__BaseUrl = "http://${azurerm_container_app.companyservice.ingress[0].fqdn}"
+          }
+        )
+        iterator = plain_env
+
+        content {
+          name  = plain_env.key
+          value = plain_env.value
+        }
+      }
+
+      dynamic "env" {
+        for_each = {
+          ConnectionStrings__ShipmentDb = "shipmentdb-connection-string"
+          RabbitMq__Password            = "rabbitmq-password"
+        }
+        iterator = secret_env
+
+        content {
+          name        = secret_env.key
+          secret_name = secret_env.value
+        }
+      }
+
+      startup_probe {
+        transport               = "HTTP"
+        path                    = "/health/live"
+        port                    = local.container_app_http_port
+        initial_delay           = 15
+        interval_seconds        = 10
+        timeout                 = 5
+        failure_count_threshold = 18
+      }
+
+      readiness_probe {
+        transport               = "HTTP"
+        path                    = "/health/ready"
+        port                    = local.container_app_http_port
+        interval_seconds        = 10
+        timeout                 = 5
+        failure_count_threshold = 6
+        success_count_threshold = 1
+      }
+
+      liveness_probe {
+        transport               = "HTTP"
+        path                    = "/health/live"
+        port                    = local.container_app_http_port
+        initial_delay           = 30
+        interval_seconds        = 30
+        timeout                 = 5
+        failure_count_threshold = 3
+      }
+    }
+  }
+}
+
+resource "azurerm_container_app" "cacheworker" {
+  name                         = var.cacheworker_container_app_name
+  container_app_environment_id = azurerm_container_app_environment.main.id
+  resource_group_name          = azurerm_resource_group.main.name
+  workload_profile_name        = "Consumption"
+  revision_mode                = "Single"
+  tags                         = var.tags
+
+  secret {
+    name  = "companydb-connection-string"
+    value = local.sql_connection_strings.company
+  }
+
+  secret {
+    name  = "redis-connection-string"
+    value = local.redis_connection_string
+  }
+
+  template {
+    min_replicas = 1
+    max_replicas = 1
+
+    container {
+      name   = "cacheworker"
+      image  = local.container_images.cacheworker
+      cpu    = 0.25
+      memory = "0.5Gi"
+
+      dynamic "env" {
+        for_each = merge(
+          local.common_container_environment,
+          {
+            CacheWorker__RunOnStartup                                        = "true"
+            CacheWorker__RunOnce                                             = "false"
+            CacheWorker__RefreshInterval                                     = "24:00:00"
+            CacheWorker__StartupJitterPercentage                             = "5"
+            CacheWorker__RefreshJitterPercentage                             = "5"
+            CacheWorker__GlobalTimeout                                       = "00:30:00"
+            CacheWorker__MaxDegreeOfParallelism                              = "2"
+            CacheWorker__EnabledModules__0                                   = "companies"
+            CacheWorker__EnabledModules__1                                   = "company-addresses"
+            CompanyCacheWarmup__BatchSize                                    = "500"
+            CompanyCacheWarmup__ConsecutiveCacheWriteFailureThreshold        = "10"
+            CompanyAddressCacheWarmup__BatchSize                             = "500"
+            CompanyAddressCacheWarmup__ConsecutiveCacheWriteFailureThreshold = "10"
+          }
+        )
+        iterator = plain_env
+
+        content {
+          name  = plain_env.key
+          value = plain_env.value
+        }
+      }
+
+      dynamic "env" {
+        for_each = {
+          ConnectionStrings__CompanyDb = "companydb-connection-string"
+          ConnectionStrings__Redis     = "redis-connection-string"
+        }
+        iterator = secret_env
+
+        content {
+          name        = secret_env.key
+          secret_name = secret_env.value
+        }
+      }
     }
   }
 }

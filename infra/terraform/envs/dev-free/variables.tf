@@ -16,6 +16,67 @@ variable "container_app_environment_name" {
   default     = "cae-logisticshub-dev-free"
 }
 
+variable "container_image_tag" {
+  description = "Immutable full Git commit SHA tag for the LogisticsHub GHCR images."
+  type        = string
+
+  validation {
+    condition     = can(regex("^[0-9a-f]{40}$", var.container_image_tag))
+    error_message = "container_image_tag must be a 40-character lowercase hexadecimal Git commit SHA."
+  }
+}
+
+variable "azure_ad_instance" {
+  description = "Microsoft Entra authority instance URL for API authentication."
+  type        = string
+  default     = "https://login.microsoftonline.com"
+
+  validation {
+    condition     = can(regex("^https://[^[:space:]]+$", var.azure_ad_instance))
+    error_message = "azure_ad_instance must be an HTTPS URL without whitespace."
+  }
+}
+
+variable "azure_ad_tenant_id" {
+  description = "Microsoft Entra tenant ID or tenant domain for API authentication."
+  type        = string
+
+  validation {
+    condition     = length(trimspace(var.azure_ad_tenant_id)) > 0
+    error_message = "azure_ad_tenant_id must be non-empty."
+  }
+}
+
+variable "azure_ad_client_id" {
+  description = "Microsoft Entra API application client ID for API authentication."
+  type        = string
+
+  validation {
+    condition     = length(trimspace(var.azure_ad_client_id)) > 0
+    error_message = "azure_ad_client_id must be non-empty."
+  }
+}
+
+variable "azure_ad_audience" {
+  description = "Expected JWT audience for LogisticsHub API authentication."
+  type        = string
+
+  validation {
+    condition     = length(trimspace(var.azure_ad_audience)) > 0
+    error_message = "azure_ad_audience must be non-empty."
+  }
+}
+
+variable "azure_ad_required_scope" {
+  description = "Delegated scope required by LogisticsHub APIs."
+  type        = string
+
+  validation {
+    condition     = length(trimspace(var.azure_ad_required_scope)) > 0
+    error_message = "azure_ad_required_scope must be non-empty."
+  }
+}
+
 variable "sql_server_name" {
   description = "Globally unique Azure SQL logical server name for dev-free."
   type        = string
@@ -49,6 +110,7 @@ variable "sql_administrator_login_password" {
     error_message = "sql_administrator_login_password must be non-empty."
   }
 }
+
 variable "rabbitmq_container_app_name" {
   description = "Name of the dev-free RabbitMQ Container App."
   type        = string
@@ -68,6 +130,50 @@ variable "redis_container_app_name" {
   validation {
     condition     = length(var.redis_container_app_name) <= 32 && can(regex("^[a-z]([a-z0-9-]*[a-z0-9])?$", var.redis_container_app_name)) && !strcontains(var.redis_container_app_name, "--")
     error_message = "redis_container_app_name must be no more than 32 characters, use only lowercase letters, digits, and hyphens, start with a letter, end with a letter or digit, and not contain consecutive hyphens."
+  }
+}
+
+variable "companyservice_container_app_name" {
+  description = "Name of the dev-free CompanyService Container App."
+  type        = string
+  default     = "ca-company-logisticshub-dev-free"
+
+  validation {
+    condition     = length(var.companyservice_container_app_name) <= 32 && can(regex("^[a-z]([a-z0-9-]*[a-z0-9])?$", var.companyservice_container_app_name)) && !strcontains(var.companyservice_container_app_name, "--")
+    error_message = "companyservice_container_app_name must be no more than 32 characters, use only lowercase letters, digits, and hyphens, start with a letter, end with a letter or digit, and not contain consecutive hyphens."
+  }
+}
+
+variable "inventoryservice_container_app_name" {
+  description = "Name of the dev-free InventoryService Container App."
+  type        = string
+  default     = "ca-inv-logisticshub-dev-free"
+
+  validation {
+    condition     = length(var.inventoryservice_container_app_name) <= 32 && can(regex("^[a-z]([a-z0-9-]*[a-z0-9])?$", var.inventoryservice_container_app_name)) && !strcontains(var.inventoryservice_container_app_name, "--")
+    error_message = "inventoryservice_container_app_name must be no more than 32 characters, use only lowercase letters, digits, and hyphens, start with a letter, end with a letter or digit, and not contain consecutive hyphens."
+  }
+}
+
+variable "shipmentservice_container_app_name" {
+  description = "Name of the dev-free ShipmentService Container App."
+  type        = string
+  default     = "ca-ship-logisticshub-dev-free"
+
+  validation {
+    condition     = length(var.shipmentservice_container_app_name) <= 32 && can(regex("^[a-z]([a-z0-9-]*[a-z0-9])?$", var.shipmentservice_container_app_name)) && !strcontains(var.shipmentservice_container_app_name, "--")
+    error_message = "shipmentservice_container_app_name must be no more than 32 characters, use only lowercase letters, digits, and hyphens, start with a letter, end with a letter or digit, and not contain consecutive hyphens."
+  }
+}
+
+variable "cacheworker_container_app_name" {
+  description = "Name of the dev-free CacheWorker Container App."
+  type        = string
+  default     = "ca-cache-logisticshub-dev-free"
+
+  validation {
+    condition     = length(var.cacheworker_container_app_name) <= 32 && can(regex("^[a-z]([a-z0-9-]*[a-z0-9])?$", var.cacheworker_container_app_name)) && !strcontains(var.cacheworker_container_app_name, "--")
+    error_message = "cacheworker_container_app_name must be no more than 32 characters, use only lowercase letters, digits, and hyphens, start with a letter, end with a letter or digit, and not contain consecutive hyphens."
   }
 }
 
