@@ -3,6 +3,14 @@ location = "swedencentral"
 resource_group_name            = "rg-logisticshub-dev-free"
 container_app_environment_name = "cae-logisticshub-dev-free"
 
+container_image_tag = "<full-master-git-sha>"
+
+azure_ad_instance       = "https://login.microsoftonline.com"
+azure_ad_tenant_id      = "<azure-ad-tenant-id-or-domain>"
+azure_ad_client_id      = "<azure-ad-api-client-id>"
+azure_ad_audience       = "<azure-ad-api-audience>"
+azure_ad_required_scope = "<azure-ad-required-scope>"
+
 sql_server_name                   = "sql-logisticshub-dev-free-600544"
 sql_administrator_login          = "logisticshubadmin"
 sql_administrator_login_password = "<sql-administrator-password>"
@@ -13,5 +21,10 @@ rabbitmq_password           = "<rabbitmq-password>"
 
 redis_container_app_name = "ca-redis-logisticshub-dev-free"
 redis_password           = "<redis-password>"
+
+companyservice_container_app_name   = "ca-company-logisticshub-dev-free"
+inventoryservice_container_app_name = "ca-inv-logisticshub-dev-free"
+shipmentservice_container_app_name  = "ca-ship-logisticshub-dev-free"
+cacheworker_container_app_name      = "ca-cache-logisticshub-dev-free"
 
 frontend_storage_account_name = "stlghubdevfree<unique>"

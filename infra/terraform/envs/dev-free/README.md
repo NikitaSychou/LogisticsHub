@@ -8,10 +8,11 @@ This root defines the simplified low-cost Azure foundation for the dev-free targ
 - Azure Container Apps managed environment using the default Consumption workload profile.
 - Internal RabbitMQ Container App for dev-only messaging.
 - Internal Redis Container App for dev-only cache and runtime dependency use.
+- Internal CompanyService, InventoryService, ShipmentService, and CacheWorker Container Apps.
 - Storage Account for future Angular static website hosting.
 - Storage Static Website configuration with `index.html` as both the index and error document.
 
-This root does not deploy application containers, Gateway, backend services, CacheWorker, SQL schemas, seed data, ACR, Key Vault, managed identities, role assignments, custom domains, Front Door, CDN, GitHub Actions, Dockerfiles, Kubernetes manifests, or application configuration.
+This root still does not deploy Gateway, Angular application files, SQL schemas, seed data, ACR, Key Vault, managed identities, role assignments, custom domains, Front Door, CDN, GitHub Actions, Dockerfiles, Kubernetes manifests, public ingress, private endpoints, or production networking.
 
 ## Azure SQL Databases
 
@@ -22,6 +23,19 @@ The databases use the Azure SQL free offer with `AutoPause` exhaustion behavior.
 Because the current Container Apps environment has no VNet integration, SQL public network access and the `0.0.0.0` Azure-services firewall rule are explicit dev-free-only compromises. Authentication is the main security boundary. Local SQL deployment should use a temporary operator firewall rule created and removed outside this Terraform PR; production networking and private endpoint strategy remain unchanged.
 
 SQL administrator passwords come from ignored local variables and are stored in protected Terraform remote state when applied. Connection strings and passwords are not exposed through Terraform outputs.
+
+## Internal Services
+
+CompanyService, InventoryService, and ShipmentService run as internal HTTP Container Apps on port `8080` with no public ingress. CacheWorker runs as a worker Container App with no ingress, no exposed port, and no HTTP probes; its health is represented by process lifecycle and Container Apps revision state.
+
+All four service apps use the Consumption workload profile, single revision mode, one minimum replica, and one maximum replica. Scale-to-zero is intentionally not used because the services have dependency checks and background processing that should remain available in this dev-free environment.
+
+The API containers use `/health/live` for startup and liveness probes and `/health/ready` for readiness probes. Readiness checks continue to include the service dependencies configured by the applications, such as SQL and RabbitMQ.
+
+Container image references are built from a required immutable full Git commit SHA in `container_image_tag`; `latest` is not used by Terraform. The GHCR packages must be Public before planning or deployment so Azure Container Apps can pull them without registry credentials.
+
+Gateway and Angular remain deferred. Later Gateway Terraform should use the internal service URL outputs from this root.
+
 ## Cost And Logging
 
 The Container Apps environment is configured for the default Consumption model. No dedicated workload profile, custom VNet, infrastructure subnet, internal load balancer, private endpoint, zone redundancy, Log Analytics workspace, or Application Insights resource is created.
@@ -54,10 +68,42 @@ Backend initialization does not require `terraform apply`.
 
 Copy `dev-free.tfvars.example` to an uncommitted `.tfvars` file and replace placeholders with local values:
 
+- A full immutable master commit SHA in `container_image_tag` for the public GHCR images.
+- Microsoft Entra API values: `azure_ad_tenant_id`, `azure_ad_client_id`, `azure_ad_audience`, and `azure_ad_required_scope`.
 - A globally unique `frontend_storage_account_name`.
-- Real `rabbitmq_password` and `redis_password` values.
+- Real `sql_administrator_login_password`, `rabbitmq_password`, and `redis_password` values.
 
 Do not commit subscription IDs, tenant IDs, credentials, access keys, SAS tokens, passwords, connection strings, or local operator values.
+
+## Plan And Apply
+
+Terraform apply for dev-free must run from `master` only, after the focused plan has been reviewed.
+
+```powershell
+terraform fmt -check
+terraform validate
+terraform plan -var-file="dev-free.tfvars" -no-color -input=false
+terraform apply -var-file="dev-free.tfvars" -input=false
+```
+
+Do not run `terraform apply` from feature branches.
+
+## Post-Apply Checks
+
+These checks do not print secrets:
+
+```powershell
+terraform output companyservice_internal_url
+terraform output inventoryservice_internal_url
+terraform output shipmentservice_internal_url
+terraform output cacheworker_container_app_name
+az containerapp show --resource-group rg-logisticshub-dev-free --name ca-company-logisticshub-dev-free --query properties.provisioningState -o tsv
+az containerapp show --resource-group rg-logisticshub-dev-free --name ca-inv-logisticshub-dev-free --query properties.provisioningState -o tsv
+az containerapp show --resource-group rg-logisticshub-dev-free --name ca-ship-logisticshub-dev-free --query properties.provisioningState -o tsv
+az containerapp show --resource-group rg-logisticshub-dev-free --name ca-cache-logisticshub-dev-free --query properties.provisioningState -o tsv
+```
+
+Do not print Container Apps secrets or Terraform sensitive values during verification.
 
 ## Validation
 
