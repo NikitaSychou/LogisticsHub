@@ -62,6 +62,10 @@ locals {
     ReverseProxy__Clusters__shipment-cluster__Destinations__shipment-destination__Address   = "http://${azurerm_container_app.shipmentservice.ingress[0].fqdn}/"
   }
 
+  gateway_cors_environment = {
+    Cors__AllowedOrigins__0 = trimsuffix(azurerm_storage_account.frontend.primary_web_endpoint, "/")
+  }
+
   rabbitmq_environment = {
     RabbitMq__HostName              = azurerm_container_app.rabbitmq.name
     RabbitMq__Port                  = tostring(local.rabbitmq_port)
@@ -672,7 +676,7 @@ resource "azurerm_container_app" "gateway" {
       memory = "0.5Gi"
 
       dynamic "env" {
-        for_each = merge(local.common_container_environment, local.azure_ad_environment, local.gateway_reverse_proxy_environment)
+        for_each = merge(local.common_container_environment, local.azure_ad_environment, local.gateway_reverse_proxy_environment, local.gateway_cors_environment)
         iterator = plain_env
 
         content {
