@@ -94,8 +94,24 @@ function Get-RelativeBlobName {
         [string] $FilePath
     )
 
-    $relative = [System.IO.Path]::GetRelativePath($BasePath, $FilePath)
-    return $relative.Replace([System.IO.Path]::DirectorySeparatorChar, "/")
+    $baseFullPath = [System.IO.Path]::GetFullPath($BasePath)
+    $fileFullPath = [System.IO.Path]::GetFullPath($FilePath)
+    $separator = [System.IO.Path]::DirectorySeparatorChar
+
+    if (-not $baseFullPath.EndsWith($separator, [System.StringComparison]::Ordinal)) {
+        $baseFullPath = "$baseFullPath$separator"
+    }
+
+    if (-not $fileFullPath.StartsWith($baseFullPath, [System.StringComparison]::OrdinalIgnoreCase)) {
+        throw "File '$FilePath' is outside the browser output directory '$BasePath'."
+    }
+
+    $baseUri = [System.Uri]::new($baseFullPath)
+    $fileUri = [System.Uri]::new($fileFullPath)
+    $relativeUri = $baseUri.MakeRelativeUri($fileUri).ToString()
+    $relativePath = [System.Uri]::UnescapeDataString($relativeUri)
+
+    return $relativePath.Replace("\", "/")
 }
 
 function Test-HashedAngularAsset {
