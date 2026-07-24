@@ -23,6 +23,7 @@ locals {
   container_image_owner    = "nikitasychou"
   container_image_registry = "ghcr.io"
   container_images = {
+    gateway          = "${local.container_image_registry}/${local.container_image_owner}/logisticshub-gateway:${var.container_image_tag}"
     cacheworker      = "${local.container_image_registry}/${local.container_image_owner}/logisticshub-cacheworker:${var.container_image_tag}"
     companyservice   = "${local.container_image_registry}/${local.container_image_owner}/logisticshub-companyservice:${var.container_image_tag}"
     inventoryservice = "${local.container_image_registry}/${local.container_image_owner}/logisticshub-inventoryservice:${var.container_image_tag}"
@@ -54,6 +55,12 @@ locals {
   rabbitmq_port  = 5672
   redis_image    = "docker.io/library/redis:8.2.1-alpine@sha256:987c376c727652f99625c7d205a1cba3cb2c53b92b0b62aade2bd48ee1593232"
   redis_port     = 6379
+
+  gateway_reverse_proxy_environment = {
+    ReverseProxy__Clusters__company-cluster__Destinations__company-destination__Address     = "http://${azurerm_container_app.companyservice.ingress[0].fqdn}/"
+    ReverseProxy__Clusters__inventory-cluster__Destinations__inventory-destination__Address = "http://${azurerm_container_app.inventoryservice.ingress[0].fqdn}/"
+    ReverseProxy__Clusters__shipment-cluster__Destinations__shipment-destination__Address   = "http://${azurerm_container_app.shipmentservice.ingress[0].fqdn}/"
+  }
 
   rabbitmq_environment = {
     RabbitMq__HostName              = azurerm_container_app.rabbitmq.name
@@ -634,6 +641,79 @@ resource "azurerm_container_app" "cacheworker" {
     }
   }
 }
+resource "azurerm_container_app" "gateway" {
+  name                         = var.gateway_container_app_name
+  container_app_environment_id = azurerm_container_app_environment.main.id
+  resource_group_name          = azurerm_resource_group.main.name
+  workload_profile_name        = "Consumption"
+  revision_mode                = "Single"
+  tags                         = var.tags
+
+  ingress {
+    external_enabled           = true
+    allow_insecure_connections = false
+    target_port                = local.container_app_http_port
+    transport                  = "http"
+
+    traffic_weight {
+      latest_revision = true
+      percentage      = 100
+    }
+  }
+
+  template {
+    min_replicas = 1
+    max_replicas = 1
+
+    container {
+      name   = "gateway"
+      image  = local.container_images.gateway
+      cpu    = 0.25
+      memory = "0.5Gi"
+
+      dynamic "env" {
+        for_each = merge(local.common_container_environment, local.azure_ad_environment, local.gateway_reverse_proxy_environment)
+        iterator = plain_env
+
+        content {
+          name  = plain_env.key
+          value = plain_env.value
+        }
+      }
+
+      startup_probe {
+        transport               = "HTTP"
+        path                    = "/health/live"
+        port                    = local.container_app_http_port
+        initial_delay           = 15
+        interval_seconds        = 10
+        timeout                 = 5
+        failure_count_threshold = 18
+      }
+
+      readiness_probe {
+        transport               = "HTTP"
+        path                    = "/health/ready"
+        port                    = local.container_app_http_port
+        interval_seconds        = 10
+        timeout                 = 5
+        failure_count_threshold = 6
+        success_count_threshold = 1
+      }
+
+      liveness_probe {
+        transport               = "HTTP"
+        path                    = "/health/live"
+        port                    = local.container_app_http_port
+        initial_delay           = 30
+        interval_seconds        = 30
+        timeout                 = 5
+        failure_count_threshold = 3
+      }
+    }
+  }
+}
+
 resource "azurerm_storage_account" "frontend" {
   name                            = var.frontend_storage_account_name
   resource_group_name             = azurerm_resource_group.main.name

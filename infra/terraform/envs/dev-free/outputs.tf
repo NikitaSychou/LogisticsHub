@@ -68,6 +68,26 @@ output "redis_port" {
   value       = local.redis_port
 }
 
+output "gateway_container_app_name" {
+  description = "Name of the dev-free Gateway Container App."
+  value       = azurerm_container_app.gateway.name
+}
+
+output "gateway_fqdn" {
+  description = "Public FQDN for the dev-free Gateway Container App."
+  value       = azurerm_container_app.gateway.ingress[0].fqdn
+}
+
+output "gateway_url" {
+  description = "Public HTTPS URL for the dev-free Gateway Container App."
+  value       = "https://${azurerm_container_app.gateway.ingress[0].fqdn}"
+}
+
+output "gateway_port" {
+  description = "Internal HTTP port for Gateway."
+  value       = local.container_app_http_port
+}
+
 output "companyservice_container_app_name" {
   description = "Name of the dev-free CompanyService Container App."
   value       = azurerm_container_app.companyservice.name

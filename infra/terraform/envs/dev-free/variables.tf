@@ -133,6 +133,17 @@ variable "redis_container_app_name" {
   }
 }
 
+variable "gateway_container_app_name" {
+  description = "Name of the dev-free Gateway Container App."
+  type        = string
+  default     = "ca-gateway-logisticshub-dev-free"
+
+  validation {
+    condition     = length(var.gateway_container_app_name) <= 32 && can(regex("^[a-z]([a-z0-9-]*[a-z0-9])?$", var.gateway_container_app_name)) && !strcontains(var.gateway_container_app_name, "--")
+    error_message = "gateway_container_app_name must be no more than 32 characters, use only lowercase letters, digits, and hyphens, start with a letter, end with a letter or digit, and not contain consecutive hyphens."
+  }
+}
+
 variable "companyservice_container_app_name" {
   description = "Name of the dev-free CompanyService Container App."
   type        = string
