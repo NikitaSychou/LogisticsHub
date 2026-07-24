@@ -1,10 +1,11 @@
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { Component, EventEmitter, Input, OnChanges, Output, SimpleChanges } from '@angular/core';
 import { CreateCompanyRequest } from '../../models/company.models';
 
 @Component({
   selector: 'app-company-create-form',
-  imports: [CommonModule],
+  imports: [CommonModule, FormsModule],
   templateUrl: './company-create-form.html',
   styleUrl: './company-create-form.css',
 })
