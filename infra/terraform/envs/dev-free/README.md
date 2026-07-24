@@ -34,7 +34,7 @@ The API containers use `/health/live` for startup and liveness probes and `/heal
 
 Container image references are built from a required immutable full Git commit SHA in `container_image_tag`; `latest` is not used by Terraform. The GHCR packages must be Public before planning or deployment so Azure Container Apps can pull them without registry credentials.
 
-Angular remains deferred. Production frontend CORS support is future application work and is not configured by this Terraform PR.
+Angular remains deferred. Gateway CORS is configured with the Storage Static Website origin derived from Terraform output; the Angular deployment still remains future work.
 
 ## Cost And Logging
 
