@@ -22,6 +22,7 @@ rabbitmq_password           = "<rabbitmq-password>"
 redis_container_app_name = "ca-redis-logisticshub-dev-free"
 redis_password           = "<redis-password>"
 
+gateway_container_app_name          = "ca-gateway-logisticshub-dev-free"
 companyservice_container_app_name   = "ca-company-logisticshub-dev-free"
 inventoryservice_container_app_name = "ca-inv-logisticshub-dev-free"
 shipmentservice_container_app_name  = "ca-ship-logisticshub-dev-free"

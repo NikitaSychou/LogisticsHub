@@ -12,11 +12,11 @@ This root defines the simplified low-cost Azure foundation for the dev-free targ
 - Storage Account for future Angular static website hosting.
 - Storage Static Website configuration with `index.html` as both the index and error document.
 
-This root still does not deploy Gateway, Angular application files, SQL schemas, seed data, ACR, Key Vault, managed identities, role assignments, custom domains, Front Door, CDN, GitHub Actions, Dockerfiles, Kubernetes manifests, public ingress, private endpoints, or production networking.
+This root still does not deploy Angular application files, SQL schemas, seed data, ACR, Key Vault, managed identities, role assignments, custom domains, Front Door, CDN, GitHub Actions, Dockerfiles, Kubernetes manifests, private endpoints, or production networking.
 
 ## Azure SQL Databases
 
-The dev-free SQL foundation creates one shared logical Azure SQL server in Sweden Central and three empty database-per-service databases: CompanyService owns `CompanyDb`, InventoryService owns `InventoryDb`, and ShipmentService owns `ShipmentDb`. CacheWorker also requires `CompanyDb` access for cache warmup; Gateway has no direct SQL access.
+The dev-free SQL foundation creates one shared logical Azure SQL server in Sweden Central and three empty database-per-service databases: CompanyService owns `CompanyDb`, InventoryService owns `InventoryDb`, and ShipmentService owns `ShipmentDb`. CacheWorker also requires `CompanyDb` access for cache warmup; Gateway has no direct SQL access and receives no SQL, Redis, RabbitMQ, or Container Apps secret values.
 
 The databases use the Azure SQL free offer with `AutoPause` exhaustion behavior. If the monthly free allowance is exhausted, a database can become unavailable until the allowance resets. Schemas and seed data remain manual SQL only; EF migrations remain prohibited.
 
@@ -34,7 +34,7 @@ The API containers use `/health/live` for startup and liveness probes and `/heal
 
 Container image references are built from a required immutable full Git commit SHA in `container_image_tag`; `latest` is not used by Terraform. The GHCR packages must be Public before planning or deployment so Azure Container Apps can pull them without registry credentials.
 
-Gateway and Angular remain deferred. Later Gateway Terraform should use the internal service URL outputs from this root.
+Angular remains deferred. Production frontend CORS support is future application work and is not configured by this Terraform PR.
 
 ## Cost And Logging
 
@@ -93,10 +93,12 @@ Do not run `terraform apply` from feature branches.
 These checks do not print secrets:
 
 ```powershell
+terraform output gateway_url
 terraform output companyservice_internal_url
 terraform output inventoryservice_internal_url
 terraform output shipmentservice_internal_url
 terraform output cacheworker_container_app_name
+az containerapp show --resource-group rg-logisticshub-dev-free --name ca-gateway-logisticshub-dev-free --query properties.configuration.ingress.fqdn -o tsv
 az containerapp show --resource-group rg-logisticshub-dev-free --name ca-company-logisticshub-dev-free --query properties.provisioningState -o tsv
 az containerapp show --resource-group rg-logisticshub-dev-free --name ca-inv-logisticshub-dev-free --query properties.provisioningState -o tsv
 az containerapp show --resource-group rg-logisticshub-dev-free --name ca-ship-logisticshub-dev-free --query properties.provisioningState -o tsv
