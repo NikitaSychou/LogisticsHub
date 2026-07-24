@@ -56,7 +56,7 @@ locals {
   redis_port     = 6379
 
   rabbitmq_environment = {
-    RabbitMq__HostName              = azurerm_container_app.rabbitmq.ingress[0].fqdn
+    RabbitMq__HostName              = azurerm_container_app.rabbitmq.name
     RabbitMq__Port                  = tostring(local.rabbitmq_port)
     RabbitMq__UserName              = var.rabbitmq_username
     RabbitMq__ExchangeName          = "logisticshub.events"
