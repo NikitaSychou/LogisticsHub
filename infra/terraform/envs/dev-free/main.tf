@@ -57,9 +57,9 @@ locals {
   redis_port     = 6379
 
   gateway_reverse_proxy_environment = {
-    ReverseProxy__Clusters__company-cluster__Destinations__company-destination__Address     = "http://${azurerm_container_app.companyservice.ingress[0].fqdn}/"
-    ReverseProxy__Clusters__inventory-cluster__Destinations__inventory-destination__Address = "http://${azurerm_container_app.inventoryservice.ingress[0].fqdn}/"
-    ReverseProxy__Clusters__shipment-cluster__Destinations__shipment-destination__Address   = "http://${azurerm_container_app.shipmentservice.ingress[0].fqdn}/"
+    ReverseProxy__Clusters__company-cluster__Destinations__company-destination__Address     = "https://${azurerm_container_app.companyservice.ingress[0].fqdn}/"
+    ReverseProxy__Clusters__inventory-cluster__Destinations__inventory-destination__Address = "https://${azurerm_container_app.inventoryservice.ingress[0].fqdn}/"
+    ReverseProxy__Clusters__shipment-cluster__Destinations__shipment-destination__Address   = "https://${azurerm_container_app.shipmentservice.ingress[0].fqdn}/"
   }
 
   gateway_cors_environment = {
@@ -518,7 +518,7 @@ resource "azurerm_container_app" "shipmentservice" {
           local.rabbitmq_environment,
           local.company_service_resilience_environment,
           {
-            CompanyService__BaseUrl = "http://${azurerm_container_app.companyservice.ingress[0].fqdn}"
+            CompanyService__BaseUrl = "https://${azurerm_container_app.companyservice.ingress[0].fqdn}"
           }
         )
         iterator = plain_env
