@@ -42,7 +42,8 @@ Deployment should fail or clearly alert if production `runtime-config.json` is m
 
 If the Angular frontend and Gateway use different origins, Gateway production CORS must explicitly allow the frontend origin.
 
-- Allow only the real Front Door/custom domain origin.
+- Allow only the real frontend origin: the dev-free Storage Static Website origin now, or the future Front Door/custom domain origin.
+- Configure Gateway with the `Cors:AllowedOrigins` string array, for example `Cors__AllowedOrigins__0`, using exact origins without trailing slashes.
 - Do not use wildcard CORS with credentials.
 - Keep Gateway API URLs in `runtime-config.json` aligned with the production ingress endpoint.
 

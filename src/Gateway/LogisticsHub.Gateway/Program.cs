@@ -2,7 +2,8 @@ using LogisticsHub.AspNetCore;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 
 const string ReverseProxySectionName = "ReverseProxy";
-const string LocalAngularCorsPolicy = "LocalAngularCors";
+const string CorsPolicyName = "ConfiguredFrontendCors";
+const string CorsAllowedOriginsSectionName = "Cors:AllowedOrigins";
 const string HealthEndpointPath = "/health";
 const string LivenessHealthEndpointPath = "/health/live";
 const string ReadinessHealthEndpointPath = "/health/ready";
@@ -10,6 +11,7 @@ const string ReadinessHealthEndpointPath = "/health/ready";
 var builder = WebApplication.CreateBuilder(args);
 
 var reverseProxySection = builder.Configuration.GetSection(ReverseProxySectionName);
+var allowedCorsOrigins = GetAllowedCorsOrigins(builder.Configuration);
 
 ValidateReverseProxyConfiguration(reverseProxySection);
 
@@ -22,10 +24,10 @@ builder.Services.AddOpenApi(options => options.AddOpenApiSecurity(builder.Config
 builder.Services.AddApiAuthentication(builder.Configuration);
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy(LocalAngularCorsPolicy, policy =>
+    options.AddPolicy(CorsPolicyName, policy =>
     {
         policy
-            .WithOrigins("http://localhost:4200")
+            .WithOrigins(allowedCorsOrigins)
             .AllowAnyHeader()
             .AllowAnyMethod();
     });
@@ -35,10 +37,7 @@ var app = builder.Build();
 
 app.UseCorrelationId();
 app.UseApiExceptionHandling();
-if (app.Environment.IsDevelopment())
-{
-    app.UseCors(LocalAngularCorsPolicy);
-}
+app.UseCors(CorsPolicyName);
 
 app.UseApiAuthentication();
 
@@ -63,6 +62,46 @@ app.MapReverseProxy()
     .RequireApiAuthentication();
 
 app.Run();
+
+static string[] GetAllowedCorsOrigins(IConfiguration configuration)
+{
+    var origins = configuration
+        .GetSection(CorsAllowedOriginsSectionName)
+        .Get<string[]>() ?? [];
+
+    var configuredOrigins = origins
+        .Select(origin => origin.Trim())
+        .Where(origin => !string.IsNullOrWhiteSpace(origin))
+        .Distinct(StringComparer.OrdinalIgnoreCase)
+        .ToArray();
+
+    if (configuredOrigins.Length == 0)
+    {
+        throw new InvalidOperationException("Cors:AllowedOrigins must contain at least one allowed frontend origin.");
+    }
+
+    foreach (var origin in configuredOrigins)
+    {
+        if (origin.Contains('*', StringComparison.Ordinal))
+        {
+            throw new InvalidOperationException($"Cors:AllowedOrigins contains wildcard origin '{origin}'. Configure exact origins only.");
+        }
+
+        if (!Uri.TryCreate(origin, UriKind.Absolute, out var uri) ||
+            (uri.Scheme != Uri.UriSchemeHttp && uri.Scheme != Uri.UriSchemeHttps) ||
+            string.IsNullOrWhiteSpace(uri.Host) ||
+            !string.IsNullOrEmpty(uri.UserInfo) ||
+            !string.IsNullOrEmpty(uri.Query) ||
+            !string.IsNullOrEmpty(uri.Fragment) ||
+            uri.AbsolutePath != "/" ||
+            !string.Equals(origin, uri.GetLeftPart(UriPartial.Authority), StringComparison.OrdinalIgnoreCase))
+        {
+            throw new InvalidOperationException($"Cors:AllowedOrigins contains invalid origin '{origin}'. Use an exact HTTP or HTTPS origin without a path, query, fragment, or trailing slash.");
+        }
+    }
+
+    return configuredOrigins;
+}
 
 static void ValidateReverseProxyConfiguration(IConfigurationSection reverseProxySection)
 {
