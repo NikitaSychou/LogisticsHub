@@ -156,8 +156,11 @@ resource "azurerm_container_app" "rabbitmq" {
         value = local.rabbitmq_definitions_base64
       }
 
-      command = ["/bin/sh", "-ec"]
-      args = [<<-EOT
+      command = ["/bin/sh"]
+      args = [
+        "-e",
+        "-c",
+        replace(<<-EOT
         umask 077
         test -n "$${RABBITMQ_DEFAULT_USER:-}"
         test -n "$${RABBITMQ_DEFAULT_PASS:-}"
@@ -207,6 +210,7 @@ resource "azurerm_container_app" "rabbitmq" {
 
         exec docker-entrypoint.sh rabbitmq-server
       EOT
+        , "\r", ""),
       ]
 
       startup_probe {
