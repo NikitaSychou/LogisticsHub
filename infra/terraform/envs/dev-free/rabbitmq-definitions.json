@@ -1,0 +1,133 @@
+{
+  "vhosts": [
+    {
+      "name": "/",
+      "tags": [],
+      "description": "Default virtual host",
+      "default_queue_type": "classic"
+    }
+  ],
+  "exchanges": [
+    {
+      "name": "logisticshub.events",
+      "vhost": "/",
+      "type": "topic",
+      "durable": true,
+      "auto_delete": false,
+      "internal": false,
+      "arguments": {}
+    },
+    {
+      "name": "logisticshub.events.dlx",
+      "vhost": "/",
+      "type": "direct",
+      "durable": true,
+      "auto_delete": false,
+      "internal": false,
+      "arguments": {}
+    }
+  ],
+  "queues": [
+    {
+      "name": "inventory.stock-reservation.requested",
+      "vhost": "/",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {
+        "x-dead-letter-exchange": "logisticshub.events.dlx",
+        "x-dead-letter-routing-key": "inventory.stock-reservation.requested.dead-letter"
+      }
+    },
+    {
+      "name": "inventory.stock-reservation.requested.dlq",
+      "vhost": "/",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {}
+    },
+    {
+      "name": "shipment.stock-reservation.reserved",
+      "vhost": "/",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {
+        "x-dead-letter-exchange": "logisticshub.events.dlx",
+        "x-dead-letter-routing-key": "shipment.stock-reservation.reserved.dead-letter"
+      }
+    },
+    {
+      "name": "shipment.stock-reservation.reserved.dlq",
+      "vhost": "/",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {}
+    },
+    {
+      "name": "shipment.stock-reservation.failed",
+      "vhost": "/",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {
+        "x-dead-letter-exchange": "logisticshub.events.dlx",
+        "x-dead-letter-routing-key": "shipment.stock-reservation.failed.dead-letter"
+      }
+    },
+    {
+      "name": "shipment.stock-reservation.failed.dlq",
+      "vhost": "/",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {}
+    }
+  ],
+  "bindings": [
+    {
+      "source": "logisticshub.events",
+      "vhost": "/",
+      "destination": "inventory.stock-reservation.requested",
+      "destination_type": "queue",
+      "routing_key": "stock-reservation.requested",
+      "arguments": {}
+    },
+    {
+      "source": "logisticshub.events.dlx",
+      "vhost": "/",
+      "destination": "inventory.stock-reservation.requested.dlq",
+      "destination_type": "queue",
+      "routing_key": "inventory.stock-reservation.requested.dead-letter",
+      "arguments": {}
+    },
+    {
+      "source": "logisticshub.events",
+      "vhost": "/",
+      "destination": "shipment.stock-reservation.reserved",
+      "destination_type": "queue",
+      "routing_key": "stock-reservation.reserved",
+      "arguments": {}
+    },
+    {
+      "source": "logisticshub.events.dlx",
+      "vhost": "/",
+      "destination": "shipment.stock-reservation.reserved.dlq",
+      "destination_type": "queue",
+      "routing_key": "shipment.stock-reservation.reserved.dead-letter",
+      "arguments": {}
+    },
+    {
+      "source": "logisticshub.events",
+      "vhost": "/",
+      "destination": "shipment.stock-reservation.failed",
+      "destination_type": "queue",
+      "routing_key": "stock-reservation.failed",
+      "arguments": {}
+    },
+    {
+      "source": "logisticshub.events.dlx",
+      "vhost": "/",
+      "destination": "shipment.stock-reservation.failed.dlq",
+      "destination_type": "queue",
+      "routing_key": "shipment.stock-reservation.failed.dead-letter",
+      "arguments": {}
+    }
+  ]
+}

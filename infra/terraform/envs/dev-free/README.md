@@ -28,9 +28,13 @@ SQL administrator passwords come from ignored local variables and are stored in 
 
 CompanyService, InventoryService, and ShipmentService run as internal HTTP Container Apps on port `8080` with no public ingress. CacheWorker runs as a worker Container App with no ingress, no exposed port, and no HTTP probes; its health is represented by process lifecycle and Container Apps revision state.
 
-Gateway and CompanyService use the Consumption workload profile, single revision mode, zero minimum replicas, and one maximum replica. Their HTTP ingress remains enabled, so incoming frontend or internal HTTP requests provide the wake-up path. Cold starts can include Container Apps startup plus Azure SQL serverless resume latency; dev-free gives ShipmentService a temporary 60-second CompanyService call timeout to tolerate that path.
+Gateway, CompanyService, InventoryService, and ShipmentService use the Consumption workload profile, single revision mode, zero minimum replicas, and one maximum replica. Their HTTP ingress remains enabled, so incoming frontend or internal HTTP requests provide the HTTP wake-up path. Cold starts can include Container Apps startup plus Azure SQL serverless resume latency.
 
-InventoryService, ShipmentService, CacheWorker, RabbitMQ, and Redis intentionally keep one minimum replica in this first optimization PR. RabbitMQ consumer scaling, outbox wake-up, CacheWorker scheduling, and TCP dependency scale-to-zero are deferred to a follow-up optimization because they need explicit non-HTTP triggers or job semantics.
+InventoryService and ShipmentService also have RabbitMQ `QueueLength` scale rules for their consumer queues. InventoryService wakes for `inventory.stock-reservation.requested`; ShipmentService wakes for `shipment.stock-reservation.reserved` and `shipment.stock-reservation.failed`. The scale rules use AMQP against the internal RabbitMQ Container App, keep credentials out of rule metadata, and read the password from the existing `rabbitmq-password` Container Apps secret.
+
+InventoryService and ShipmentService each have a dev-free-only cron safety window from `0 */3 * * *` through `10 */3 * * *` in `Etc/UTC`, with desired replicas set to `1`. This gives delayed outbox retries a short processing window every three hours while leaving enough idle time for Azure SQL serverless databases to auto-pause. The HTTP cold-start behavior still applies outside that window, and dev-free keeps ShipmentService's temporary 60-second CompanyService call timeout to tolerate CompanyService and SQL cold starts.
+
+CacheWorker, RabbitMQ, and Redis intentionally keep one minimum replica. CacheWorker scheduling or job conversion, RabbitMQ TCP dependency scale-to-zero, and Redis scale-to-zero or managed-cache replacement remain deferred follow-up optimizations.
 
 The API containers use `/health/live` for startup and liveness probes and `/health/ready` for readiness probes. Readiness checks continue to include the service dependencies configured by the applications, such as SQL and RabbitMQ.
 
@@ -48,7 +52,9 @@ The Container Apps environment is configured for the default Consumption model. 
 
 RabbitMQ and Redis run as dev-only Container Apps in the shared Consumption environment. Both use one replica, internal TCP ingress only, and no persistent volumes or high-availability configuration. RabbitMQ listens on port `5672`; the management UI on `15672` is not exposed and the image does not include the management plugin. Redis listens on port `6379`, requires authentication, and disables AOF and RDB snapshot persistence.
 
-Broker and cache data is ephemeral: restarts, revision replacement, stopping, or destroying dev-free can lose temporary data. Passwords come from ignored local variables and are stored as Container Apps secrets; sensitive Terraform values are also stored in the protected remote state even when marked sensitive. These runtime dependencies are not part of the preserved production AKS architecture.
+RabbitMQ imports `rabbitmq-definitions.json` during broker boot using RabbitMQ's local-filesystem definitions import settings. The tracked definitions file contains no users, passwords, or permissions; it bootstraps only the durable exchange, dead-letter exchange, consumer queues, dead-letter queues, and bindings required by the dev-free message flow. Consumer declarations remain compatible and idempotent with the bootstrapped topology.
+
+At startup, the RabbitMQ container combines the tracked topology with a runtime-only user entry and permissions for `/`. The password hash is generated from the existing secret-backed RabbitMQ password before broker startup and is written only to the container's ephemeral runtime definitions file. Broker and cache data is ephemeral: restarts, revision replacement, stopping, or destroying dev-free can lose temporary data. Passwords come from ignored local variables and are stored as Container Apps secrets; sensitive Terraform values are also stored in the protected remote state even when marked sensitive. These runtime dependencies are not part of the preserved production AKS architecture.
 
 ## Remote State
 
