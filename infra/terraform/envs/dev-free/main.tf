@@ -62,11 +62,10 @@ locals {
   }
   rabbitmq_definitions_base64 = base64encode(file("${path.module}/rabbitmq-definitions.json"))
   rabbitmq_queue_scale_metadata = {
-    host            = "amqp://${azurerm_container_app.rabbitmq.name}:${local.rabbitmq_port}/"
-    mode            = "QueueLength"
-    protocol        = "amqp"
-    usernameFromEnv = "RabbitMq__UserName"
-    value           = "1"
+    host     = "amqp://${azurerm_container_app.rabbitmq.name}:${local.rabbitmq_port}/"
+    mode     = "QueueLength"
+    protocol = "amqp"
+    value    = "1"
   }
   outbox_safety_cron_scale_metadata = {
     desiredReplicas = "1"
@@ -472,6 +471,11 @@ resource "azurerm_container_app" "inventoryservice" {
     value = var.rabbitmq_password
   }
 
+  secret {
+    name  = "rabbitmq-username"
+    value = var.rabbitmq_username
+  }
+
   ingress {
     external_enabled = false
     target_port      = local.container_app_http_port
@@ -505,6 +509,11 @@ resource "azurerm_container_app" "inventoryservice" {
       authentication {
         secret_name       = "rabbitmq-password"
         trigger_parameter = "password"
+      }
+
+      authentication {
+        secret_name       = "rabbitmq-username"
+        trigger_parameter = "username"
       }
     }
 
@@ -594,6 +603,11 @@ resource "azurerm_container_app" "shipmentservice" {
     value = var.rabbitmq_password
   }
 
+  secret {
+    name  = "rabbitmq-username"
+    value = var.rabbitmq_username
+  }
+
   ingress {
     external_enabled = false
     target_port      = local.container_app_http_port
@@ -628,6 +642,11 @@ resource "azurerm_container_app" "shipmentservice" {
         secret_name       = "rabbitmq-password"
         trigger_parameter = "password"
       }
+
+      authentication {
+        secret_name       = "rabbitmq-username"
+        trigger_parameter = "username"
+      }
     }
 
     custom_scale_rule {
@@ -643,6 +662,11 @@ resource "azurerm_container_app" "shipmentservice" {
       authentication {
         secret_name       = "rabbitmq-password"
         trigger_parameter = "password"
+      }
+
+      authentication {
+        secret_name       = "rabbitmq-username"
+        trigger_parameter = "username"
       }
     }
 
