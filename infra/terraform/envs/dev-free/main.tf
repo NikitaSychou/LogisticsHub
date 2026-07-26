@@ -277,7 +277,7 @@ resource "azapi_resource" "sql_database" {
       minCapacity                      = 0.5
       requestedBackupStorageRedundancy = "Local"
       useFreeLimit                     = true
-      freeLimitExhaustionBehavior      = "AutoPause"
+      freeLimitExhaustionBehavior      = "BillOverUsage"
     }
   }
 }

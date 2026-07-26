@@ -18,7 +18,7 @@ This root still does not deploy Angular application files, SQL schemas, seed dat
 
 The dev-free SQL foundation creates one shared logical Azure SQL server in Sweden Central and three empty database-per-service databases: CompanyService owns `CompanyDb`, InventoryService owns `InventoryDb`, and ShipmentService owns `ShipmentDb`. CacheWorker also requires `CompanyDb` access for cache warmup; Gateway has no direct SQL access and receives no SQL, Redis, RabbitMQ, or Container Apps secret values.
 
-The databases use the Azure SQL free offer with `AutoPause` exhaustion behavior. If the monthly free allowance is exhausted, a database can become unavailable until the allowance resets. Schemas and seed data remain manual SQL only; EF migrations remain prohibited.
+The databases use the Azure SQL free offer with `BillOverUsage` exhaustion behavior so dev-free E2E flows can continue after the monthly free compute allowance is exhausted. Schemas and seed data remain manual SQL only; EF migrations remain prohibited.
 
 Because the current Container Apps environment has no VNet integration, SQL public network access and the `0.0.0.0` Azure-services firewall rule are explicit dev-free-only compromises. Authentication is the main security boundary. Local SQL deployment should use a temporary operator firewall rule created and removed outside this Terraform PR; production networking and private endpoint strategy remain unchanged.
 
