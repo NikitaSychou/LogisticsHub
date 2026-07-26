@@ -44,7 +44,7 @@ locals {
   }
 
   company_service_resilience_environment = {
-    CompanyService__Resilience__TimeoutSeconds                 = "3"
+    CompanyService__Resilience__TimeoutSeconds                 = "60"
     CompanyService__Resilience__RetryCount                     = "1"
     CompanyService__Resilience__RetryDelayMilliseconds         = "150"
     CompanyService__Resilience__CircuitBreakerFailureThreshold = "3"
@@ -312,7 +312,7 @@ resource "azurerm_container_app" "companyservice" {
   }
 
   template {
-    min_replicas = 1
+    min_replicas = 0
     max_replicas = 1
 
     container {
@@ -666,7 +666,7 @@ resource "azurerm_container_app" "gateway" {
   }
 
   template {
-    min_replicas = 1
+    min_replicas = 0
     max_replicas = 1
 
     container {

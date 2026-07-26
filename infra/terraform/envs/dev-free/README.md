@@ -28,7 +28,9 @@ SQL administrator passwords come from ignored local variables and are stored in 
 
 CompanyService, InventoryService, and ShipmentService run as internal HTTP Container Apps on port `8080` with no public ingress. CacheWorker runs as a worker Container App with no ingress, no exposed port, and no HTTP probes; its health is represented by process lifecycle and Container Apps revision state.
 
-All four service apps use the Consumption workload profile, single revision mode, one minimum replica, and one maximum replica. Scale-to-zero is intentionally not used because the services have dependency checks and background processing that should remain available in this dev-free environment.
+Gateway and CompanyService use the Consumption workload profile, single revision mode, zero minimum replicas, and one maximum replica. Their HTTP ingress remains enabled, so incoming frontend or internal HTTP requests provide the wake-up path. Cold starts can include Container Apps startup plus Azure SQL serverless resume latency; dev-free gives ShipmentService a temporary 60-second CompanyService call timeout to tolerate that path.
+
+InventoryService, ShipmentService, CacheWorker, RabbitMQ, and Redis intentionally keep one minimum replica in this first optimization PR. RabbitMQ consumer scaling, outbox wake-up, CacheWorker scheduling, and TCP dependency scale-to-zero are deferred to a follow-up optimization because they need explicit non-HTTP triggers or job semantics.
 
 The API containers use `/health/live` for startup and liveness probes and `/health/ready` for readiness probes. Readiness checks continue to include the service dependencies configured by the applications, such as SQL and RabbitMQ.
 
