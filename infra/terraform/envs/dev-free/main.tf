@@ -55,6 +55,25 @@ locals {
   rabbitmq_port  = 5672
   redis_image    = "docker.io/library/redis:8.2.1-alpine@sha256:987c376c727652f99625c7d205a1cba3cb2c53b92b0b62aade2bd48ee1593232"
   redis_port     = 6379
+  rabbitmq_queues = {
+    inventory_stock_reservation_requested = "inventory.stock-reservation.requested"
+    shipment_stock_reservation_failed     = "shipment.stock-reservation.failed"
+    shipment_stock_reservation_reserved   = "shipment.stock-reservation.reserved"
+  }
+  rabbitmq_definitions_base64 = base64encode(file("${path.module}/rabbitmq-definitions.json"))
+  rabbitmq_queue_scale_metadata = {
+    host            = "amqp://${azurerm_container_app.rabbitmq.name}:${local.rabbitmq_port}/"
+    mode            = "QueueLength"
+    protocol        = "amqp"
+    usernameFromEnv = "RabbitMq__UserName"
+    value           = "1"
+  }
+  outbox_safety_cron_scale_metadata = {
+    desiredReplicas = "1"
+    end             = "10 */3 * * *"
+    start           = "0 */3 * * *"
+    timezone        = "Etc/UTC"
+  }
 
   gateway_reverse_proxy_environment = {
     ReverseProxy__Clusters__company-cluster__Destinations__company-destination__Address     = "https://${azurerm_container_app.companyservice.ingress[0].fqdn}/"
@@ -132,6 +151,64 @@ resource "azurerm_container_app" "rabbitmq" {
         name        = "RABBITMQ_DEFAULT_PASS"
         secret_name = "rabbitmq-password"
       }
+
+      env {
+        name  = "RABBITMQ_DEFINITIONS_BASE64"
+        value = local.rabbitmq_definitions_base64
+      }
+
+      command = ["/bin/sh", "-ec"]
+      args = [<<-EOT
+        umask 077
+        test -n "$${RABBITMQ_DEFAULT_USER:-}"
+        test -n "$${RABBITMQ_DEFAULT_PASS:-}"
+
+        mkdir -p /tmp/logisticshub-rabbitmq
+        mkdir -p /tmp/logisticshub-rabbitmq/conf.d
+        printf '%s' "$RABBITMQ_DEFINITIONS_BASE64" | base64 -d > /tmp/logisticshub-rabbitmq/topology-definitions.json
+
+        hash_output="$(rabbitmqctl hash_password "$RABBITMQ_DEFAULT_PASS")"
+        password_hash="$(printf '%s\n' "$hash_output" | tail -n 1)"
+        test -n "$password_hash"
+
+        export RABBITMQ_RUNTIME_TOPOLOGY_PATH=/tmp/logisticshub-rabbitmq/topology-definitions.json
+        export RABBITMQ_RUNTIME_DEFINITIONS_PATH=/tmp/logisticshub-rabbitmq/runtime-definitions.json
+        export RABBITMQ_RUNTIME_PASSWORD_HASH="$password_hash"
+
+        erl -pa /opt/rabbitmq/plugins/rabbit_common-4.1.4/ebin /opt/rabbitmq/plugins/thoas-*/ebin -noshell -eval '
+          {ok, TopologyJson} = file:read_file(os:getenv("RABBITMQ_RUNTIME_TOPOLOGY_PATH")),
+          Topology = rabbit_json:decode(TopologyJson),
+          UserName = list_to_binary(os:getenv("RABBITMQ_DEFAULT_USER")),
+          PasswordHash = list_to_binary(os:getenv("RABBITMQ_RUNTIME_PASSWORD_HASH")),
+          User = #{
+            <<"name">> => UserName,
+            <<"password_hash">> => PasswordHash,
+            <<"hashing_algorithm">> => <<"rabbit_password_hashing_sha256">>,
+            <<"tags">> => []
+          },
+          Permission = #{
+            <<"user">> => UserName,
+            <<"vhost">> => <<"/">>,
+            <<"configure">> => <<".*">>,
+            <<"write">> => <<".*">>,
+            <<"read">> => <<".*">>
+          },
+          RuntimeDefinitions = Topology#{<<"users">> => [User], <<"permissions">> => [Permission]},
+          ok = file:write_file(os:getenv("RABBITMQ_RUNTIME_DEFINITIONS_PATH"), rabbit_json:encode(RuntimeDefinitions)),
+          halt(0).
+        '
+
+        unset RABBITMQ_RUNTIME_PASSWORD_HASH password_hash hash_output
+        printf '%s\n' \
+          'definitions.import_backend = local_filesystem' \
+          'definitions.local.path = /tmp/logisticshub-rabbitmq/runtime-definitions.json' \
+          'definitions.skip_if_unchanged = true' \
+          > /tmp/logisticshub-rabbitmq/conf.d/10-definitions.conf
+        export RABBITMQ_CONFIG_FILES=/tmp/logisticshub-rabbitmq/conf.d
+
+        exec docker-entrypoint.sh rabbitmq-server
+      EOT
+      ]
 
       startup_probe {
         transport               = "TCP"
@@ -407,8 +484,35 @@ resource "azurerm_container_app" "inventoryservice" {
   }
 
   template {
-    min_replicas = 1
+    min_replicas = 0
     max_replicas = 1
+
+    http_scale_rule {
+      name                = "http"
+      concurrent_requests = "10"
+    }
+
+    custom_scale_rule {
+      name             = "rabbitmq-stock-reservation-requested"
+      custom_rule_type = "rabbitmq"
+      metadata = merge(
+        local.rabbitmq_queue_scale_metadata,
+        {
+          queueName = local.rabbitmq_queues.inventory_stock_reservation_requested
+        }
+      )
+
+      authentication {
+        secret_name       = "rabbitmq-password"
+        trigger_parameter = "password"
+      }
+    }
+
+    custom_scale_rule {
+      name             = "outbox-safety-window"
+      custom_rule_type = "cron"
+      metadata         = local.outbox_safety_cron_scale_metadata
+    }
 
     container {
       name   = "inventoryservice"
@@ -502,8 +606,51 @@ resource "azurerm_container_app" "shipmentservice" {
   }
 
   template {
-    min_replicas = 1
+    min_replicas = 0
     max_replicas = 1
+
+    http_scale_rule {
+      name                = "http"
+      concurrent_requests = "10"
+    }
+
+    custom_scale_rule {
+      name             = "rabbitmq-stock-reservation-reserved"
+      custom_rule_type = "rabbitmq"
+      metadata = merge(
+        local.rabbitmq_queue_scale_metadata,
+        {
+          queueName = local.rabbitmq_queues.shipment_stock_reservation_reserved
+        }
+      )
+
+      authentication {
+        secret_name       = "rabbitmq-password"
+        trigger_parameter = "password"
+      }
+    }
+
+    custom_scale_rule {
+      name             = "rabbitmq-stock-reservation-failed"
+      custom_rule_type = "rabbitmq"
+      metadata = merge(
+        local.rabbitmq_queue_scale_metadata,
+        {
+          queueName = local.rabbitmq_queues.shipment_stock_reservation_failed
+        }
+      )
+
+      authentication {
+        secret_name       = "rabbitmq-password"
+        trigger_parameter = "password"
+      }
+    }
+
+    custom_scale_rule {
+      name             = "outbox-safety-window"
+      custom_rule_type = "cron"
+      metadata         = local.outbox_safety_cron_scale_metadata
+    }
 
     container {
       name   = "shipmentservice"
