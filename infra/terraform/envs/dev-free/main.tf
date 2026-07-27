@@ -51,10 +51,11 @@ locals {
     CompanyService__Resilience__CircuitBreakerDurationSeconds  = "5"
   }
 
-  rabbitmq_image = "docker.io/library/rabbitmq:4.1.4-alpine@sha256:b736d649308e1b3e1a116c3f36986b605ee3d03e88f10166be2900083d2e63f2"
-  rabbitmq_port  = 5672
-  redis_image    = "docker.io/library/redis:8.2.1-alpine@sha256:987c376c727652f99625c7d205a1cba3cb2c53b92b0b62aade2bd48ee1593232"
-  redis_port     = 6379
+  rabbitmq_image           = "docker.io/library/rabbitmq:4.1.4-alpine@sha256:b736d649308e1b3e1a116c3f36986b605ee3d03e88f10166be2900083d2e63f2"
+  rabbitmq_port            = 5672
+  rabbitmq_management_port = 15672
+  redis_image              = "docker.io/library/redis:8.2.1-alpine@sha256:987c376c727652f99625c7d205a1cba3cb2c53b92b0b62aade2bd48ee1593232"
+  redis_port               = 6379
   rabbitmq_queues = {
     inventory_stock_reservation_requested = "inventory.stock-reservation.requested"
     shipment_stock_reservation_failed     = "shipment.stock-reservation.failed"
@@ -62,9 +63,9 @@ locals {
   }
   rabbitmq_definitions_base64 = base64encode(file("${path.module}/rabbitmq-definitions.json"))
   rabbitmq_queue_scale_metadata = {
-    host      = "amqp://${azurerm_container_app.rabbitmq.name}:${local.rabbitmq_port}"
+    host      = "http://${azurerm_container_app.rabbitmq.name}:${local.rabbitmq_management_port}/"
     mode      = "QueueLength"
-    protocol  = "amqp"
+    protocol  = "http"
     value     = "1"
     vhostName = "/"
   }
@@ -187,7 +188,7 @@ resource "azurerm_container_app" "rabbitmq" {
             <<"name">> => UserName,
             <<"password_hash">> => PasswordHash,
             <<"hashing_algorithm">> => <<"rabbit_password_hashing_sha256">>,
-            <<"tags">> => []
+            <<"tags">> => [<<"management">>]
           },
           Permission = #{
             <<"user">> => UserName,
@@ -209,6 +210,7 @@ resource "azurerm_container_app" "rabbitmq" {
           > /tmp/logisticshub-rabbitmq/conf.d/10-definitions.conf
         export RABBITMQ_CONFIG_FILES=/tmp/logisticshub-rabbitmq/conf.d
 
+        rabbitmq-plugins enable --offline rabbitmq_management
         exec docker-entrypoint.sh rabbitmq-server
       EOT
         , "\r", ""),
@@ -239,6 +241,33 @@ resource "azurerm_container_app" "rabbitmq" {
         interval_seconds        = 30
         timeout                 = 5
         failure_count_threshold = 3
+      }
+    }
+  }
+}
+
+resource "azapi_update_resource" "rabbitmq_management_port" {
+  type        = "Microsoft.App/containerApps@2025-07-01"
+  resource_id = azurerm_container_app.rabbitmq.id
+
+  lifecycle {
+    replace_triggered_by = [
+      azurerm_container_app.rabbitmq
+    ]
+  }
+
+  body = {
+    properties = {
+      configuration = {
+        ingress = {
+          additionalPortMappings = [
+            {
+              targetPort  = local.rabbitmq_management_port
+              exposedPort = local.rabbitmq_management_port
+              external    = false
+            }
+          ]
+        }
       }
     }
   }
