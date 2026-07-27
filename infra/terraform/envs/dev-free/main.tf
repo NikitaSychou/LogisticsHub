@@ -51,24 +51,11 @@ locals {
     CompanyService__Resilience__CircuitBreakerDurationSeconds  = "5"
   }
 
-  rabbitmq_image           = "docker.io/library/rabbitmq:4.1.4-alpine@sha256:b736d649308e1b3e1a116c3f36986b605ee3d03e88f10166be2900083d2e63f2"
-  rabbitmq_port            = 5672
-  rabbitmq_management_port = 15672
-  redis_image              = "docker.io/library/redis:8.2.1-alpine@sha256:987c376c727652f99625c7d205a1cba3cb2c53b92b0b62aade2bd48ee1593232"
-  redis_port               = 6379
-  rabbitmq_queues = {
-    inventory_stock_reservation_requested = "inventory.stock-reservation.requested"
-    shipment_stock_reservation_failed     = "shipment.stock-reservation.failed"
-    shipment_stock_reservation_reserved   = "shipment.stock-reservation.reserved"
-  }
+  rabbitmq_image              = "docker.io/library/rabbitmq:4.1.4-alpine@sha256:b736d649308e1b3e1a116c3f36986b605ee3d03e88f10166be2900083d2e63f2"
+  rabbitmq_port               = 5672
+  redis_image                 = "docker.io/library/redis:8.2.1-alpine@sha256:987c376c727652f99625c7d205a1cba3cb2c53b92b0b62aade2bd48ee1593232"
+  redis_port                  = 6379
   rabbitmq_definitions_base64 = base64encode(file("${path.module}/rabbitmq-definitions.json"))
-  rabbitmq_queue_scale_metadata = {
-    host      = "http://${azurerm_container_app.rabbitmq.name}:${local.rabbitmq_management_port}/"
-    mode      = "QueueLength"
-    protocol  = "http"
-    value     = "1"
-    vhostName = "/"
-  }
   outbox_safety_cron_scale_metadata = {
     desiredReplicas = "1"
     end             = "10 */3 * * *"
@@ -188,7 +175,7 @@ resource "azurerm_container_app" "rabbitmq" {
             <<"name">> => UserName,
             <<"password_hash">> => PasswordHash,
             <<"hashing_algorithm">> => <<"rabbit_password_hashing_sha256">>,
-            <<"tags">> => [<<"management">>]
+            <<"tags">> => []
           },
           Permission = #{
             <<"user">> => UserName,
@@ -210,7 +197,6 @@ resource "azurerm_container_app" "rabbitmq" {
           > /tmp/logisticshub-rabbitmq/conf.d/10-definitions.conf
         export RABBITMQ_CONFIG_FILES=/tmp/logisticshub-rabbitmq/conf.d
 
-        rabbitmq-plugins enable --offline rabbitmq_management
         exec docker-entrypoint.sh rabbitmq-server
       EOT
         , "\r", ""),
@@ -246,32 +232,6 @@ resource "azurerm_container_app" "rabbitmq" {
   }
 }
 
-resource "azapi_update_resource" "rabbitmq_management_port" {
-  type        = "Microsoft.App/containerApps@2025-07-01"
-  resource_id = azurerm_container_app.rabbitmq.id
-
-  lifecycle {
-    replace_triggered_by = [
-      azurerm_container_app.rabbitmq
-    ]
-  }
-
-  body = {
-    properties = {
-      configuration = {
-        ingress = {
-          additionalPortMappings = [
-            {
-              targetPort  = local.rabbitmq_management_port
-              exposedPort = local.rabbitmq_management_port
-              external    = false
-            }
-          ]
-        }
-      }
-    }
-  }
-}
 
 resource "azurerm_container_app" "redis" {
   name                         = var.redis_container_app_name
@@ -505,11 +465,6 @@ resource "azurerm_container_app" "inventoryservice" {
     value = var.rabbitmq_password
   }
 
-  secret {
-    name  = "rabbitmq-username"
-    value = var.rabbitmq_username
-  }
-
   ingress {
     external_enabled = false
     target_port      = local.container_app_http_port
@@ -528,27 +483,6 @@ resource "azurerm_container_app" "inventoryservice" {
     http_scale_rule {
       name                = "http"
       concurrent_requests = "10"
-    }
-
-    custom_scale_rule {
-      name             = "rabbitmq-stock-reservation-requested"
-      custom_rule_type = "rabbitmq"
-      metadata = merge(
-        local.rabbitmq_queue_scale_metadata,
-        {
-          queueName = local.rabbitmq_queues.inventory_stock_reservation_requested
-        }
-      )
-
-      authentication {
-        secret_name       = "rabbitmq-password"
-        trigger_parameter = "password"
-      }
-
-      authentication {
-        secret_name       = "rabbitmq-username"
-        trigger_parameter = "username"
-      }
     }
 
     custom_scale_rule {
@@ -637,11 +571,6 @@ resource "azurerm_container_app" "shipmentservice" {
     value = var.rabbitmq_password
   }
 
-  secret {
-    name  = "rabbitmq-username"
-    value = var.rabbitmq_username
-  }
-
   ingress {
     external_enabled = false
     target_port      = local.container_app_http_port
@@ -660,48 +589,6 @@ resource "azurerm_container_app" "shipmentservice" {
     http_scale_rule {
       name                = "http"
       concurrent_requests = "10"
-    }
-
-    custom_scale_rule {
-      name             = "rabbitmq-stock-reservation-reserved"
-      custom_rule_type = "rabbitmq"
-      metadata = merge(
-        local.rabbitmq_queue_scale_metadata,
-        {
-          queueName = local.rabbitmq_queues.shipment_stock_reservation_reserved
-        }
-      )
-
-      authentication {
-        secret_name       = "rabbitmq-password"
-        trigger_parameter = "password"
-      }
-
-      authentication {
-        secret_name       = "rabbitmq-username"
-        trigger_parameter = "username"
-      }
-    }
-
-    custom_scale_rule {
-      name             = "rabbitmq-stock-reservation-failed"
-      custom_rule_type = "rabbitmq"
-      metadata = merge(
-        local.rabbitmq_queue_scale_metadata,
-        {
-          queueName = local.rabbitmq_queues.shipment_stock_reservation_failed
-        }
-      )
-
-      authentication {
-        secret_name       = "rabbitmq-password"
-        trigger_parameter = "password"
-      }
-
-      authentication {
-        secret_name       = "rabbitmq-username"
-        trigger_parameter = "username"
-      }
     }
 
     custom_scale_rule {
