@@ -121,8 +121,13 @@ resource "azurerm_container_app" "rabbitmq" {
   }
 
   template {
-    min_replicas = 1
+    min_replicas = 0
     max_replicas = 1
+    tcp_scale_rule {
+      name                = "amqp-connections"
+      concurrent_requests = "1"
+    }
+
 
     container {
       name   = "rabbitmq"
