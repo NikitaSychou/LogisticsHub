@@ -8,7 +8,8 @@ This root defines the simplified low-cost Azure foundation for the dev-free targ
 - Azure Container Apps managed environment using the default Consumption workload profile.
 - Internal RabbitMQ Container App for dev-only messaging.
 - Internal Redis Container App for dev-only cache and runtime dependency use.
-- Internal CompanyService, InventoryService, ShipmentService, and CacheWorker Container Apps.
+- Internal CompanyService, InventoryService, and ShipmentService Container Apps.
+- CacheWorker scheduled Azure Container Apps Job.
 - Storage Account for future Angular static website hosting.
 - Storage Static Website configuration with `index.html` as both the index and error document.
 
@@ -26,7 +27,7 @@ SQL administrator passwords come from ignored local variables and are stored in 
 
 ## Internal Services
 
-CompanyService, InventoryService, and ShipmentService run as internal HTTP Container Apps on port `8080` with no public ingress. CacheWorker runs as a worker Container App with no ingress, no exposed port, and no HTTP probes; its health is represented by process lifecycle and Container Apps revision state.
+CompanyService, InventoryService, and ShipmentService run as internal HTTP Container Apps on port `8080` with no public ingress.
 
 Gateway, CompanyService, InventoryService, and ShipmentService use the Consumption workload profile, single revision mode, zero minimum replicas, and one maximum replica. Their HTTP ingress remains enabled, so incoming frontend or internal HTTP requests provide the HTTP wake-up path. Cold starts can include Container Apps startup plus Azure SQL serverless resume latency.
 
@@ -34,7 +35,9 @@ InventoryService and ShipmentService also have RabbitMQ `QueueLength` scale rule
 
 InventoryService and ShipmentService each have a dev-free-only cron safety window from `0 */3 * * *` through `10 */3 * * *` in `Etc/UTC`, with desired replicas set to `1`. This gives delayed outbox retries a short processing window every three hours while leaving enough idle time for Azure SQL serverless databases to auto-pause. The HTTP cold-start behavior still applies outside that window, and dev-free keeps ShipmentService's temporary 60-second CompanyService call timeout to tolerate CompanyService and SQL cold starts.
 
-CacheWorker, RabbitMQ, and Redis intentionally keep one minimum replica. CacheWorker scheduling or job conversion, RabbitMQ TCP dependency scale-to-zero, and Redis scale-to-zero or managed-cache replacement remain deferred follow-up optimizations.
+CacheWorker runs as a scheduled Azure Container Apps Job at `10 3 * * *` UTC. Each execution performs one startup cache warm-up and exits. The Job reads CompanyDb directly and writes rebuildable cache entries to Redis; Redis intentionally remains an always-available one-replica Container App. Module failures currently may be logged without producing a non-zero process exit code.
+
+RabbitMQ and Redis intentionally keep one minimum replica. RabbitMQ TCP dependency scale-to-zero and Redis scale-to-zero or managed-cache replacement remain deferred follow-up optimizations.
 
 The API containers use `/health/live` for startup and liveness probes and `/health/ready` for readiness probes. Readiness checks continue to include the service dependencies configured by the applications, such as SQL and RabbitMQ.
 
@@ -110,7 +113,7 @@ az containerapp show --resource-group rg-logisticshub-dev-free --name ca-gateway
 az containerapp show --resource-group rg-logisticshub-dev-free --name ca-company-logisticshub-dev-free --query properties.provisioningState -o tsv
 az containerapp show --resource-group rg-logisticshub-dev-free --name ca-inv-logisticshub-dev-free --query properties.provisioningState -o tsv
 az containerapp show --resource-group rg-logisticshub-dev-free --name ca-ship-logisticshub-dev-free --query properties.provisioningState -o tsv
-az containerapp show --resource-group rg-logisticshub-dev-free --name ca-cache-logisticshub-dev-free --query properties.provisioningState -o tsv
+az containerapp job show --resource-group rg-logisticshub-dev-free --name ca-cache-logisticshub-dev-free --query properties.provisioningState -o tsv
 ```
 
 Do not print Container Apps secrets or Terraform sensitive values during verification.
