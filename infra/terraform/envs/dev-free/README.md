@@ -31,9 +31,9 @@ CompanyService, InventoryService, and ShipmentService run as internal HTTP Conta
 
 Gateway, CompanyService, InventoryService, and ShipmentService use the Consumption workload profile, single revision mode, zero minimum replicas, and one maximum replica. Their HTTP ingress remains enabled, so incoming frontend or internal HTTP requests provide the HTTP wake-up path. Cold starts can include Container Apps startup plus Azure SQL serverless resume latency.
 
-InventoryService and ShipmentService also have RabbitMQ `QueueLength` scale rules for their consumer queues. InventoryService wakes for `inventory.stock-reservation.requested`; ShipmentService wakes for `shipment.stock-reservation.reserved` and `shipment.stock-reservation.failed`. The scale rules read queue depth through the internal RabbitMQ Management HTTP API, keep credentials out of rule metadata, and use the existing `rabbitmq-username` and `rabbitmq-password` Container Apps secrets.
+InventoryService and ShipmentService can scale to zero through HTTP inactivity. RabbitMQ message-driven wake-up is intentionally not enabled in dev-free; this is a deliberate simplicity and cost tradeoff.
 
-InventoryService and ShipmentService each have a dev-free-only cron safety window from `0 */3 * * *` through `10 */3 * * *` in `Etc/UTC`, with desired replicas set to `1`. This gives delayed outbox retries a short processing window every three hours while leaving enough idle time for Azure SQL serverless databases to auto-pause. The HTTP cold-start behavior still applies outside that window, and dev-free keeps ShipmentService's temporary 60-second CompanyService call timeout to tolerate CompanyService and SQL cold starts.
+InventoryService and ShipmentService each have a dev-free-only cron safety window from `0 */3 * * *` through `10 */3 * * *` in `Etc/UTC`, with desired replicas set to `1`. This starts them for scheduled demo and asynchronous processing while leaving enough idle time for Azure SQL serverless databases to auto-pause. The HTTP cold-start behavior still applies outside that window, and dev-free keeps ShipmentService's temporary 60-second CompanyService call timeout to tolerate CompanyService and SQL cold starts.
 
 CacheWorker runs as a scheduled Azure Container Apps Job at `10 3 * * *` UTC. Each execution performs one startup cache warm-up and exits. The Job reads CompanyDb directly and writes rebuildable cache entries to Redis; Redis intentionally remains an always-available one-replica Container App. Module failures currently may be logged without producing a non-zero process exit code.
 
@@ -53,7 +53,7 @@ The Container Apps environment is configured for the default Consumption model. 
 
 ## Dev Runtime Dependencies
 
-RabbitMQ and Redis run as dev-only Container Apps in the shared Consumption environment. Both use one replica, internal TCP ingress only, and no persistent volumes or high-availability configuration. RabbitMQ listens on port `5672`; the management plugin is enabled only for the internal Management HTTP API on port `15672` used by KEDA, and no public management endpoint is exposed. Redis listens on port `6379`, requires authentication, and disables AOF and RDB snapshot persistence.
+RabbitMQ and Redis run as dev-only Container Apps in the shared Consumption environment. Both use one replica, internal TCP ingress only, and no persistent volumes or high-availability configuration. RabbitMQ listens on port `5672` for internal AMQP traffic, and no public management endpoint is exposed. Redis listens on port `6379`, requires authentication, and disables AOF and RDB snapshot persistence.
 
 RabbitMQ imports `rabbitmq-definitions.json` during broker boot using RabbitMQ's local-filesystem definitions import settings. The tracked definitions file contains no users, passwords, or permissions; it bootstraps only the durable exchange, dead-letter exchange, consumer queues, dead-letter queues, and bindings required by the dev-free message flow. Consumer declarations remain compatible and idempotent with the bootstrapped topology.
 
