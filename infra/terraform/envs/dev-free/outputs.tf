@@ -149,8 +149,8 @@ output "shipmentservice_port" {
 }
 
 output "cacheworker_container_app_name" {
-  description = "Name of the dev-free CacheWorker Container App."
-  value       = azurerm_container_app.cacheworker.name
+  description = "Name of the dev-free CacheWorker Container Apps Job."
+  value       = azurerm_container_app_job.cacheworker.name
 }
 
 output "frontend_storage_account_name" {

@@ -751,13 +751,21 @@ resource "azurerm_container_app" "shipmentservice" {
   }
 }
 
-resource "azurerm_container_app" "cacheworker" {
+resource "azurerm_container_app_job" "cacheworker" {
   name                         = var.cacheworker_container_app_name
   container_app_environment_id = azurerm_container_app_environment.main.id
+  location                     = azurerm_resource_group.main.location
+  replica_retry_limit          = 1
+  replica_timeout_in_seconds   = 2100
   resource_group_name          = azurerm_resource_group.main.name
   workload_profile_name        = "Consumption"
-  revision_mode                = "Single"
   tags                         = var.tags
+
+  schedule_trigger_config {
+    cron_expression          = "10 3 * * *"
+    parallelism              = 1
+    replica_completion_count = 1
+  }
 
   secret {
     name  = "companydb-connection-string"
@@ -770,9 +778,6 @@ resource "azurerm_container_app" "cacheworker" {
   }
 
   template {
-    min_replicas = 1
-    max_replicas = 1
-
     container {
       name   = "cacheworker"
       image  = local.container_images.cacheworker
@@ -784,7 +789,7 @@ resource "azurerm_container_app" "cacheworker" {
           local.common_container_environment,
           {
             CacheWorker__RunOnStartup                                        = "true"
-            CacheWorker__RunOnce                                             = "false"
+            CacheWorker__RunOnce                                             = "true"
             CacheWorker__RefreshInterval                                     = "24:00:00"
             CacheWorker__StartupJitterPercentage                             = "5"
             CacheWorker__RefreshJitterPercentage                             = "5"
