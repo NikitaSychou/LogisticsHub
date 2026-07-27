@@ -62,10 +62,11 @@ locals {
   }
   rabbitmq_definitions_base64 = base64encode(file("${path.module}/rabbitmq-definitions.json"))
   rabbitmq_queue_scale_metadata = {
-    host     = "amqp://${azurerm_container_app.rabbitmq.name}:${local.rabbitmq_port}/"
-    mode     = "QueueLength"
-    protocol = "amqp"
-    value    = "1"
+    host      = "amqp://${azurerm_container_app.rabbitmq.name}:${local.rabbitmq_port}"
+    mode      = "QueueLength"
+    protocol  = "amqp"
+    value     = "1"
+    vhostName = "/"
   }
   outbox_safety_cron_scale_metadata = {
     desiredReplicas = "1"
