@@ -37,7 +37,7 @@ InventoryService and ShipmentService each have a dev-free-only cron safety windo
 
 CacheWorker runs as a scheduled Azure Container Apps Job at `10 3 * * *` UTC. Each execution performs one startup cache warm-up and exits. The Job reads CompanyDb directly and writes rebuildable cache entries to Redis; Redis intentionally remains an always-available one-replica Container App. Module failures currently may be logged without producing a non-zero process exit code.
 
-RabbitMQ and Redis intentionally keep one minimum replica. RabbitMQ TCP dependency scale-to-zero and Redis scale-to-zero or managed-cache replacement remain deferred follow-up optimizations.
+RabbitMQ uses zero minimum replicas and one maximum replica. Its existing internal AMQP TCP ingress on port `5672` is the scale trigger, with a threshold of one concurrent connection. The first AMQP connection can encounter a cold start, so application RabbitMQ clients rely on their existing reconnect behavior. The previous RabbitMQ QueueLength scaler experiment remains intentionally abandoned; dev-free does not add the RabbitMQ Management Plugin or port `15672`. Redis intentionally keeps one minimum replica, and Redis scale-to-zero or managed-cache replacement remains a deferred follow-up optimization.
 
 The API containers use `/health/live` for startup and liveness probes and `/health/ready` for readiness probes. Readiness checks continue to include the service dependencies configured by the applications, such as SQL and RabbitMQ.
 
@@ -53,7 +53,7 @@ The Container Apps environment is configured for the default Consumption model. 
 
 ## Dev Runtime Dependencies
 
-RabbitMQ and Redis run as dev-only Container Apps in the shared Consumption environment. Both use one replica, internal TCP ingress only, and no persistent volumes or high-availability configuration. RabbitMQ listens on port `5672` for internal AMQP traffic, and no public management endpoint is exposed. Redis listens on port `6379`, requires authentication, and disables AOF and RDB snapshot persistence.
+RabbitMQ and Redis run as dev-only Container Apps in the shared Consumption environment with internal TCP ingress only and no persistent volumes or high-availability configuration. RabbitMQ scales between zero and one replica and listens on port `5672` for internal AMQP traffic; no public management endpoint is exposed. Redis keeps one replica, listens on port `6379`, requires authentication, and disables AOF and RDB snapshot persistence.
 
 RabbitMQ imports `rabbitmq-definitions.json` during broker boot using RabbitMQ's local-filesystem definitions import settings. The tracked definitions file contains no users, passwords, or permissions; it bootstraps only the durable exchange, dead-letter exchange, consumer queues, dead-letter queues, and bindings required by the dev-free message flow. Consumer declarations remain compatible and idempotent with the bootstrapped topology.
 
