@@ -1,10 +1,11 @@
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { Component, EventEmitter, Input, OnChanges, Output, SimpleChanges } from '@angular/core';
 import { CreateInventoryItemRequest } from '../../models/inventory.models';
 
 @Component({
   selector: 'app-inventory-create-form',
-  imports: [CommonModule],
+  imports: [CommonModule, FormsModule],
   templateUrl: './inventory-create-form.html',
   styleUrl: './inventory-create-form.css',
 })
