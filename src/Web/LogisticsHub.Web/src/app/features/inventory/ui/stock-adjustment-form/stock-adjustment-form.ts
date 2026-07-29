@@ -1,10 +1,11 @@
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { Component, EventEmitter, Input, OnChanges, Output, SimpleChanges } from '@angular/core';
 import { CreateStockAdjustmentRequest } from '../../models/inventory.models';
 
 @Component({
   selector: 'app-stock-adjustment-form',
-  imports: [CommonModule],
+  imports: [CommonModule, FormsModule],
   templateUrl: './stock-adjustment-form.html',
   styleUrl: './stock-adjustment-form.css',
 })
